@@ -73,6 +73,8 @@ export interface ResolvedChainAddresses {
   protocolConfig: `0x${string}`;
   citizenRegistry: `0x${string}`;
   settlementToken: `0x${string}`;
+  topicWaitlist: `0x${string}` | undefined;
+  positionPool: `0x${string}` | undefined;
   chainId: number;
 }
 
@@ -93,11 +95,15 @@ export function resolveChainAddresses(): ResolvedChainAddresses {
   const pe = process.env.ROBOTANIA_PROTOCOL_CONFIG as `0x${string}` | undefined;
   const ce = process.env.ROBOTANIA_CITIZEN_REGISTRY as `0x${string}` | undefined;
   const te = process.env.ROBOTANIA_SETTLEMENT_TOKEN as `0x${string}` | undefined;
+  const twe = process.env.ROBOTANIA_TOPIC_WAITLIST as `0x${string}` | undefined;
+  const ppe = process.env.ROBOTANIA_POSITION_POOL as `0x${string}` | undefined;
   if (pe && ce && te) {
     return {
       protocolConfig: pe,
       citizenRegistry: ce,
       settlementToken: te,
+      topicWaitlist: twe,
+      positionPool: ppe,
       chainId: Number(process.env.CHAIN_ID ?? process.env.ROBOTANIA_CHAIN_ID ?? 31337),
     };
   }
@@ -130,6 +136,8 @@ export function resolveChainAddresses(): ResolvedChainAddresses {
     protocolConfig,
     citizenRegistry,
     settlementToken,
+    topicWaitlist: (twe ?? c.TopicWaitlist) as `0x${string}` | undefined,
+    positionPool: (ppe ?? c.PositionPool) as `0x${string}` | undefined,
     chainId: Number(process.env.CHAIN_ID ?? process.env.ROBOTANIA_CHAIN_ID ?? raw.chainId ?? 31337),
   };
 }
