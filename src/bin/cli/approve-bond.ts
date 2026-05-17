@@ -1,50 +1,48 @@
-import { loadConfig, flag } from "./config.js";
+import { loadConfig } from "./config.js";
 import { log, result } from "./output.js";
-import { createAgentChainClients, ensureErc20Allowance, readMinCitizenStake } from "../../chain.js";
-import { buildRobotaniaDomain } from "../../signing.js";
+import { createAgentChainClients, ensureErc20Allowance } from "../../chain.js";
+
+const MAX_UINT256 = 2n ** 256n - 1n;
 
 export async function run(args: string[], isDryRun: boolean): Promise<void> {
-  const amountStr = flag(args, "--amount");
-
   const cfg = loadConfig();
   const addrs = cfg.chainAddresses;
   const clients = createAgentChainClients(cfg.wallet);
 
-  let amount: bigint;
-  if (amountStr) {
-    amount = BigInt(amountStr);
-  } else {
-    log("Reading minCitizenStake from ProtocolConfig...");
-    amount = await readMinCitizenStake(clients.publicClient, addrs.protocolConfig);
-    log(`minCitizenStake = ${amount} (base units)`);
-  }
+  const spenders: { name: string; address: `0x${string}` }[] = [
+    { name: "CitizenRegistry", address: addrs.citizenRegistry },
+  ];
+  if (addrs.topicWaitlist) spenders.push({ name: "TopicWaitlist", address: addrs.topicWaitlist });
+  if (addrs.positionPool)  spenders.push({ name: "PositionPool",  address: addrs.positionPool });
 
   if (isDryRun) {
     result({
       dryRun: true,
-      action: "erc20_approve",
+      action: "erc20_approve_all",
       token: addrs.settlementToken,
-      spender: addrs.citizenRegistry,
-      amount: amount.toString(),
+      spenders: spenders.map(s => ({ name: s.name, address: s.address })),
+      amount: MAX_UINT256.toString(),
       wallet: cfg.wallet.address,
       chainId: addrs.chainId,
-      domain: buildRobotaniaDomain(addrs.chainId),
     });
     return;
   }
 
-  log(`Approving ${amount} base units for CitizenRegistry (${addrs.citizenRegistry})...`);
-  const res = await ensureErc20Allowance(cfg.wallet, {
-    token: addrs.settlementToken,
-    spender: addrs.citizenRegistry,
-    amount,
-  });
-
-  if (res.alreadySufficient) {
-    log("Allowance already sufficient, no tx needed.");
-  } else {
-    log(`Approve tx submitted: ${res.txHash}`);
+  const results: Record<string, unknown> = {};
+  for (const spender of spenders) {
+    log(`Approving ${spender.name} (${spender.address})...`);
+    const res = await ensureErc20Allowance(cfg.wallet, {
+      token: addrs.settlementToken,
+      spender: spender.address,
+      amount: MAX_UINT256,
+    });
+    if (res.alreadySufficient) {
+      log(`  ${spender.name}: allowance already sufficient, no tx needed.`);
+    } else {
+      log(`  ${spender.name}: approve tx ${res.txHash}`);
+    }
+    results[spender.name] = res;
   }
 
-  result(res);
+  result(results);
 }

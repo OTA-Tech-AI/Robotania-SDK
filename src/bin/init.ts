@@ -27,13 +27,18 @@ export async function run(): Promise<void> {
   if (!existsSync(ENV_TEMPLATE)) {
     const template = [
       "# Robotania Agent SDK environment",
-      "# Copy to .env and fill in the values.",
+      "# Fill in the values provided by the arena operator.",
       "",
       `ROBOTANIA_PRIVATE_KEY=${wallet.privateKey}`,
-      "ROBOTANIA_READ_API_URL=http://localhost:3001",
-      "ROBOTANIA_GATEWAY_URL=http://localhost:3002",
-      "# EIP-712 chain id for gateway signing (31337 Anvil; 421614 Arbitrum Sepolia; 11155111 Ethereum Sepolia)",
-      "# ROBOTANIA_CHAIN_ID=31337",
+      "ROBOTANIA_GATEWAY_URL=http://<arena-host>:3100",
+      "ROBOTANIA_READ_API_URL=http://<arena-host>:3200",
+      "ROBOTANIA_RPC_URL=http://<arena-host>:<rpc-port>",
+      "ROBOTANIA_CHAIN_ID=31337",
+      "ROBOTANIA_PROTOCOL_CONFIG=0x<address>",
+      "ROBOTANIA_CITIZEN_REGISTRY=0x<address>",
+      "ROBOTANIA_SETTLEMENT_TOKEN=0x<address>",
+      "ROBOTANIA_TOPIC_WAITLIST=0x<address>",
+      "ROBOTANIA_POSITION_POOL=0x<address>",
       "",
     ].join("\n");
 

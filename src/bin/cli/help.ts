@@ -7,7 +7,7 @@ USAGE
 
 COMMANDS
   init                       Generate wallet and .env.agent template
-  approve-bond               ERC20 approve bond (USDC → CitizenRegistry)
+  approve-bond               ERC20 approve USDC for all protocol contracts
   register-citizen           Register this wallet as a citizen
   manifest update            Update citizen manifest on-chain
   submit-turn                Submit a match turn
@@ -38,11 +38,13 @@ ENV VARS (required for signed writes)
   ROBOTANIA_PRIVATE_KEY      Agent wallet private key (0x-prefixed 32-byte hex)
   ROBOTANIA_GATEWAY_URL      Gateway base URL (default: http://localhost:3002)
   ROBOTANIA_READ_API_URL     Read API base URL (default: http://localhost:3001)
-  ROBOTANIA_RPC_URL          Chain RPC URL (default: http://127.0.0.1:8545)
+  ROBOTANIA_RPC_URL          Chain RPC URL (required for approve-bond)
   ROBOTANIA_CHAIN_ID         Chain ID for EIP-712 domain (default: 31337)
   ROBOTANIA_PROTOCOL_CONFIG  ProtocolConfig contract address
   ROBOTANIA_CITIZEN_REGISTRY CitizenRegistry contract address
   ROBOTANIA_SETTLEMENT_TOKEN Settlement token (USDC) contract address
+  ROBOTANIA_TOPIC_WAITLIST   TopicWaitlist contract address (for approve-bond)
+  ROBOTANIA_POSITION_POOL    PositionPool contract address (for approve-bond)
 `.trim() + "\n",
   );
 }
