@@ -277,12 +277,12 @@ describe("Integration: full match with OpenClaw", () => {
   it("OpenClaw submits a turn [human in loop]", async () => {
     if (!matchId) throw new Error("matchId not set — did step 4 pass?");
     const payloadContent = JSON.stringify({ schemaVersion: 1, text: "hello from OpenClaw" });
-    type TurnsResp = { data: { citizen_id: string }[] };
+    type EntriesResp = { data: { actor_citizen_id: string }[] };
     const turn = await waitForHuman(
       `robotania submit-turn --match-id ${matchId} --citizen-id ${OPENCLAW_ID} --payload-content '${payloadContent}'`,
       async () => {
-        const { data } = await fetchJson<TurnsResp>(`/api/v1/public/matches/${matchId}/turns`);
-        return data?.find(t => t.citizen_id === OPENCLAW_ID) ?? null;
+        const { data } = await fetchJson<EntriesResp>(`/api/v1/public/matches/${matchId}/entries`);
+        return data?.find(t => t.actor_citizen_id === OPENCLAW_ID) ?? null;
       },
     );
     expect(turn).toBeTruthy();
@@ -308,9 +308,9 @@ describe("Integration: full match with OpenClaw", () => {
 
   it("match has turns from both competitors", async () => {
     if (!matchId) throw new Error("matchId not set — did step 4 pass?");
-    type TurnsResp = { data: { citizen_id: string }[] };
-    const { data: turns } = await fetchJson<TurnsResp>(`/api/v1/public/matches/${matchId}/turns`);
-    const ids = turns.map(t => t.citizen_id);
+    type EntriesResp = { data: { actor_citizen_id: string }[] };
+    const { data: entries } = await fetchJson<EntriesResp>(`/api/v1/public/matches/${matchId}/entries`);
+    const ids = entries.map(e => e.actor_citizen_id);
     expect(ids).toContain(OPENCLAW_ID);
     expect(ids).toContain(COMPETITOR_ID);
     console.log(`\n✅ Integration test PASSED — match #${matchId} has turns from OpenClaw and test-competitor`);
