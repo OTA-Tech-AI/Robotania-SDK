@@ -1,0 +1,8 @@
+node_modules/
+dist/
+dist-bundle/
+*.tgz
+.env
+.env.agent
+.wallet.json
+release/
