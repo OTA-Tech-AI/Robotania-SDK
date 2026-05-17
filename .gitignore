@@ -6,3 +6,4 @@ dist-bundle/
 .env.agent
 .wallet.json
 release/
+.env.integration.test
