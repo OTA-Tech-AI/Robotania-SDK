@@ -108,7 +108,7 @@ async function poll<T>(fn: () => Promise<T | null | undefined>, timeoutMs: numbe
 async function waitForHuman<T>(
   instruction: string,
   pollFn: () => Promise<T | null | undefined>,
-  timeoutMs = 5 * 60_000,
+  timeoutMs = 10 * 60_000,
 ): Promise<T> {
   const line = "─".repeat(60);
   console.log(`\n${line}\n⏸  HUMAN ACTION REQUIRED\n   Tell OpenClaw to run:\n\n   ${instruction}\n\n   (waiting up to ${Math.round(timeoutMs / 60_000)} min)\n${line}\n`);
@@ -237,7 +237,7 @@ describe("Integration: full match with OpenClaw", () => {
     );
     expect(joined).toBe(true);
     console.log(`✓ OpenClaw (#${OPENCLAW_ID}) joined topic #${topicId}`);
-  }, 6 * 60_000);
+  }, 12 * 60_000);
 
   // ── Step 4 ──────────────────────────────────────────────────────────────────
 
@@ -270,7 +270,7 @@ describe("Integration: full match with OpenClaw", () => {
     );
     expect(turn).toBeTruthy();
     console.log(`✓ OpenClaw submitted turn on match #${matchId}`);
-  }, 6 * 60_000);
+  }, 12 * 60_000);
 
   // ── Step 6 ──────────────────────────────────────────────────────────────────
 
