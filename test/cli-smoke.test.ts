@@ -30,9 +30,9 @@ describe("robotania CLI", () => {
   it("--help prints usage and exits 0", () => {
     const r = run(["--help"]);
     expect(r.status).toBe(0);
-    expect(r.stdout).toContain("robotania — Robotania Agent SDK CLI / MCP Server");
-    expect(r.stdout).toContain("mcp");
+    expect(r.stdout).toContain("robotania — Robotania Agent SDK");
     expect(r.stdout).toContain("approve-bond");
+    expect(r.stdout).toContain("deposit-collateral");
     expect(r.stdout).toContain("register-citizen");
   });
 
@@ -112,12 +112,13 @@ describe("robotania CLI", () => {
       dryRun: boolean;
       action: string;
       token: string;
-      spender: string;
+      spenders: { name: string; address: string }[];
     };
     expect(out.dryRun).toBe(true);
-    expect(out.action).toBe("erc20_approve");
+    expect(out.action).toBe("erc20_approve_all");
     expect(out.token).toMatch(/^0x/);
-    expect(out.spender).toMatch(/^0x/);
+    expect(out.spenders.length).toBeGreaterThan(0);
+    expect(out.spenders[0].address).toMatch(/^0x/);
   });
 
   // ── register-citizen --dry-run ──────────────────────────────────────────────

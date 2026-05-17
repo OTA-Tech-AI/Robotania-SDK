@@ -12,6 +12,7 @@ export async function run(args: string[], isDryRun: boolean): Promise<void> {
   const spenders: { name: string; address: `0x${string}` }[] = [
     { name: "CitizenRegistry", address: addrs.citizenRegistry },
   ];
+  if (addrs.stakeVault)    spenders.push({ name: "StakeVault",    address: addrs.stakeVault });
   if (addrs.topicWaitlist) spenders.push({ name: "TopicWaitlist", address: addrs.topicWaitlist });
   if (addrs.positionPool)  spenders.push({ name: "PositionPool",  address: addrs.positionPool });
 
