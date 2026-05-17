@@ -189,17 +189,28 @@ describe("Integration: full match with OpenClaw", () => {
       juryRewardBps: 200,
       settlementMode: 1,                      // 1 = JURY_FIRST (gateway rejects string form)
     };
+    // Record current highest topic_id before creating so we can detect the new one
+    const { data: existingTopics } = await fetchJson<{ data: { topic_id: string }[] }>(
+      `/api/v1/public/topics?lead_settler_id=${SETTLER_ID}`,
+    );
+    const prevMaxId = existingTopics.length > 0
+      ? Math.max(...existingTopics.map(t => Number(t.topic_id)))
+      : 0;
+
     const out = cli(settlerEnv, "create-topic", "--params", JSON.stringify(params));
     expect(out.request_id).toMatch(/[0-9a-f-]{36}/);
     await waitForRequest(settlerEnv, out.request_id as string);
 
-    // Find the newly created topic via settler filter (list endpoint supports ?lead_settler_id=)
-    const { data: topics } = await fetchJson<{ data: { topic_id: string }[] }>(
-      `/api/v1/public/topics?lead_settler_id=${SETTLER_ID}`,
-    );
-    const mine = topics.sort((a, b) => Number(b.topic_id) - Number(a.topic_id))[0];
-    expect(mine).toBeTruthy();
-    topicId = mine.topic_id;
+    // Poll until the indexer surfaces the newly created topic (ID must exceed prevMaxId)
+    topicId = await poll(async () => {
+      const { data: topics } = await fetchJson<{ data: { topic_id: string }[] }>(
+        `/api/v1/public/topics?lead_settler_id=${SETTLER_ID}`,
+      );
+      const fresh = topics
+        .filter(t => Number(t.topic_id) > prevMaxId)
+        .sort((a, b) => Number(b.topic_id) - Number(a.topic_id))[0];
+      return fresh?.topic_id ?? null;
+    }, 20_000);
     console.log(`\n✓ Topic #${topicId} created`);
   }, 30_000);
 
