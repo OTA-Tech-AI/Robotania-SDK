@@ -180,24 +180,24 @@ describe("Integration: full match with OpenClaw", () => {
       competitorCap: 2,
       minCompetitors: 2,
       plannedTurnCount: 3,
-      minSpectatorDeposit: 1_000_000,        // 1 USDC
-      activationStakeThreshold: 0,            // no spectator threshold
+      minSpectatorDeposit: 5_000_000,        // 5 USDC (protocol floor = minPositionAmount)
+      activationStakeThreshold: 0,            // no spectator threshold required
       activationDeadline: Math.floor(Date.now() / 1000) + 7 * 24 * 3600,
       salaryBudgetBps: 500,
       prizeBudgetBps: 3000,
       settlerShareBps: 500,
       juryRewardBps: 200,
-      settlementMode: "JURY_FIRST",
+      settlementMode: 1,                      // 1 = JURY_FIRST (gateway rejects string form)
     };
     const out = cli(settlerEnv, "create-topic", "--params", JSON.stringify(params));
     expect(out.request_id).toMatch(/[0-9a-f-]{36}/);
     await waitForRequest(settlerEnv, out.request_id as string);
 
-    // Find the newly created topic (highest topic_id where lead_settler = SETTLER_ID)
-    const { data: topics } = await fetchJson<{ data: { topic_id: string; lead_settler_id: string }[] }>("/api/v1/public/topics");
-    const mine = topics
-      .filter(t => t.lead_settler_id === SETTLER_ID)
-      .sort((a, b) => Number(b.topic_id) - Number(a.topic_id))[0];
+    // Find the newly created topic via settler filter (list endpoint supports ?lead_settler_id=)
+    const { data: topics } = await fetchJson<{ data: { topic_id: string }[] }>(
+      `/api/v1/public/topics?lead_settler_id=${SETTLER_ID}`,
+    );
+    const mine = topics.sort((a, b) => Number(b.topic_id) - Number(a.topic_id))[0];
     expect(mine).toBeTruthy();
     topicId = mine.topic_id;
     console.log(`\n✓ Topic #${topicId} created`);
@@ -206,6 +206,7 @@ describe("Integration: full match with OpenClaw", () => {
   // ── Step 2 ──────────────────────────────────────────────────────────────────
 
   it("test competitor (#55) joins the topic", async () => {
+    if (!topicId) throw new Error("topicId not set — did step 1 pass?");
     const out = cli(competitorEnv, "join-waitlist", "--topic-id", topicId, "--citizen-id", COMPETITOR_ID);
     await waitForRequest(competitorEnv, out.request_id as string);
     console.log(`✓ Citizen #${COMPETITOR_ID} joined topic #${topicId}`);
@@ -214,6 +215,7 @@ describe("Integration: full match with OpenClaw", () => {
   // ── Step 3 — human in loop ──────────────────────────────────────────────────
 
   it("OpenClaw (#54) joins the topic [human in loop]", async () => {
+    if (!topicId) throw new Error("topicId not set — did step 1 pass?");
     type TopicResp = { data: { waitlist: { citizen_id: string }[] } };
     const joined = await waitForHuman(
       `robotania join-waitlist --topic-id ${topicId} --citizen-id ${OPENCLAW_ID}`,
@@ -229,6 +231,7 @@ describe("Integration: full match with OpenClaw", () => {
   // ── Step 4 ──────────────────────────────────────────────────────────────────
 
   it("settler activates the topic", async () => {
+    if (!topicId) throw new Error("topicId not set — did step 1 pass?");
     const out = cli(settlerEnv, "activate-topic", "--topic-id", topicId);
     await waitForRequest(settlerEnv, out.request_id as string);
 
@@ -244,6 +247,7 @@ describe("Integration: full match with OpenClaw", () => {
   // ── Step 5 — human in loop ──────────────────────────────────────────────────
 
   it("OpenClaw submits a turn [human in loop]", async () => {
+    if (!matchId) throw new Error("matchId not set — did step 4 pass?");
     const payload = JSON.stringify({ move: "hello from OpenClaw" });
     type TurnsResp = { data: { citizen_id: string }[] };
     const turn = await waitForHuman(
@@ -260,6 +264,7 @@ describe("Integration: full match with OpenClaw", () => {
   // ── Step 6 ──────────────────────────────────────────────────────────────────
 
   it("test competitor submits a turn", async () => {
+    if (!matchId) throw new Error("matchId not set — did step 4 pass?");
     const out = cli(
       competitorEnv,
       "submit-turn",
@@ -274,6 +279,7 @@ describe("Integration: full match with OpenClaw", () => {
   // ── Step 7 ──────────────────────────────────────────────────────────────────
 
   it("match has turns from both competitors", async () => {
+    if (!matchId) throw new Error("matchId not set — did step 4 pass?");
     type TurnsResp = { data: { citizen_id: string }[] };
     const { data: turns } = await fetchJson<TurnsResp>(`/api/v1/public/matches/${matchId}/turns`);
     const ids = turns.map(t => t.citizen_id);
