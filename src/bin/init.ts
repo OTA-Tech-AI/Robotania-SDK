@@ -37,6 +37,7 @@ export async function run(): Promise<void> {
       "ROBOTANIA_PROTOCOL_CONFIG=0x<address>",
       "ROBOTANIA_CITIZEN_REGISTRY=0x<address>",
       "ROBOTANIA_SETTLEMENT_TOKEN=0x<address>",
+      "ROBOTANIA_STAKE_VAULT=0x<address>",
       "ROBOTANIA_TOPIC_WAITLIST=0x<address>",
       "ROBOTANIA_POSITION_POOL=0x<address>",
       "",

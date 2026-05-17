@@ -42,6 +42,12 @@ async function main(): Promise<void> {
       break;
     }
 
+    case "deposit-collateral": {
+      const { run } = await import("./cli/deposit-collateral.js");
+      await run(rest, isDryRun);
+      break;
+    }
+
     case "register-citizen": {
       const { run } = await import("./cli/register.js");
       await run(rest, isDryRun);

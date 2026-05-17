@@ -55,6 +55,43 @@ const protocolMinStakeAbi = [
   },
 ] as const;
 
+const stakeVaultAbi = [
+  {
+    type: "function",
+    name: "depositCollateral",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "citizenId", type: "uint256" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "depositOperational",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "citizenId", type: "uint256" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "collateralBalanceByCitizen",
+    stateMutability: "view",
+    inputs: [{ name: "citizenId", type: "uint256" }],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "operationalBalanceByCitizen",
+    stateMutability: "view",
+    inputs: [{ name: "citizenId", type: "uint256" }],
+    outputs: [{ type: "uint256" }],
+  },
+] as const;
+
 const updateManifestAbi = [
   {
     type: "function",
@@ -73,6 +110,7 @@ export interface ResolvedChainAddresses {
   protocolConfig: `0x${string}`;
   citizenRegistry: `0x${string}`;
   settlementToken: `0x${string}`;
+  stakeVault: `0x${string}` | undefined;
   topicWaitlist: `0x${string}` | undefined;
   positionPool: `0x${string}` | undefined;
   chainId: number;
@@ -95,6 +133,7 @@ export function resolveChainAddresses(): ResolvedChainAddresses {
   const pe = process.env.ROBOTANIA_PROTOCOL_CONFIG as `0x${string}` | undefined;
   const ce = process.env.ROBOTANIA_CITIZEN_REGISTRY as `0x${string}` | undefined;
   const te = process.env.ROBOTANIA_SETTLEMENT_TOKEN as `0x${string}` | undefined;
+  const sve = process.env.ROBOTANIA_STAKE_VAULT as `0x${string}` | undefined;
   const twe = process.env.ROBOTANIA_TOPIC_WAITLIST as `0x${string}` | undefined;
   const ppe = process.env.ROBOTANIA_POSITION_POOL as `0x${string}` | undefined;
   if (pe && ce && te) {
@@ -102,6 +141,7 @@ export function resolveChainAddresses(): ResolvedChainAddresses {
       protocolConfig: pe,
       citizenRegistry: ce,
       settlementToken: te,
+      stakeVault: sve,
       topicWaitlist: twe,
       positionPool: ppe,
       chainId: Number(process.env.CHAIN_ID ?? process.env.ROBOTANIA_CHAIN_ID ?? 31337),
@@ -136,6 +176,7 @@ export function resolveChainAddresses(): ResolvedChainAddresses {
     protocolConfig,
     citizenRegistry,
     settlementToken,
+    stakeVault: (sve ?? c.StakeVault) as `0x${string}` | undefined,
     topicWaitlist: (twe ?? c.TopicWaitlist) as `0x${string}` | undefined,
     positionPool: (ppe ?? c.PositionPool) as `0x${string}` | undefined,
     chainId: Number(process.env.CHAIN_ID ?? process.env.ROBOTANIA_CHAIN_ID ?? raw.chainId ?? 31337),
@@ -295,4 +336,52 @@ export async function ensureErc20Allowance(
     args: [params.spender, params.amount],
   });
   return { txHash, alreadySufficient: false };
+}
+
+/** Deposit USDC into the StakeVault collateral pool for a citizen. */
+export async function writeDepositCollateral(
+  wallet: AgentWallet,
+  params: {
+    stakeVault: `0x${string}`;
+    citizenId: bigint | string;
+    amount: bigint;
+    rpcUrl?: string;
+    chainId?: number;
+  },
+): Promise<`0x${string}`> {
+  const { walletClient, account, chain } = createAgentChainClients(wallet, {
+    rpcUrl: params.rpcUrl,
+    chainId: params.chainId,
+  });
+  return walletClient.writeContract({
+    account,
+    chain,
+    address: params.stakeVault,
+    abi: stakeVaultAbi,
+    functionName: "depositCollateral",
+    args: [BigInt(params.citizenId), params.amount],
+  });
+}
+
+/** Read collateral and operational balances for a citizen from StakeVault. */
+export async function readStakeVaultBalances(
+  publicClient: PublicClient,
+  stakeVault: `0x${string}`,
+  citizenId: bigint | string,
+): Promise<{ collateral: bigint; operational: bigint }> {
+  const [collateral, operational] = await Promise.all([
+    publicClient.readContract({
+      address: stakeVault,
+      abi: stakeVaultAbi,
+      functionName: "collateralBalanceByCitizen",
+      args: [BigInt(citizenId)],
+    }) as Promise<bigint>,
+    publicClient.readContract({
+      address: stakeVault,
+      abi: stakeVaultAbi,
+      functionName: "operationalBalanceByCitizen",
+      args: [BigInt(citizenId)],
+    }) as Promise<bigint>,
+  ]);
+  return { collateral, operational };
 }
