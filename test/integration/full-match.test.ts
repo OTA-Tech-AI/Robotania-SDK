@@ -41,6 +41,7 @@ const DEPLOYER_KEY   = process.env.INTEGRATION_DEPLOYER_KEY!   as `0x${string}`;
 
 const USDC_ADDR      = process.env.ROBOTANIA_SETTLEMENT_TOKEN! as `0x${string}`;
 const STAKE_VAULT    = process.env.ROBOTANIA_STAKE_VAULT!       as `0x${string}`;
+const MATCH_MANAGER  = process.env.ROBOTANIA_MATCH_MANAGER!     as `0x${string}`;
 const BINARY         = resolve(__dirname, "../../dist/bin/robotania.js");
 
 // ── Chain clients ─────────────────────────────────────────────────────────────
@@ -123,6 +124,9 @@ async function waitForRequest(envFile: string, requestId: string): Promise<void>
 const stakeVaultAbi = parseAbi([
   "function collateralBalanceByCitizen(uint256) view returns (uint256)",
   "function depositCollateral(uint256, uint256)",
+]);
+const matchManagerAbi = parseAbi([
+  "function startMatch(uint256 matchId)",
 ]);
 const erc20Abi = parseAbi([
   "function balanceOf(address) view returns (uint256)",
@@ -252,17 +256,30 @@ describe("Integration: full match with OpenClaw", () => {
       return data.match_id ?? null;
     }, 30_000);
 
-    console.log(`✓ Topic #${topicId} activated → match #${matchId}`);
+    // activateTopic creates the match in PENDING_START; startMatch transitions it to LIVE.
+    // startMatch is permissionless — anyone can call it directly on-chain.
+    const wc = walletClient(DEPLOYER_KEY);
+    const account = privateKeyToAccount(DEPLOYER_KEY);
+    const startHash = await wc.writeContract({
+      account,
+      address: MATCH_MANAGER,
+      abi: matchManagerAbi,
+      functionName: "startMatch",
+      args: [BigInt(matchId)],
+    });
+    await publicClient.waitForTransactionReceipt({ hash: startHash });
+
+    console.log(`✓ Topic #${topicId} activated → match #${matchId} (LIVE)`);
   }, 60_000);
 
   // ── Step 5 — human in loop ──────────────────────────────────────────────────
 
   it("OpenClaw submits a turn [human in loop]", async () => {
     if (!matchId) throw new Error("matchId not set — did step 4 pass?");
-    const payload = JSON.stringify({ move: "hello from OpenClaw" });
+    const payloadContent = JSON.stringify({ schemaVersion: 1, text: "hello from OpenClaw" });
     type TurnsResp = { data: { citizen_id: string }[] };
     const turn = await waitForHuman(
-      `robotania submit-turn --match-id ${matchId} --citizen-id ${OPENCLAW_ID} --payload '${payload}'`,
+      `robotania submit-turn --match-id ${matchId} --citizen-id ${OPENCLAW_ID} --payload-content '${payloadContent}'`,
       async () => {
         const { data } = await fetchJson<TurnsResp>(`/api/v1/public/matches/${matchId}/turns`);
         return data?.find(t => t.citizen_id === OPENCLAW_ID) ?? null;
@@ -281,7 +298,7 @@ describe("Integration: full match with OpenClaw", () => {
       "submit-turn",
       "--match-id", matchId,
       "--citizen-id", COMPETITOR_ID,
-      "--payload", JSON.stringify({ move: "hello from test-competitor" }),
+      "--payload-content", JSON.stringify({ schemaVersion: 1, text: "hello from test-competitor" }),
     );
     await waitForRequest(competitorEnv, out.request_id as string);
     console.log(`✓ Citizen #${COMPETITOR_ID} submitted turn on match #${matchId}`);
