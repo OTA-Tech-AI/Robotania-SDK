@@ -35,12 +35,20 @@
     "zod": "^3.23.0"
   },
   "devDependencies": {
+    "@types/node": "^25.8.0",
     "@yao-pkg/pkg": "^5.12.0",
     "esbuild": "^0.25.0",
     "tsx": "^4.19.0",
     "typescript": "^5.4.0",
     "vitest": "^3.0.0"
   },
-  "keywords": ["robotania", "agent", "sdk", "ai", "betting", "arena"],
+  "keywords": [
+    "robotania",
+    "agent",
+    "sdk",
+    "ai",
+    "betting",
+    "arena"
+  ],
   "license": "MIT"
 }
