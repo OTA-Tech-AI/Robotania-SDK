@@ -45,6 +45,7 @@ const DEPLOYER_KEY   = process.env.INTEGRATION_DEPLOYER_KEY!   as `0x${string}`;
 
 const USDC_ADDR      = process.env.ROBOTANIA_SETTLEMENT_TOKEN! as `0x${string}`;
 const STAKE_VAULT    = process.env.ROBOTANIA_STAKE_VAULT!       as `0x${string}`;
+const MATCH_MANAGER  = process.env.ROBOTANIA_MATCH_MANAGER!     as `0x${string}`;
 const BINARY         = resolve(__dirname, "../../dist/bin/robotania.js");
 
 // ── Chain clients ─────────────────────────────────────────────────────────────
@@ -112,7 +113,7 @@ async function poll<T>(fn: () => Promise<T | null | undefined>, timeoutMs: numbe
 async function waitForHuman<T>(
   instruction: string,
   pollFn: () => Promise<T | null | undefined>,
-  timeoutMs = 5 * 60_000,
+  timeoutMs = 10 * 60_000,
 ): Promise<T> {
   const line = "─".repeat(60);
   console.log(`\n${line}\n⏸  MANUAL CLI STEP\n   Run this where the third citizen’s key is loaded:\n\n   ${instruction}\n\n   (waiting up to ${Math.round(timeoutMs / 60_000)} min)\n${line}\n`);
@@ -127,6 +128,9 @@ async function waitForRequest(envFile: string, requestId: string): Promise<void>
 const stakeVaultAbi = parseAbi([
   "function collateralBalanceByCitizen(uint256) view returns (uint256)",
   "function depositCollateral(uint256, uint256)",
+]);
+const matchManagerAbi = parseAbi([
+  "function startMatch(uint256 matchId)",
 ]);
 const erc20Abi = parseAbi([
   "function balanceOf(address) view returns (uint256)",
@@ -188,32 +192,44 @@ describe("Integration: full match plus manual third competitor", () => {
       competitorCap: 2,
       minCompetitors: 2,
       plannedTurnCount: 3,
-      minSpectatorDeposit: 1_000_000,        // 1 USDC
-      activationStakeThreshold: 0,            // no spectator threshold
+      minSpectatorDeposit: 5_000_000,        // 5 USDC (protocol floor = minPositionAmount)
+      activationStakeThreshold: 0,            // no spectator threshold required
       activationDeadline: Math.floor(Date.now() / 1000) + 7 * 24 * 3600,
       salaryBudgetBps: 500,
       prizeBudgetBps: 3000,
       settlerShareBps: 500,
       juryRewardBps: 200,
-      settlementMode: "JURY_FIRST",
+      settlementMode: 1,                      // 1 = JURY_FIRST (gateway rejects string form)
     };
+    // Record current highest topic_id before creating so we can detect the new one
+    const { data: existingTopics } = await fetchJson<{ data: { topic_id: string }[] }>(
+      `/api/v1/public/topics?lead_settler_id=${SETTLER_ID}`,
+    );
+    const prevMaxId = existingTopics.length > 0
+      ? Math.max(...existingTopics.map(t => Number(t.topic_id)))
+      : 0;
+
     const out = cli(settlerEnv, "create-topic", "--params", JSON.stringify(params));
     expect(out.request_id).toMatch(/[0-9a-f-]{36}/);
     await waitForRequest(settlerEnv, out.request_id as string);
 
-    // Find the newly created topic (highest topic_id where lead_settler = SETTLER_ID)
-    const { data: topics } = await fetchJson<{ data: { topic_id: string; lead_settler_id: string }[] }>("/api/v1/public/topics");
-    const mine = topics
-      .filter(t => t.lead_settler_id === SETTLER_ID)
-      .sort((a, b) => Number(b.topic_id) - Number(a.topic_id))[0];
-    expect(mine).toBeTruthy();
-    topicId = mine.topic_id;
+    // Poll until the indexer surfaces the newly created topic (ID must exceed prevMaxId)
+    topicId = await poll(async () => {
+      const { data: topics } = await fetchJson<{ data: { topic_id: string }[] }>(
+        `/api/v1/public/topics?lead_settler_id=${SETTLER_ID}`,
+      );
+      const fresh = topics
+        .filter(t => Number(t.topic_id) > prevMaxId)
+        .sort((a, b) => Number(b.topic_id) - Number(a.topic_id))[0];
+      return fresh?.topic_id ?? null;
+    }, 20_000);
     console.log(`\n✓ Topic #${topicId} created`);
   }, 30_000);
 
   // ── Step 2 ──────────────────────────────────────────────────────────────────
 
   it("primary competitor joins the topic", async () => {
+    if (!topicId) throw new Error("topicId not set — did step 1 pass?");
     const out = cli(competitorEnv, "join-waitlist", "--topic-id", topicId, "--citizen-id", COMPETITOR_ID);
     await waitForRequest(competitorEnv, out.request_id as string);
     console.log(`✓ Citizen #${COMPETITOR_ID} joined topic #${topicId}`);
@@ -222,6 +238,7 @@ describe("Integration: full match plus manual third competitor", () => {
   // ── Step 3 — human in loop ──────────────────────────────────────────────────
 
   it("manual third competitor joins (human or external agent)", async () => {
+    if (!topicId) throw new Error("topicId not set — did step 1 pass?");
     type TopicResp = { data: { waitlist: { citizen_id: string }[] } };
     const joined = await waitForHuman(
       `robotania join-waitlist --topic-id ${topicId} --citizen-id ${THIRD_PARTY_CITIZEN_ID}`,
@@ -229,14 +246,16 @@ describe("Integration: full match plus manual third competitor", () => {
         const { data } = await fetchJson<TopicResp>(`/api/v1/public/topics/${topicId}`);
         return data.waitlist?.some(e => e.citizen_id === THIRD_PARTY_CITIZEN_ID) ? true : null;
       },
+      12 * 60_000,
     );
     expect(joined).toBe(true);
     console.log(`✓ Third competitor (#${THIRD_PARTY_CITIZEN_ID}) joined topic #${topicId}`);
-  }, 6 * 60_000);
+  }, 12 * 60_000);
 
   // ── Step 4 ──────────────────────────────────────────────────────────────────
 
   it("settler activates the topic", async () => {
+    if (!topicId) throw new Error("topicId not set — did step 1 pass?");
     const out = cli(settlerEnv, "activate-topic", "--topic-id", topicId);
     await waitForRequest(settlerEnv, out.request_id as string);
 
@@ -246,34 +265,50 @@ describe("Integration: full match plus manual third competitor", () => {
       return data.match_id ?? null;
     }, 30_000);
 
-    console.log(`✓ Topic #${topicId} activated → match #${matchId}`);
+    // activateTopic creates the match in PENDING_START; startMatch transitions it to LIVE.
+    // startMatch is permissionless — anyone can call it directly on-chain.
+    const wc = walletClient(DEPLOYER_KEY);
+    const account = privateKeyToAccount(DEPLOYER_KEY);
+    const startHash = await wc.writeContract({
+      account,
+      address: MATCH_MANAGER,
+      abi: matchManagerAbi,
+      functionName: "startMatch",
+      args: [BigInt(matchId)],
+    });
+    await publicClient.waitForTransactionReceipt({ hash: startHash });
+
+    console.log(`✓ Topic #${topicId} activated → match #${matchId} (LIVE)`);
   }, 60_000);
 
   // ── Step 5 — human in loop ──────────────────────────────────────────────────
 
   it("manual third competitor submits a turn [human/external agent]", async () => {
-    const payload = JSON.stringify({ move: "hello from integration third competitor" });
-    type TurnsResp = { data: { citizen_id: string }[] };
+    if (!matchId) throw new Error("matchId not set — did step 4 pass?");
+    const payloadContent = JSON.stringify({ schemaVersion: 1, text: "hello from third-party competitor" });
+    type EntriesResp = { data: { actor_citizen_id: string }[] };
     const turn = await waitForHuman(
-      `robotania submit-turn --match-id ${matchId} --citizen-id ${THIRD_PARTY_CITIZEN_ID} --payload '${payload}'`,
+      `robotania submit-turn --match-id ${matchId} --citizen-id ${THIRD_PARTY_CITIZEN_ID} --payload-content '${payloadContent}'`,
       async () => {
-        const { data } = await fetchJson<TurnsResp>(`/api/v1/public/matches/${matchId}/turns`);
-        return data?.find(t => t.citizen_id === THIRD_PARTY_CITIZEN_ID) ?? null;
+        const { data } = await fetchJson<EntriesResp>(`/api/v1/public/matches/${matchId}/entries`);
+        return data?.find(t => t.actor_citizen_id === THIRD_PARTY_CITIZEN_ID) ?? null;
       },
+      12 * 60_000,
     );
     expect(turn).toBeTruthy();
     console.log(`✓ Third competitor submitted turn on match #${matchId}`);
-  }, 6 * 60_000);
+  }, 12 * 60_000);
 
   // ── Step 6 ──────────────────────────────────────────────────────────────────
 
   it("primary competitor submits a turn", async () => {
+    if (!matchId) throw new Error("matchId not set — did step 4 pass?");
     const out = cli(
       competitorEnv,
       "submit-turn",
       "--match-id", matchId,
       "--citizen-id", COMPETITOR_ID,
-      "--payload", JSON.stringify({ move: "hello from test-competitor" }),
+      "--payload-content", JSON.stringify({ schemaVersion: 1, text: "hello from test-competitor" }),
     );
     await waitForRequest(competitorEnv, out.request_id as string);
     console.log(`✓ Citizen #${COMPETITOR_ID} submitted turn on match #${matchId}`);
@@ -281,12 +316,13 @@ describe("Integration: full match plus manual third competitor", () => {
 
   // ── Step 7 ──────────────────────────────────────────────────────────────────
 
-  it("match has turns from both competitors", async () => {
-    type TurnsResp = { data: { citizen_id: string }[] };
-    const { data: turns } = await fetchJson<TurnsResp>(`/api/v1/public/matches/${matchId}/turns`);
-    const ids = turns.map(t => t.citizen_id);
+  it("match has entries from both competitors", async () => {
+    if (!matchId) throw new Error("matchId not set — did step 4 pass?");
+    type EntriesResp = { data: { actor_citizen_id: string }[] };
+    const { data: entries } = await fetchJson<EntriesResp>(`/api/v1/public/matches/${matchId}/entries`);
+    const ids = entries.map(e => e.actor_citizen_id);
     expect(ids).toContain(THIRD_PARTY_CITIZEN_ID);
     expect(ids).toContain(COMPETITOR_ID);
-    console.log(`\n✅ Integration test PASSED — match #${matchId} has turns from both automated and manual competitors`);
+    console.log(`\n✅ Integration test PASSED — match #${matchId} has entries from both automated and manual competitors`);
   }, 15_000);
 });
