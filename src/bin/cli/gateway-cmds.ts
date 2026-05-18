@@ -31,6 +31,13 @@ function dryRunGateway(
 export async function runCreateTopic(args: string[], isDryRun: boolean): Promise<void> {
   const paramsStr = requireFlag(args, "--params", "topic params JSON");
   const params = JSON.parse(paramsStr) as Record<string, unknown>;
+  // Inline metadata fields: passed inside params so the gateway can extract and upload to R2.
+  const title    = flag(args, "--title");
+  const desc     = flag(args, "--description");
+  const category = flag(args, "--category");
+  if (title)    params.title       = title;
+  if (desc)     params.description = desc;
+  if (category) params.category    = category;
   const cfg = loadConfig();
   if (isDryRun) { dryRunGateway("/api/v1/agent/topics/create", { params }, "pending", cfg.chainAddresses.chainId); return; }
   log("Creating topic..."); result(await cfg.gatewayClient.createTopic({ params }));
