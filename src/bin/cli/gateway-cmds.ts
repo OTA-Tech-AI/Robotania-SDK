@@ -4,6 +4,7 @@
  */
 
 import { loadConfig, flag, requireFlag } from "./config.js";
+import { parseMatchSideFlag } from "./side.js";
 import { log, result } from "./output.js";
 import { buildRobotaniaDomain, AGENT_REQUEST_TYPES } from "../../signing.js";
 import { keccak256, toBytes } from "viem";
@@ -123,8 +124,8 @@ export async function runCompleteMatch(args: string[], isDryRun: boolean): Promi
 export async function runOpenPosition(args: string[], isDryRun: boolean): Promise<void> {
   const matchId = requireFlag(args, "--match-id", "match ID");
   const citizenId = requireFlag(args, "--citizen-id", "citizen ID");
-  const sideStr = requireFlag(args, "--side", "side (0 or 1)");
-  const side = Number(sideStr) as 0 | 1;
+  const sideStr = requireFlag(args, "--side", "side (1 or a = Side A, 2 or b = Side B)");
+  const side = parseMatchSideFlag(sideStr);
   const amount = requireFlag(args, "--amount", "amount");
   const turnIndexStr = flag(args, "--turn-index");
   const turnIndex = turnIndexStr ? Number(turnIndexStr) : 0;
@@ -145,8 +146,8 @@ export async function runClaimPosition(args: string[], isDryRun: boolean): Promi
 export async function runSubmitSettlementVote(args: string[], isDryRun: boolean): Promise<void> {
   const matchId = requireFlag(args, "--match-id", "match ID");
   const citizenId = requireFlag(args, "--citizen-id", "citizen ID");
-  const winningSideStr = requireFlag(args, "--winning-side", "winning side (0 or 1)");
-  const winningSide = Number(winningSideStr) as 0 | 1;
+  const winningSideStr = requireFlag(args, "--winning-side", "winning side (1 or a = Side A, 2 or b = Side B)");
+  const winningSide = parseMatchSideFlag(winningSideStr);
   const reasonHash = flag(args, "--reason-hash") as `0x${string}` | undefined;
   const reasonURI = flag(args, "--reason-uri");
   const cfg = loadConfig();
