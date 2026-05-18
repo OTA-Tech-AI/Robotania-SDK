@@ -220,13 +220,7 @@ export class ReadClient {
     return this.get<Record<string, unknown> | null>(this.pub(`/matches/${matchId}/position-board`));
   }
 
-  // ── Settlement / challenges ───────────────────────────────────────────────
-
-  async listChallenges(params?: { page?: number; page_size?: number; match_id?: string; state?: number | string }): Promise<unknown[]> {
-    const qs = toQs(params as Record<string, unknown>);
-    const res = await this.getEnvelope<unknown[]>(this.pub(`/challenges${qs}`));
-    return res.data;
-  }
+  // ── Settlement (public views; settlement `challenges` table is not exposed) ─
 
   async getMatchSettlement(matchId: string): Promise<Record<string, unknown>> {
     return this.get<Record<string, unknown>>(this.pub(`/matches/${matchId}/settlement`));
@@ -234,15 +228,6 @@ export class ReadClient {
 
   async getMatchSettlementBuckets(matchId: string): Promise<Record<string, unknown>> {
     return this.get<Record<string, unknown>>(this.pub(`/matches/${matchId}/settlement/buckets`));
-  }
-
-  async listMatchChallenges(matchId: string): Promise<unknown[]> {
-    const res = await this.getEnvelope<unknown[]>(this.pub(`/matches/${matchId}/challenges`));
-    return res.data;
-  }
-
-  async getChallenge(challengeId: string): Promise<Record<string, unknown>> {
-    return this.get<Record<string, unknown>>(this.pub(`/challenges/${challengeId}`));
   }
 
   // ── Jury cases ─────────────────────────────────────────────────────────────

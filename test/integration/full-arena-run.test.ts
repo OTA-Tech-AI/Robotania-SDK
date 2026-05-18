@@ -43,7 +43,11 @@ loadDotenv({ path: resolve(__dirname, "../../.env.integration.test") });
 
 const GATEWAY_URL  = process.env.ROBOTANIA_GATEWAY_URL!;
 const READ_API_URL = process.env.ROBOTANIA_READ_API_URL!;
-const RPC_URL      = process.env.ROBOTANIA_RPC_URL!;
+/** Vitest always imports this file; viem needs a non-empty URL even when integration tests are skipped. */
+const RAW_RPC_URL  = process.env.ROBOTANIA_RPC_URL;
+const RPC_URL      = RAW_RPC_URL && RAW_RPC_URL.trim() !== ""
+  ? RAW_RPC_URL.trim()
+  : "http://127.0.0.1:8545";
 const CHAIN_ID     = Number(process.env.ROBOTANIA_CHAIN_ID ?? 31337);
 
 const SETTLER_KEY    = process.env.INTEGRATION_SETTLER_KEY!    as `0x${string}`;
@@ -201,11 +205,51 @@ async function ensureUsdcApproval(key: `0x${string}`, spender: `0x${string}`) {
   await publicClient.waitForTransactionReceipt({ hash });
 }
 
+/** When `ROBOTANIA_INTEGRATION` is set, every entry must be non-empty (shell or `.env.integration.test`). */
+function missingFullArenaRunEnv(): string[] {
+  const need: [string, string | undefined][] = [
+    ["ROBOTANIA_GATEWAY_URL", process.env.ROBOTANIA_GATEWAY_URL],
+    ["ROBOTANIA_READ_API_URL", process.env.ROBOTANIA_READ_API_URL],
+    ["ROBOTANIA_RPC_URL", process.env.ROBOTANIA_RPC_URL?.trim()],
+    ["INTEGRATION_SETTLER_KEY", process.env.INTEGRATION_SETTLER_KEY],
+    ["INTEGRATION_SETTLER_CITIZEN_ID", process.env.INTEGRATION_SETTLER_CITIZEN_ID],
+    ["INTEGRATION_COMPETITOR_KEY", process.env.INTEGRATION_COMPETITOR_KEY],
+    ["INTEGRATION_COMPETITOR_CITIZEN_ID", process.env.INTEGRATION_COMPETITOR_CITIZEN_ID],
+    ["INTEGRATION_SUBAGENT_KEY", process.env.INTEGRATION_SUBAGENT_KEY],
+    ["INTEGRATION_SUBAGENT_CITIZEN_ID", process.env.INTEGRATION_SUBAGENT_CITIZEN_ID],
+    ["INTEGRATION_JURY1_KEY", process.env.INTEGRATION_JURY1_KEY],
+    ["INTEGRATION_JURY1_CITIZEN_ID", process.env.INTEGRATION_JURY1_CITIZEN_ID],
+    ["INTEGRATION_JURY2_KEY", process.env.INTEGRATION_JURY2_KEY],
+    ["INTEGRATION_JURY2_CITIZEN_ID", process.env.INTEGRATION_JURY2_CITIZEN_ID],
+    ["INTEGRATION_JURY3_KEY", process.env.INTEGRATION_JURY3_KEY],
+    ["INTEGRATION_JURY3_CITIZEN_ID", process.env.INTEGRATION_JURY3_CITIZEN_ID],
+    ["INTEGRATION_DEPLOYER_KEY", process.env.INTEGRATION_DEPLOYER_KEY],
+    ["ROBOTANIA_SETTLEMENT_TOKEN", process.env.ROBOTANIA_SETTLEMENT_TOKEN],
+    ["ROBOTANIA_STAKE_VAULT", process.env.ROBOTANIA_STAKE_VAULT],
+    ["ROBOTANIA_MATCH_MANAGER", process.env.ROBOTANIA_MATCH_MANAGER],
+    ["ROBOTANIA_JURY_MANAGER", process.env.ROBOTANIA_JURY_MANAGER],
+    ["ROBOTANIA_PROTOCOL_CONFIG", process.env.ROBOTANIA_PROTOCOL_CONFIG],
+    ["ROBOTANIA_CITIZEN_REGISTRY", process.env.ROBOTANIA_CITIZEN_REGISTRY],
+    ["ROBOTANIA_TOPIC_WAITLIST", process.env.ROBOTANIA_TOPIC_WAITLIST],
+    ["ROBOTANIA_POSITION_POOL", process.env.ROBOTANIA_POSITION_POOL],
+  ];
+  return need.filter(([, v]) => v == null || v === "").map(([k]) => k);
+}
+
 // ── Test suite ────────────────────────────────────────────────────────────────
 
 describe("Integration: full arena run with jury settlement", () => {
   if (!process.env.ROBOTANIA_INTEGRATION) {
     it.skip("set ROBOTANIA_INTEGRATION=true to run integration tests", () => {});
+    return;
+  }
+
+  const missing = missingFullArenaRunEnv();
+  if (missing.length > 0) {
+    it.skip(
+      `integration env incomplete — missing: ${missing.join(", ")}. Set in the shell or packages/agent-sdk/.env.integration.test (see file header).`,
+      () => {},
+    );
     return;
   }
 

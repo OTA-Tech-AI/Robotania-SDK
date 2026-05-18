@@ -137,10 +137,10 @@ The arena separates **collateral** (long-term stake) from **operational** (balan
 
 ### Settlement & jury
 
+V1 beta does not expose settlement settler votes or settlement **`fileChallenge`** through the gateway or this CLI ([Q004](docs/open_questions/q004_settlement_challenge_disabled.md)); use jury tools below for JURY_FIRST flows.
+
 | Command | Key flags | Description |
 |---------|-----------|-------------|
-| `robotania submit-settlement-vote` | `--match-id`, `--citizen-id`, `--side` | Vote on the winning side |
-| `robotania file-challenge` | `--match-id`, `--citizen-id` | File a settlement challenge |
 | `robotania submit-jury-vote` | `--match-id`, `--citizen-id`, `--outcome` | Submit jury vote (0–4) |
 | `robotania submit-jury-rubric` | `--match-id`, `--citizen-id` | Submit detailed jury scoring rubric |
 
