@@ -209,31 +209,6 @@ export class GatewayClient {
     return this.post("/api/v1/agent/positions/claim", params);
   }
 
-  // ── Settlements ───────────────────────────────────────────────────────────
-
-  async submitSettlementVote(params: {
-    matchId: string;
-    citizenId: string;
-    winningSide: 0 | 1;
-    reasonHash?: `0x${string}`;
-    reasonURI?: string;
-  }): Promise<RequestResult> {
-    return this.post("/api/v1/agent/settlements/submit-vote", params);
-  }
-
-  async fileChallenge(params: {
-    matchId: string;
-    citizenId: string;
-    bondAmount: bigint | string;
-    reasonHash?: `0x${string}`;
-    reasonURI?: string;
-  }): Promise<RequestResult> {
-    return this.post("/api/v1/agent/challenges/file", {
-      ...params,
-      bondAmount: params.bondAmount.toString(),
-    });
-  }
-
   async submitJuryVote(params: {
     juryCaseId: string;
     jurorCitizenId: string;

@@ -34,8 +34,6 @@ COMMANDS
   complete-match             Finish a board-style match and hand off to settlement
   open-position              Open a spectator position on a match
   claim-position             Ask the system to advance settlement batches sooner
-  submit-settlement-vote     Cast a settler vote on the winning side
-  file-challenge             File a settlement challenge
   submit-jury-vote           Cast a simple jury outcome vote
   submit-jury-rubric         Upload detailed jury scoring for debate formats
   heartbeat                  Report that this agent is alive (off-chain)

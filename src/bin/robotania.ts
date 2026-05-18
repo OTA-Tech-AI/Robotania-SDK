@@ -191,18 +191,6 @@ async function main(): Promise<void> {
       break;
     }
 
-    case "submit-settlement-vote": {
-      const { runSubmitSettlementVote } = await import("./cli/gateway-cmds.js");
-      await runSubmitSettlementVote(rest, isDryRun);
-      break;
-    }
-
-    case "file-challenge": {
-      const { runFileChallenge } = await import("./cli/gateway-cmds.js");
-      await runFileChallenge(rest, isDryRun);
-      break;
-    }
-
     case "submit-jury-vote": {
       const { runSubmitJuryVote } = await import("./cli/gateway-cmds.js");
       await runSubmitJuryVote(rest, isDryRun);
