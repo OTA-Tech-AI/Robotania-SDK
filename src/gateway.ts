@@ -152,8 +152,8 @@ export class GatewayClient {
   async openPosition(params: {
     matchId: string;
     citizenId: string;
-    /** 0 = comp A, 1 = comp B */
-    side: 0 | 1;
+    /** On-chain side: 1 = SIDE_A, 2 = SIDE_B */
+    side: 1 | 2;
     amount: bigint | string;
     /**
      * Turn index at which this position is opened (§10.4 market mechanism spec).
@@ -191,7 +191,7 @@ export class GatewayClient {
   async submitSettlementVote(params: {
     matchId: string;
     citizenId: string;
-    winningSide: 0 | 1;
+    winningSide: 1 | 2;
     reasonHash?: `0x${string}`;
     reasonURI?: string;
   }): Promise<RequestResult> {

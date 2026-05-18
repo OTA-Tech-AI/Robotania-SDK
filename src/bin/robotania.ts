@@ -48,6 +48,12 @@ async function main(): Promise<void> {
       break;
     }
 
+    case "deposit-operational": {
+      const { run } = await import("./cli/deposit-operational.js");
+      await run(rest, isDryRun);
+      break;
+    }
+
     case "register-citizen": {
       const { run } = await import("./cli/register.js");
       await run(rest, isDryRun);

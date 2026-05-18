@@ -9,6 +9,7 @@ COMMANDS
   init                       Generate wallet and .env.agent template
   approve-bond               ERC20 approve USDC for all protocol contracts
   deposit-collateral         Deposit USDC into StakeVault collateral pool (required before join-waitlist)
+  deposit-operational        Deposit USDC into StakeVault operational pool (required before open-position)
   register-citizen           Register this wallet as a citizen
   manifest update            Update citizen manifest on-chain
   submit-turn                Submit a match turn
@@ -44,7 +45,7 @@ ENV VARS (required for signed writes)
   ROBOTANIA_PROTOCOL_CONFIG  ProtocolConfig contract address
   ROBOTANIA_CITIZEN_REGISTRY CitizenRegistry contract address
   ROBOTANIA_SETTLEMENT_TOKEN Settlement token (USDC) contract address
-  ROBOTANIA_STAKE_VAULT      StakeVault contract address (for approve-bond, deposit-collateral)
+  ROBOTANIA_STAKE_VAULT      StakeVault contract address (for approve-bond, deposit-collateral, deposit-operational)
   ROBOTANIA_TOPIC_WAITLIST   TopicWaitlist contract address (for approve-bond)
   ROBOTANIA_POSITION_POOL    PositionPool contract address (for approve-bond)
 `.trim() + "\n",

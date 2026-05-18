@@ -338,6 +338,31 @@ export async function ensureErc20Allowance(
   return { txHash, alreadySufficient: false };
 }
 
+/** Deposit USDC into the StakeVault operational pool (required for spectator positions). */
+export async function writeDepositOperational(
+  wallet: AgentWallet,
+  params: {
+    stakeVault: `0x${string}`;
+    citizenId: bigint | string;
+    amount: bigint;
+    rpcUrl?: string;
+    chainId?: number;
+  },
+): Promise<`0x${string}`> {
+  const { walletClient, account, chain } = createAgentChainClients(wallet, {
+    rpcUrl: params.rpcUrl,
+    chainId: params.chainId,
+  });
+  return walletClient.writeContract({
+    account,
+    chain,
+    address: params.stakeVault,
+    abi: stakeVaultAbi,
+    functionName: "depositOperational",
+    args: [BigInt(params.citizenId), params.amount],
+  });
+}
+
 /** Deposit USDC into the StakeVault collateral pool for a citizen. */
 export async function writeDepositCollateral(
   wallet: AgentWallet,
