@@ -1,15 +1,13 @@
 /**
- * Integration test: full match flow with human-in-the-loop (OpenClaw).
+ * Optional end-to-end arena walkthrough with two automated wallets plus one **manual** competitor.
  *
- * Run with:
+ * Enable with:
  *   ROBOTANIA_INTEGRATION=true pnpm vitest run test/integration/full-match.test.ts
  *
- * Requires .env.integration.test (pre-registered settler #56 and competitor #55)
- * and a live arena stack.
+ * Requires `.env.integration.test` with live arena URLs, RPC, and pre-seeded citizen IDs/keys.
  *
- * Human-in-the-loop steps are printed to console. The test polls the read API
- * automatically — no stdin interaction needed. Just send the printed command to
- * OpenClaw and the test continues when the action lands on-chain.
+ * When a step needs a third wallet, the test prints the exact `robotania ...` line to run externally;
+ * polling continues once the read API reflects that action.
  */
 
 import { describe, it, expect, beforeAll } from "vitest";
@@ -29,14 +27,20 @@ loadDotenv({ path: resolve(__dirname, "../../.env.integration.test") });
 
 const GATEWAY_URL  = process.env.ROBOTANIA_GATEWAY_URL!;
 const READ_API_URL = process.env.ROBOTANIA_READ_API_URL!;
-const RPC_URL      = process.env.ROBOTANIA_RPC_URL!;
+/** Non-integration runs never touch chain; viem still needs a harmless default URL when env is empty. */
+const RAW_RPC_URL  = process.env.ROBOTANIA_RPC_URL;
+const RPC_URL      = RAW_RPC_URL && RAW_RPC_URL.trim() !== ""
+  ? RAW_RPC_URL.trim()
+  : "http://127.0.0.1:8545";
 const CHAIN_ID     = Number(process.env.ROBOTANIA_CHAIN_ID ?? 31337);
 
 const SETTLER_KEY    = process.env.INTEGRATION_SETTLER_KEY!    as `0x${string}`;
 const SETTLER_ID     = process.env.INTEGRATION_SETTLER_CITIZEN_ID!;
 const COMPETITOR_KEY = process.env.INTEGRATION_COMPETITOR_KEY! as `0x${string}`;
 const COMPETITOR_ID  = process.env.INTEGRATION_COMPETITOR_CITIZEN_ID!;
-const OPENCLAW_ID    = process.env.INTEGRATION_OPENCLAW_CITIZEN_ID ?? "54";
+/** Citizen ID whose commands are intentionally issued **outside** this test (human or separate agent). Prefer `INTEGRATION_THIRD_PARTY_CITIZEN_ID`; falls back to legacy `INTEGRATION_OPENCLAW_CITIZEN_ID`. */
+const THIRD_PARTY_CITIZEN_ID =
+  process.env.INTEGRATION_THIRD_PARTY_CITIZEN_ID ?? process.env.INTEGRATION_OPENCLAW_CITIZEN_ID ?? "54";
 const DEPLOYER_KEY   = process.env.INTEGRATION_DEPLOYER_KEY!   as `0x${string}`;
 
 const USDC_ADDR      = process.env.ROBOTANIA_SETTLEMENT_TOKEN! as `0x${string}`;
@@ -103,7 +107,7 @@ async function poll<T>(fn: () => Promise<T | null | undefined>, timeoutMs: numbe
 
 /**
  * Print human instruction to console, then poll until on-chain state matches.
- * No stdin required — the human sends the printed command to OpenClaw.
+ * No stdin here — run the printed CLI in another terminal (or hand it to another agent) and the poll loop advances once state matches.
  */
 async function waitForHuman<T>(
   instruction: string,
@@ -111,7 +115,7 @@ async function waitForHuman<T>(
   timeoutMs = 5 * 60_000,
 ): Promise<T> {
   const line = "─".repeat(60);
-  console.log(`\n${line}\n⏸  HUMAN ACTION REQUIRED\n   Tell OpenClaw to run:\n\n   ${instruction}\n\n   (waiting up to ${Math.round(timeoutMs / 60_000)} min)\n${line}\n`);
+  console.log(`\n${line}\n⏸  MANUAL CLI STEP\n   Run this where the third citizen’s key is loaded:\n\n   ${instruction}\n\n   (waiting up to ${Math.round(timeoutMs / 60_000)} min)\n${line}\n`);
   return poll(pollFn, timeoutMs);
 }
 
@@ -149,7 +153,7 @@ async function ensureUsdc(address: `0x${string}`, minAmount: bigint) {
 
 // ── Test suite ────────────────────────────────────────────────────────────────
 
-describe("Integration: full match with OpenClaw", () => {
+describe("Integration: full match plus manual third competitor", () => {
   if (!process.env.ROBOTANIA_INTEGRATION) {
     it.skip("set ROBOTANIA_INTEGRATION=true to run integration tests", () => {});
     return;
@@ -164,6 +168,10 @@ describe("Integration: full match with OpenClaw", () => {
   let matchId = "";
 
   beforeAll(async () => {
+    if (!process.env.ROBOTANIA_RPC_URL?.trim()) {
+      throw new Error("ROBOTANIA_INTEGRATION requires ROBOTANIA_RPC_URL (not empty)");
+    }
+
     writeFileSync(settlerEnv,    makeEnv(SETTLER_KEY),    "utf8");
     writeFileSync(competitorEnv, makeEnv(COMPETITOR_KEY), "utf8");
 
@@ -175,7 +183,7 @@ describe("Integration: full match with OpenClaw", () => {
 
   // ── Step 1 ──────────────────────────────────────────────────────────────────
 
-  it("settler (#56) creates a topic", async () => {
+  it("settler creates a topic", async () => {
     const params = {
       competitorCap: 2,
       minCompetitors: 2,
@@ -205,7 +213,7 @@ describe("Integration: full match with OpenClaw", () => {
 
   // ── Step 2 ──────────────────────────────────────────────────────────────────
 
-  it("test competitor (#55) joins the topic", async () => {
+  it("primary competitor joins the topic", async () => {
     const out = cli(competitorEnv, "join-waitlist", "--topic-id", topicId, "--citizen-id", COMPETITOR_ID);
     await waitForRequest(competitorEnv, out.request_id as string);
     console.log(`✓ Citizen #${COMPETITOR_ID} joined topic #${topicId}`);
@@ -213,17 +221,17 @@ describe("Integration: full match with OpenClaw", () => {
 
   // ── Step 3 — human in loop ──────────────────────────────────────────────────
 
-  it("OpenClaw (#54) joins the topic [human in loop]", async () => {
+  it("manual third competitor joins (human or external agent)", async () => {
     type TopicResp = { data: { waitlist: { citizen_id: string }[] } };
     const joined = await waitForHuman(
-      `robotania join-waitlist --topic-id ${topicId} --citizen-id ${OPENCLAW_ID}`,
+      `robotania join-waitlist --topic-id ${topicId} --citizen-id ${THIRD_PARTY_CITIZEN_ID}`,
       async () => {
         const { data } = await fetchJson<TopicResp>(`/api/v1/public/topics/${topicId}`);
-        return data.waitlist?.some(e => e.citizen_id === OPENCLAW_ID) ? true : null;
+        return data.waitlist?.some(e => e.citizen_id === THIRD_PARTY_CITIZEN_ID) ? true : null;
       },
     );
     expect(joined).toBe(true);
-    console.log(`✓ OpenClaw (#${OPENCLAW_ID}) joined topic #${topicId}`);
+    console.log(`✓ Third competitor (#${THIRD_PARTY_CITIZEN_ID}) joined topic #${topicId}`);
   }, 6 * 60_000);
 
   // ── Step 4 ──────────────────────────────────────────────────────────────────
@@ -243,23 +251,23 @@ describe("Integration: full match with OpenClaw", () => {
 
   // ── Step 5 — human in loop ──────────────────────────────────────────────────
 
-  it("OpenClaw submits a turn [human in loop]", async () => {
-    const payload = JSON.stringify({ move: "hello from OpenClaw" });
+  it("manual third competitor submits a turn [human/external agent]", async () => {
+    const payload = JSON.stringify({ move: "hello from integration third competitor" });
     type TurnsResp = { data: { citizen_id: string }[] };
     const turn = await waitForHuman(
-      `robotania submit-turn --match-id ${matchId} --citizen-id ${OPENCLAW_ID} --payload '${payload}'`,
+      `robotania submit-turn --match-id ${matchId} --citizen-id ${THIRD_PARTY_CITIZEN_ID} --payload '${payload}'`,
       async () => {
         const { data } = await fetchJson<TurnsResp>(`/api/v1/public/matches/${matchId}/turns`);
-        return data?.find(t => t.citizen_id === OPENCLAW_ID) ?? null;
+        return data?.find(t => t.citizen_id === THIRD_PARTY_CITIZEN_ID) ?? null;
       },
     );
     expect(turn).toBeTruthy();
-    console.log(`✓ OpenClaw submitted turn on match #${matchId}`);
+    console.log(`✓ Third competitor submitted turn on match #${matchId}`);
   }, 6 * 60_000);
 
   // ── Step 6 ──────────────────────────────────────────────────────────────────
 
-  it("test competitor submits a turn", async () => {
+  it("primary competitor submits a turn", async () => {
     const out = cli(
       competitorEnv,
       "submit-turn",
@@ -277,8 +285,8 @@ describe("Integration: full match with OpenClaw", () => {
     type TurnsResp = { data: { citizen_id: string }[] };
     const { data: turns } = await fetchJson<TurnsResp>(`/api/v1/public/matches/${matchId}/turns`);
     const ids = turns.map(t => t.citizen_id);
-    expect(ids).toContain(OPENCLAW_ID);
+    expect(ids).toContain(THIRD_PARTY_CITIZEN_ID);
     expect(ids).toContain(COMPETITOR_ID);
-    console.log(`\n✅ Integration test PASSED — match #${matchId} has turns from OpenClaw and test-competitor`);
+    console.log(`\n✅ Integration test PASSED — match #${matchId} has turns from both automated and manual competitors`);
   }, 15_000);
 });

@@ -1,6 +1,6 @@
 import { loadConfig, requireFlag } from "./config.js";
 import { log, result } from "./output.js";
-import { createAgentChainClients, writeDepositCollateral, readCitizenArenaBalances } from "../../chain.js";
+import { createAgentChainClients, writeDepositOperational, readCitizenArenaBalances } from "../../chain.js";
 
 export async function run(args: string[], isDryRun: boolean): Promise<void> {
   const citizenId = requireFlag(args, "--citizen-id", "citizen ID");
@@ -18,7 +18,7 @@ export async function run(args: string[], isDryRun: boolean): Promise<void> {
   if (isDryRun) {
     result({
       dryRun: true,
-      action: "depositCollateral",
+      action: "depositOperational",
       stakeVault: addrs.stakeVault,
       citizenId,
       amount: amount.toString(),
@@ -31,8 +31,8 @@ export async function run(args: string[], isDryRun: boolean): Promise<void> {
   const before = await readCitizenArenaBalances(publicClient, addrs.stakeVault, citizenId);
   log(`Current balances — collateral: ${before.collateral}, operational: ${before.operational}`);
 
-  log(`Depositing ${amount} USDC base units into collateral for citizen ${citizenId}...`);
-  const txHash = await writeDepositCollateral(cfg.wallet, {
+  log(`Depositing ${amount} USDC base units into operational pool for citizen ${citizenId}...`);
+  const txHash = await writeDepositOperational(cfg.wallet, {
     stakeVault: addrs.stakeVault,
     citizenId,
     amount,
@@ -46,7 +46,7 @@ export async function run(args: string[], isDryRun: boolean): Promise<void> {
     txHash,
     status: receipt.status,
     citizenId,
-    collateralBefore: before.collateral.toString(),
-    collateralAfter: after.collateral.toString(),
+    operationalBefore: before.operational.toString(),
+    operationalAfter: after.operational.toString(),
   });
 }

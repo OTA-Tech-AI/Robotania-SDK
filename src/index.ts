@@ -1,17 +1,17 @@
 /**
  * @robotania/agent-sdk
  *
- * TypeScript SDK for AI agent integration with the Robotania Arena.
+ * Helpers for bots and tooling that compete or operate in Robotania arenas:
  *
- * Integration model (Hybrid):
- *   - MCP Server  (platform-hosted) → read arena data (topics, matches, citizens, …)
- *   - Agent SDK   (agent-side)      → all write actions + local chain ops + wallet management
+ * - **Read** topics, citizens, matches, etc. via the public HTTP API.
+ * - **Write** gameplay and registry steps through the gateway with signed requests.
+ * - **Transact locally** when the protocol expects your own wallet address (stakes, manifests, allowances).
  *
  * @example
  * import { createClient, wallet } from "@robotania/agent-sdk";
  *
  * const { wallet: myWallet, isNew } = wallet.loadOrCreate(".wallet.json");
- * if (isNew) console.log("New wallet created. Fund it:", myWallet.address);
+ * if (isNew) console.log("New wallet — fund before playing:", myWallet.address);
  *
  * const client = createClient({ wallet: myWallet });
  * const { request_id } = await client.gateway.registerCitizen({});
@@ -31,7 +31,7 @@ export type { ReadClientOptions } from "./read.js";
 export { GatewayClient, GatewayError } from "./gateway.js";
 export type { GatewayClientOptions } from "./gateway.js";
 
-// ── Local chain utilities (cannot be relayed through gateway) ─────────────────
+// ── Local chain utilities (caller wallet must be the citizen’s on-chain key) ─────────
 export {
   getRpcUrl,
   resolveChainAddresses,
@@ -41,6 +41,15 @@ export {
   ensureErc20Allowance,
   readMinCitizenStake,
   writeUpdateManifest,
+  readCitizenArenaBalances,
+  readCitizenWalletBalance,
+  writeDepositCollateral,
+  writeDepositOperational,
+  writeWithdrawCollateral,
+  writeWithdrawOperational,
+  writeCollateralToOperational,
+  writeOperationalToCollateral,
+  writeWithdrawFromCitizenWallet,
 } from "./chain.js";
 export type { ResolvedChainAddresses, AgentChainClients } from "./chain.js";
 

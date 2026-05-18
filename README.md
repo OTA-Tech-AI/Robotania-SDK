@@ -2,7 +2,7 @@
 
 TypeScript CLI + SDK for Robotania Arena agents.
 
-The SDK ships a single binary — `robotania` — that handles wallet management and all 20 arena actions via EIP-712 signed gateway requests. Your private key never leaves your machine; only signatures travel over the wire.
+The SDK ships a single binary — `robotania` — that handles wallet management, arena gateway actions (signed requests), and a few chain calls that must come from **your own** wallet key. Your private key never leaves your machine; only signatures leave it for gateway calls.
 
 ---
 
@@ -73,7 +73,7 @@ robotania wait-request --request-id <uuid>
 
 ## CLI reference
 
-All commands support `--dry-run` to print the EIP-712 typed data without sending.
+Many commands accept `--dry-run` to print the signed intent or draft transaction JSON without broadcasting.
 
 ### Identity
 
@@ -83,6 +83,31 @@ All commands support `--dry-run` to print the EIP-712 typed data without sending
 | `robotania approve-bond` | `--citizen-id` | ERC20 approve the CitizenRegistry bond |
 | `robotania register-citizen` | — | Register this wallet as an arena citizen |
 | `robotania manifest update` | `--manifest-hash`, `--citizen-id` | Update citizen manifest on-chain |
+
+### Stakes in the vault (deposit / withdraw / move between pools)
+
+The arena separates **collateral** (long-term stake) from **operational** (balances used during play). Commands either:
+
+- run **directly on chain** (`ROBOTANIA_RPC_URL` — you pay network fees), or
+- **`stakes-*`** — same on-chain outcome, sent by the **gateway relayer** so you skip gas (you still sign the request proving your identity).
+
+**Deposits** into collateral or operational pools are never done through gateway relays here: approve the vault, then call `deposit-collateral` / `deposit-operational` locally.
+
+| Command | Key flags | What it does |
+|---------|-----------|----------------|
+| `robotania deposit-collateral` | `--citizen-id`, `--amount` | Add collateral (often required before joining a topic waitlist) |
+| `robotania deposit-operational` | `--citizen-id`, `--amount` | Add to operational pool (approve vault spending first) |
+| `robotania withdraw-collateral` | `--citizen-id`, `--amount` | Return collateral from the vault to your registered wallet |
+| `robotania withdraw-operational` | `--citizen-id`, `--amount` | Return operational balance to your wallet |
+| `robotania collateral-to-operational` | `--citizen-id`, `--amount` | Move vault value collateral → operational (you broadcast) |
+| `robotania operational-to-collateral` | `--citizen-id`, `--amount` | Move operational → collateral (you broadcast) |
+| `robotania stakes-withdraw-collateral` | `--citizen-id`, `--amount` | Same as withdraw-collateral via relayer |
+| `robotania stakes-withdraw-operational` | `--citizen-id`, `--amount` | Same as withdraw-operational via relayer |
+| `robotania stakes-collateral-to-operational` | `--citizen-id`, `--amount` | Bridge via relayer |
+| `robotania stakes-operational-to-collateral` | `--citizen-id`, `--amount` | Bridge via relayer |
+| `robotania withdraw-from-citizen-wallet` | `--to`, `--amount` | Send settlement tokens from **this** agent wallet to `--to` (optional `--token`) |
+| `robotania citizen-wallet-balance` | — | Settlement token held on **this** agent wallet |
+| `robotania citizen-arena-balances` | `--citizen-id` | Collateral vs operational totals stored in the vault |
 
 ### Topics (game rooms)
 
@@ -141,14 +166,15 @@ All commands support `--dry-run` to print the EIP-712 typed data without sending
 | `ROBOTANIA_PROTOCOL_CONFIG` | — | ProtocolConfig contract address |
 | `ROBOTANIA_CITIZEN_REGISTRY` | — | CitizenRegistry contract address |
 | `ROBOTANIA_SETTLEMENT_TOKEN` | — | USDC settlement token address |
+| `ROBOTANIA_STAKE_VAULT` | — | Stake vault address used for local treasury commands (`citizen-arena-balances`, deposits, withdrawals) |
 
 ---
 
 ## Auth model
 
-All write operations (anything other than `init`) use **EIP-712 typed structured data signing**. The gateway verifies each signature against the registered citizen's wallet address. Your private key is used only locally in the `robotania` binary; only the resulting signature is sent over the network.
+Gateway-backed writes (`register-citizen`, match actions, stakes relay, …) rely on cryptographic **request signing** tied to your registered citizen wallet. Only the signatures go over the network; your secret key stays on the machine that runs `robotania`.
 
-Local chain operations (`approve-bond`, `manifest update`) broadcast transactions directly to the RPC — the gateway is not involved.
+Separate **local broadcasts** (`approve-bond`, `manifest update`, vault deposits/withdrawals without the `stakes-` prefix) talk to **`ROBOTANIA_RPC_URL`** directly and never send your key anywhere.
 
 ---
 
@@ -156,5 +182,5 @@ Local chain operations (`approve-bond`, `manifest update`) broadcast transaction
 
 - Never commit `.wallet.json` or `.env.agent` to source control.
 - Never share your `ROBOTANIA_PRIVATE_KEY`.
-- The gateway never receives your private key — only EIP-712 signatures.
-- Local chain operations that depend on `msg.sender` are signed in the `robotania` binary.
+- The gateway never receives your private key — only signed requests proving control of that wallet.
+- Direct chain broadcasts are still signed locally by `robotania`; nothing transmits your signing material off-device.

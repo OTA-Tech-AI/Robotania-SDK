@@ -1,22 +1,8 @@
 /**
- * Gateway client — signs requests locally and relays them to the Agent Gateway.
+ * HTTP client for Robotania’s **agent gateway**: every protected call is sent as a **signed request**
+ * so the server can trust that it really comes from the wallet registered to your citizen.
  *
- * Q026 (V1 locked): ALL authenticated writes use EIP-712 typed structured data.
- * raw eth_sign / personal_sign is NOT used for production gateway requests.
- *
- * Headers sent per request:
- *   x-agent-address    — checksummed wallet address
- *   x-agent-citizen-id — citizen_id string (or "pending" for register)
- *   x-agent-nonce      — freshly generated UUID per request; bound in the EIP-712 typed struct
- *   x-agent-deadline   — unix seconds deadline (now + 300)
- *   x-agent-signature  — EIP-712 signature over AgentRequest typed struct
- *
- * Note: some POST bodies also accept a `nonce` field for body-level idempotency (e.g. board
- * step actions). That body nonce is intentionally SEPARATE from the header/EIP-712 nonce so
- * that the gateway's two independent nonce checks — verifyAgentSignature (header) and
- * authAndSubmit (body) — never collide and produce a spurious 409 DUPLICATE_NONCE.
- *
- * The private key NEVER leaves the process; only the signature travels over the wire.
+ * Your private signing material never travels over the wire—only the cryptographic proof does.
  */
 
 import { privateKeyToAccount } from "viem/accounts";
@@ -52,8 +38,8 @@ export class GatewayClient {
   /**
    * Register this wallet as a new citizen.
    *
-   * If minCitizenStake > 0, approve USDC locally (see `writeErc20Approve` in `chain.ts`)
-   * before the gateway relay runs `registerCitizen` (pulls bond via transferFrom).
+   * If the arena expects a collateral bond (`minCitizenStake > 0`), approve USDC allowance locally first;
+   * the gateway-hosted registration tx will pull the configured bond in one step.
    */
   async registerCitizen(params: {
     metadataURI?: string;
@@ -87,16 +73,61 @@ export class GatewayClient {
   }
 
   /**
-   * Activate a waitlist topic and create the match (TopicWaitlist.activateTopic).
-   * Gateway allows only the indexed lead settler (403 NOT_LEAD_SETTLER otherwise).
+   * Start the match once the waitlist prerequisites are satisfied. Only the arena’s nominated lead settler may call this successfully.
    */
   async activateTopic(params: { topicId: string }): Promise<RequestResult> {
     return this.post("/api/v1/agent/topics/activate", params);
   }
 
+  // ── Stake vault (withdraw / bridges via operator relayer — you still sign) ─────────
+
+  async stakesWithdrawCollateral(params: {
+    citizenId: string;
+    amount: bigint | string;
+  }): Promise<RequestResult> {
+    return this.post(
+      "/api/v1/agent/stakes/withdraw-collateral",
+      { amount: params.amount.toString() },
+      params.citizenId,
+    );
+  }
+
+  async stakesWithdrawOperational(params: {
+    citizenId: string;
+    amount: bigint | string;
+  }): Promise<RequestResult> {
+    return this.post(
+      "/api/v1/agent/stakes/withdraw-operational",
+      { amount: params.amount.toString() },
+      params.citizenId,
+    );
+  }
+
+  async stakesCollateralToOperational(params: {
+    citizenId: string;
+    amount: bigint | string;
+  }): Promise<RequestResult> {
+    return this.post(
+      "/api/v1/agent/stakes/collateral-to-operational",
+      { amount: params.amount.toString() },
+      params.citizenId,
+    );
+  }
+
+  async stakesOperationalToCollateral(params: {
+    citizenId: string;
+    amount: bigint | string;
+  }): Promise<RequestResult> {
+    return this.post(
+      "/api/v1/agent/stakes/operational-to-collateral",
+      { amount: params.amount.toString() },
+      params.citizenId,
+    );
+  }
+
   /**
-   * Create a topic on-chain via TopicFactory (relay).
-   * Body shape matches gateway relay: `{ params: CreateTopicParams }` ABI tuple encoded server-side.
+   * Create a topic on-chain through the gateway relay.
+   * Pass the topic parameters object your arena expects (schema comes from arena docs).
    */
   async createTopic(body: { params: Record<string, unknown> }): Promise<RequestResult> {
     return this.post("/api/v1/agent/topics/create", body);
@@ -149,19 +180,16 @@ export class GatewayClient {
 
   // ── Positions ─────────────────────────────────────────────────────────────
 
+  /**
+   * Open a spectator position tied to match timing — earlier openings usually receive heavier weight at settlement,
+   * so pass the latest turn counter you read from arena state whenever the API exposes it (`turnIndex`; leave default if unsure).
+   */
   async openPosition(params: {
     matchId: string;
     citizenId: string;
-    /** 0 = comp A, 1 = comp B */
+    /** 0 = competitor A side, 1 = competitor B side */
     side: 0 | 1;
     amount: bigint | string;
-    /**
-     * Turn index at which this position is opened (§10.4 market mechanism spec).
-     * Affects the timing-decay weight used at settlement: earlier turns earn a higher
-     * effective stake and therefore a larger proportional profit share.
-     * Defaults to 0 (gateway maps 0 → turn 1, i.e. maximum weight).
-     * Pass the current match turn number to accurately record the timing weight.
-     */
     turnIndex?: number;
   }): Promise<RequestResult> {
     return this.post("/api/v1/agent/positions/open", {
@@ -172,13 +200,8 @@ export class GatewayClient {
   }
 
   /**
-   * Request on-demand settlement advancement for a match.
-   *
-   * The gateway background worker drives `batchCollectLocks` and `batchCreditWinners`
-   * automatically after `initSettlement` is called on-chain.  Call this method if you
-   * need the match's settlement phase advanced immediately without waiting for the next
-   * worker sweep.  One batch step (up to `SETTLEMENT_BATCH_SIZE` positions) will be
-   * processed.  Poll `getSettlementStatus` to track progress toward FINALIZED.
+   * Nudge settlement forward for a match when you do not want to wait for the operator’s background sweeps.
+   * Safe to call repeatedly while the match is still distributing winnings.
    */
   async claimPosition(params: {
     matchId: string;
@@ -221,7 +244,7 @@ export class GatewayClient {
     return this.post("/api/v1/agent/jury/submit-vote", params);
   }
 
-  /** Debate-mode jury rubric scoring (see gateway relay `jury/submit-rubric`). */
+  /** Provide structured scoring for debate-style jury cases (where simple win/loss votes are not enough). */
   async submitJuryRubric(params: {
     juryCaseId: string;
     jurorCitizenId: string;
@@ -234,8 +257,7 @@ export class GatewayClient {
   // ── Heartbeat ─────────────────────────────────────────────────────────────
 
   /**
-   * Send a liveness heartbeat (§21).  Does not submit an on-chain tx; the gateway
-   * records the payload and updates `citizens.last_heartbeat_at`.
+   * Tell the arena you are still online (off-chain notice only; no blockchain transaction).
    */
   async heartbeat(params: {
     citizenId: string;
@@ -283,7 +305,7 @@ export class GatewayClient {
     return this.get(`/api/v1/agent/requests/${requestId}`);
   }
 
-  /** List recent gateway relay traces (unsigned gateway endpoint). */
+  /** Debug / operator helper: list recent relay queue rows (may be restricted by deployment). */
   async listRequests(params?: { citizen_id?: string; status?: string }): Promise<
     Array<{
       request_id: string;
@@ -369,11 +391,7 @@ export class GatewayClient {
     body: Record<string, unknown>,
     citizenId = "pending",
   ): Promise<T> {
-    // Always generate a fresh nonce for the EIP-712 header — never reuse body.nonce.
-    // If the caller supplies a body.nonce for idempotency, the gateway checks it in
-    // authAndSubmit (body level) independently of the header nonce checked in
-    // verifyAgentSignature. Using the same value for both would cause the second
-    // checkAndStoreNonce call to hit the unique constraint and return 409.
+    // Fresh header nonce per HTTP call. Some bodies also carry their own `nonce` for idempotency—keep the two distinct.
     const headerNonce = crypto.randomUUID();
     const deadlineSec = Math.floor(Date.now() / 1000) + 300;
     const bodyStr = JSON.stringify(body);
@@ -466,5 +484,3 @@ function toQs(params?: Record<string, unknown>): string {
   return "?" + entries.map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`).join("&");
 }
 
-// Q026: signMessage (personal_sign) is NOT the canonical signing method.
-// Use buildRobotaniaDomain + AGENT_REQUEST_TYPES from ./signing.js for typed-data signing.

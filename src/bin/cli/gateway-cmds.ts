@@ -1,6 +1,5 @@
 /**
- * CLI wrappers for the remaining GatewayClient methods.
- * All write commands support --dry-run (prints EIP-712 typed data, no network call).
+ * Command-line wrappers around GatewayClient. `--dry-run` prints the structured request envelope only.
  */
 
 import { loadConfig, flag, requireFlag } from "./config.js";
@@ -58,6 +57,56 @@ export async function runActivateTopic(args: string[], isDryRun: boolean): Promi
   const cfg = loadConfig();
   if (isDryRun) { dryRunGateway("/api/v1/agent/topics/activate", { topicId }, "pending", cfg.chainAddresses.chainId); return; }
   log("Activating topic..."); result(await cfg.gatewayClient.activateTopic({ topicId }));
+}
+
+// ── StakeVault via gateway relayer ────────────────────────────────────────────
+
+export async function runStakesWithdrawCollateral(args: string[], isDryRun: boolean): Promise<void> {
+  const citizenId = requireFlag(args, "--citizen-id", "citizen ID");
+  const amount = requireFlag(args, "--amount", "amount (base units)");
+  const cfg = loadConfig();
+  if (isDryRun) {
+    dryRunGateway("/api/v1/agent/stakes/withdraw-collateral", { amount }, citizenId, cfg.chainAddresses.chainId);
+    return;
+  }
+  log("Relay withdraw collateral...");
+  result(await cfg.gatewayClient.stakesWithdrawCollateral({ citizenId, amount }));
+}
+
+export async function runStakesWithdrawOperational(args: string[], isDryRun: boolean): Promise<void> {
+  const citizenId = requireFlag(args, "--citizen-id", "citizen ID");
+  const amount = requireFlag(args, "--amount", "amount (base units)");
+  const cfg = loadConfig();
+  if (isDryRun) {
+    dryRunGateway("/api/v1/agent/stakes/withdraw-operational", { amount }, citizenId, cfg.chainAddresses.chainId);
+    return;
+  }
+  log("Relay withdraw operational...");
+  result(await cfg.gatewayClient.stakesWithdrawOperational({ citizenId, amount }));
+}
+
+export async function runStakesCollateralToOperational(args: string[], isDryRun: boolean): Promise<void> {
+  const citizenId = requireFlag(args, "--citizen-id", "citizen ID");
+  const amount = requireFlag(args, "--amount", "amount (base units)");
+  const cfg = loadConfig();
+  if (isDryRun) {
+    dryRunGateway("/api/v1/agent/stakes/collateral-to-operational", { amount }, citizenId, cfg.chainAddresses.chainId);
+    return;
+  }
+  log("Relay collateral → operational...");
+  result(await cfg.gatewayClient.stakesCollateralToOperational({ citizenId, amount }));
+}
+
+export async function runStakesOperationalToCollateral(args: string[], isDryRun: boolean): Promise<void> {
+  const citizenId = requireFlag(args, "--citizen-id", "citizen ID");
+  const amount = requireFlag(args, "--amount", "amount (base units)");
+  const cfg = loadConfig();
+  if (isDryRun) {
+    dryRunGateway("/api/v1/agent/stakes/operational-to-collateral", { amount }, citizenId, cfg.chainAddresses.chainId);
+    return;
+  }
+  log("Relay operational → collateral...");
+  result(await cfg.gatewayClient.stakesOperationalToCollateral({ citizenId, amount }));
 }
 
 // ── Matches ───────────────────────────────────────────────────────────────────

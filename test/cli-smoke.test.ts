@@ -1,56 +1,97 @@
-/**
- * CLI smoke tests: verify the compiled robotania binary's core behaviors.
- * These run against dist/ (tsc output), not the pkg native binary.
- */
-
-import { execFileSync, spawnSync } from "node:child_process";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { execFile as execFileCb } from "node:child_process";
+import { promisify } from "node:util";
 import { mkdtempSync, rmSync, existsSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { dirname } from "node:path";
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+
+const execFileAsync = promisify(execFileCb);
+
+/**
+ * Smoke-test the packaged `robotania` CLI emitted next to tests (`dist/` after `pnpm build`).
+ * Long-running subprocesses use async exec so Vitest workers are not wedged synchronously.
+ */
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const BINARY = resolve(__dirname, "../dist/bin/robotania.js");
 const NODE = process.execPath;
 
-function run(args: string[], env: Record<string, string> = {}, opts: { cwd?: string } = {}) {
-  return spawnSync(NODE, [BINARY, ...args], {
-    env: { ...process.env, ...env },
-    cwd: opts.cwd,
-    encoding: "utf8",
-    timeout: 10_000,
-  });
+type RunResult = { status: number; stdout: string; stderr: string };
+
+function bufStr(x: unknown): string {
+  if (typeof x === "string") return x;
+  if (x != null && typeof (x as Buffer).toString === "function") return (x as Buffer).toString("utf8");
+  return "";
+}
+
+async function run(
+  args: string[],
+  env: Record<string, string> = {},
+  opts: { cwd?: string } = {},
+): Promise<RunResult> {
+  try {
+    const r = await execFileAsync(NODE, [BINARY, ...args], {
+      env: { ...process.env, ...env },
+      cwd: opts.cwd,
+      encoding: "utf8",
+      maxBuffer: 20 * 1024 * 1024,
+      timeout: 35_000,
+    });
+    return {
+      status: 0,
+      stdout: bufStr(r.stdout),
+      stderr: bufStr(r.stderr),
+    };
+  } catch (err: unknown) {
+    const x = err as NodeJS.ErrnoException & {
+      stdout?: unknown;
+      stderr?: unknown;
+      code?: number | string;
+      status?: number;
+    };
+    const status =
+      typeof x.code === "number"
+        ? x.code
+        : typeof x.status === "number"
+          ? x.status
+          : typeof x.code === "string" && /^\d+$/.test(x.code)
+            ? Number(x.code)
+            : x.code === "ETIMEDOUT"
+              ? 124
+              : 1;
+    return { status, stdout: bufStr(x.stdout), stderr: bufStr(x.stderr) };
+  }
 }
 
 describe("robotania CLI", () => {
   // ── --help ──────────────────────────────────────────────────────────────────
 
-  it("--help prints usage and exits 0", () => {
-    const r = run(["--help"]);
+  it("--help prints usage and exits 0", async () => {
+    const r = await run(["--help"]);
     expect(r.status).toBe(0);
     expect(r.stdout).toContain("robotania — Robotania Agent SDK");
     expect(r.stdout).toContain("approve-bond");
     expect(r.stdout).toContain("deposit-collateral");
+    expect(r.stdout).toContain("deposit-operational");
     expect(r.stdout).toContain("register-citizen");
   });
 
-  it("-h alias exits 0", () => {
-    const r = run(["-h"]);
+  it("-h alias exits 0", async () => {
+    const r = await run(["-h"]);
     expect(r.status).toBe(0);
   });
 
-  it("no args prints help and exits 0", () => {
-    const r = run([]);
+  it("no args prints help and exits 0", async () => {
+    const r = await run([]);
     expect(r.status).toBe(0);
     expect(r.stdout).toContain("USAGE");
   });
 
   // ── unknown command ─────────────────────────────────────────────────────────
 
-  it("unknown command exits 1 and prints error to stderr", () => {
-    const r = run(["definitely-not-a-command"]);
+  it("unknown command exits 1 and prints error to stderr", async () => {
+    const r = await run(["definitely-not-a-command"]);
     expect(r.status).toBe(1);
     expect(r.stderr).toContain("Unknown command");
     expect(r.stderr).toContain("definitely-not-a-command");
@@ -69,8 +110,8 @@ describe("robotania CLI", () => {
       rmSync(tmpDir, { recursive: true, force: true });
     });
 
-    it("creates .wallet.json and .env.agent on first run", () => {
-      const r = run(["init"], {}, { cwd: tmpDir });
+    it("creates .wallet.json and .env.agent on first run", async () => {
+      const r = await run(["init"], {}, { cwd: tmpDir });
       expect(r.status).toBe(0);
       expect(existsSync(join(tmpDir, ".wallet.json"))).toBe(true);
       expect(existsSync(join(tmpDir, ".env.agent"))).toBe(true);
@@ -90,8 +131,8 @@ describe("robotania CLI", () => {
       expect(env).toContain("ROBOTANIA_PRIVATE_KEY=0x");
     });
 
-    it("second init skips .env.agent if it exists", () => {
-      const r = run(["init"], {}, { cwd: tmpDir });
+    it("second init skips .env.agent if it exists", async () => {
+      const r = await run(["init"], {}, { cwd: tmpDir });
       expect(r.status).toBe(0);
       expect(r.stderr).toContain("already exists");
     });
@@ -99,8 +140,8 @@ describe("robotania CLI", () => {
 
   // ── approve-bond --dry-run ──────────────────────────────────────────────────
 
-  it("approve-bond --dry-run prints dryRun JSON to stdout", () => {
-    const r = run(
+  it("approve-bond --dry-run prints dryRun JSON to stdout", async () => {
+    const r = await run(
       ["approve-bond", "--dry-run"],
       {
         ROBOTANIA_PRIVATE_KEY: "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
@@ -123,8 +164,8 @@ describe("robotania CLI", () => {
 
   // ── register-citizen --dry-run ──────────────────────────────────────────────
 
-  it("register-citizen --dry-run prints valid EIP-712 typed data", () => {
-    const r = run(
+  it("register-citizen --dry-run prints signed gateway envelope preview", async () => {
+    const r = await run(
       ["register-citizen", "--dry-run"],
       {
         ROBOTANIA_PRIVATE_KEY: "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
@@ -148,8 +189,8 @@ describe("robotania CLI", () => {
 
   // ── missing private key ─────────────────────────────────────────────────────
 
-  it("approve-bond without PRIVATE_KEY exits 1", () => {
-    const r = run(
+  it("approve-bond without PRIVATE_KEY exits 1", async () => {
+    const r = await run(
       ["approve-bond", "--dry-run"],
       { ROBOTANIA_DEPLOYED_ADDRESSES_PATH: resolve(__dirname, "../../ops/deployed-addresses.json") },
     );

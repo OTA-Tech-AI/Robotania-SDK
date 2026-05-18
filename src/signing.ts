@@ -1,22 +1,11 @@
-// SOURCE COPY from packages/shared/src/signing.ts (Q026)
-// Keep in sync manually; do not import from @robotania/shared here.
-// NOTE: This file diverges from shared at keccak256Hex — shared uses a dynamic
-// require() so it can run without viem as a hard dep. Agent-sdk always has viem,
-// so we use a static import here to keep esbuild bundling clean.
-import { keccak256, toBytes } from "viem";
-
 /**
- * Q026 — Agent gateway canonical signing: EIP-712 (V1)
+ * Gateway request signing (typed data). The arena only accepts structured signatures for
+ * authenticated writes so your wallet can prove “this request is really mine” without ever
+ * uploading a private key.
  *
- * All authenticated gateway write requests MUST be signed as EIP-712 typed structured data.
- * raw eth_sign / personal_sign is NOT the canonical format for production agents.
- *
- * Sentinel verifyingContract:
- *   0x0000000000000000000000526f626f74616e6961  — 11 zero-bytes + "Robotania" UTF-8 hex (40 hex chars = 20 bytes)
- *   This is NOT a deployed contract. It is a stable domain-separation constant that prevents
- *   cross-application signature replay. All SDK implementations and gateway verifiers MUST use
- *   this exact value.
+ * This module is self-contained (no shared monorepo imports) so the published SDK stays small.
  */
+import { keccak256, toBytes } from "viem";
 
 // ── Domain ───────────────────────────────────────────────────────────────────
 
@@ -24,12 +13,9 @@ export const ROBOTANIA_DOMAIN_NAME = "Robotania" as const;
 export const ROBOTANIA_DOMAIN_VERSION = "1" as const;
 
 /**
- * V1 locked (Q026): sentinel verifyingContract for domain separation.
- * Decoded: 0x0000…0000 (11 zero bytes) + "Robotania" as UTF-8 hex (526f626f74616e6961, 9 bytes)
- * = 20 bytes total — a valid EIP-55 address slot, intentionally not a deployed contract.
- *
- * Bug fix: original constant had 12 leading zero bytes (42 hex chars = 21 bytes), which viem
- * rejects at runtime. Corrected to 11 leading zero bytes (40 hex chars = 20 bytes).
+ * Not a live contract — a fixed “namespace” address baked into every gateway signature so the
+ * same key cannot accidentally reuse signatures on unrelated apps. Must stay byte-for-byte in
+ * sync with the arena gateway verifier.
  */
 export const ROBOTANIA_VERIFYING_CONTRACT =
   "0x0000000000000000000000526f626f74616e6961" as const;
@@ -48,17 +34,8 @@ export function buildRobotaniaDomain(chainId: number) {
   } as const;
 }
 
-// ── AgentRequest typed struct (V1 generic request) ───────────────────────────
-//
-// Per Q026, per-action typed structs are the long-term target. For V1, a single generic
-// AgentRequest struct covers all write families. Action-specific types are added in a
-// follow-up spec/SDK version when the action surface stabilises.
-//
-// Anti-replay fields per Q026:
-//   - citizenId   — binds the signature to the specific citizen (or "pending" for register)
-//   - nonce       — idempotency key (UUID); gateway rejects re-use within retention window
-//   - deadline    — unix seconds; gateway rejects if now > deadline
-//   - payloadHash — keccak256(JSON body); binds the sig to the exact bytes sent
+// One generic “envelope” wraps every gateway write: method, path, who, replay guards, and an
+// exact hash of the JSON body so tampering after signing is detected.
 
 export const AGENT_REQUEST_TYPE = [
   { name: "method", type: "string" },
@@ -88,7 +65,7 @@ export type AgentRequestMessage = {
  * @param method   HTTP verb ("POST", "GET")
  * @param path     Full URL path (e.g. "/api/v1/agent/matches/submit-turn")
  * @param citizenId The citizen initiating the request. Use "pending" for register.
- * @param nonce    Caller-supplied idempotency UUID (v4 recommended). Also sent in body.
+ * @param nonce    Fresh UUID per attempt; must match what you place in signing headers alongside the POST.
  * @param deadlineSec Unix timestamp (seconds) after which the gateway rejects the request.
  *                    Recommended: Date.now() / 1000 + 300 (5 min from now).
  * @param body     The JSON body string exactly as it will be sent on the wire.
