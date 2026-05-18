@@ -1,6 +1,6 @@
 /**
- * Local chain calls — signed by the agent wallet (not the gateway relay).
- * Use for: ERC20 approve/allowance, CitizenRegistry.updateManifest (requires msg.sender == citizen wallet).
+ * Helpers that broadcast transactions from **this SDK wallet**.
+ * Use them when arena rules say “must be signed by the citizen” (stakes, manifests, allowances).
  */
 
 import { readFileSync, existsSync } from "node:fs";
@@ -11,6 +11,7 @@ import {
   createWalletClient,
   http,
   defineChain,
+  erc20Abi,
   type Account,
   type Chain,
   type PublicClient,
@@ -20,30 +21,6 @@ import { privateKeyToAccount } from "viem/accounts";
 import type { AgentWallet } from "./wallet.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-
-/** Minimal ERC20 — shared package does not ship IERC20 artifact. */
-const erc20Abi = [
-  {
-    type: "function",
-    name: "allowance",
-    stateMutability: "view",
-    inputs: [
-      { name: "owner", type: "address" },
-      { name: "spender", type: "address" },
-    ],
-    outputs: [{ type: "uint256" }],
-  },
-  {
-    type: "function",
-    name: "approve",
-    stateMutability: "nonpayable",
-    inputs: [
-      { name: "spender", type: "address" },
-      { name: "amount", type: "uint256" },
-    ],
-    outputs: [{ type: "bool" }],
-  },
-] as const;
 
 const protocolMinStakeAbi = [
   {
@@ -90,6 +67,46 @@ const stakeVaultAbi = [
     inputs: [{ name: "citizenId", type: "uint256" }],
     outputs: [{ type: "uint256" }],
   },
+  {
+    type: "function",
+    name: "withdrawCollateral",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "citizenId", type: "uint256" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "withdrawOperational",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "citizenId", type: "uint256" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "collateralToOperational",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "citizenId", type: "uint256" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "operationalToCollateral",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "citizenId", type: "uint256" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [],
+  },
 ] as const;
 
 const updateManifestAbi = [
@@ -126,8 +143,8 @@ export function getRpcUrl(): string {
 }
 
 /**
- * Resolve deployment addresses from env vars or `packages/ops/deployed-addresses.json`
- * (same shape as gateway relay).
+ * Loads contract addresses from environment variables first; otherwise reads a deployment JSON via
+ * `ROBOTANIA_DEPLOYED_ADDRESSES_PATH` (or a default path next to the published package layout).
  */
 export function resolveChainAddresses(): ResolvedChainAddresses {
   const pe = process.env.ROBOTANIA_PROTOCOL_CONFIG as `0x${string}` | undefined;
@@ -155,7 +172,7 @@ export function resolveChainAddresses(): ResolvedChainAddresses {
   if (!existsSync(path)) {
     throw new Error(
       "Missing chain addresses: set ROBOTANIA_PROTOCOL_CONFIG, ROBOTANIA_CITIZEN_REGISTRY, " +
-        "ROBOTANIA_SETTLEMENT_TOKEN, or place packages/ops/deployed-addresses.json (or ROBOTANIA_DEPLOYED_ADDRESSES_PATH).",
+        "ROBOTANIA_SETTLEMENT_TOKEN, or point ROBOTANIA_DEPLOYED_ADDRESSES_PATH at a deployment export JSON.",
     );
   }
 
@@ -260,7 +277,7 @@ export async function writeErc20Approve(
 }
 
 /**
- * On-chain manifest update. Requires `msg.sender ==` citizen wallet (cannot be gateway relay).
+ * Attach a manifest hash / metadata URI after registration — must be submitted from **your** citizen wallet.
  */
 export async function writeUpdateManifest(
   wallet: AgentWallet,
@@ -277,7 +294,6 @@ export async function writeUpdateManifest(
     rpcUrl: params.rpcUrl,
     chainId: params.chainId,
   });
-  // Narrow ABI: full CitizenRegistry artifact is `unknown[]` at compile time; this fragment matches the contract.
   return walletClient.writeContract({
     account,
     chain,
@@ -338,7 +354,7 @@ export async function ensureErc20Allowance(
   return { txHash, alreadySufficient: false };
 }
 
-/** Deposit USDC into the StakeVault collateral pool for a citizen. */
+/** Move settlement tokens into the **collateral** side of your vault ledger. */
 export async function writeDepositCollateral(
   wallet: AgentWallet,
   params: {
@@ -363,8 +379,142 @@ export async function writeDepositCollateral(
   });
 }
 
-/** Read collateral and operational balances for a citizen from StakeVault. */
-export async function readStakeVaultBalances(
+/** Move settlement tokens into the **operational** side of your vault ledger (pulls from this wallet after approval). */
+export async function writeDepositOperational(
+  wallet: AgentWallet,
+  params: {
+    stakeVault: `0x${string}`;
+    citizenId: bigint | string;
+    amount: bigint;
+    rpcUrl?: string;
+    chainId?: number;
+  },
+): Promise<`0x${string}`> {
+  const { walletClient, account, chain } = createAgentChainClients(wallet, {
+    rpcUrl: params.rpcUrl,
+    chainId: params.chainId,
+  });
+  return walletClient.writeContract({
+    account,
+    chain,
+    address: params.stakeVault,
+    abi: stakeVaultAbi,
+    functionName: "depositOperational",
+    args: [BigInt(params.citizenId), params.amount],
+  });
+}
+
+async function writeStakeVaultEntry(
+  wallet: AgentWallet,
+  params: {
+    stakeVault: `0x${string}`;
+    citizenId: bigint | string;
+    amount: bigint;
+    rpcUrl?: string;
+    chainId?: number;
+    functionName: "withdrawCollateral" | "withdrawOperational" | "collateralToOperational" | "operationalToCollateral";
+  },
+): Promise<`0x${string}`> {
+  const { walletClient, account, chain } = createAgentChainClients(wallet, {
+    rpcUrl: params.rpcUrl,
+    chainId: params.chainId,
+  });
+  return walletClient.writeContract({
+    account,
+    chain,
+    address: params.stakeVault,
+    abi: stakeVaultAbi,
+    functionName: params.functionName,
+    args: [BigInt(params.citizenId), params.amount],
+  });
+}
+
+/** Withdraw collateral back to your registered citizen wallet address. */
+export async function writeWithdrawCollateral(
+  wallet: AgentWallet,
+  params: {
+    stakeVault: `0x${string}`;
+    citizenId: bigint | string;
+    amount: bigint;
+    rpcUrl?: string;
+    chainId?: number;
+  },
+): Promise<`0x${string}`> {
+  return writeStakeVaultEntry(wallet, { ...params, functionName: "withdrawCollateral" });
+}
+
+/** Withdraw operational vault balance back to your registered citizen wallet address. */
+export async function writeWithdrawOperational(
+  wallet: AgentWallet,
+  params: {
+    stakeVault: `0x${string}`;
+    citizenId: bigint | string;
+    amount: bigint;
+    rpcUrl?: string;
+    chainId?: number;
+  },
+): Promise<`0x${string}`> {
+  return writeStakeVaultEntry(wallet, { ...params, functionName: "withdrawOperational" });
+}
+
+export async function writeCollateralToOperational(
+  wallet: AgentWallet,
+  params: {
+    stakeVault: `0x${string}`;
+    citizenId: bigint | string;
+    amount: bigint;
+    rpcUrl?: string;
+    chainId?: number;
+  },
+): Promise<`0x${string}`> {
+  return writeStakeVaultEntry(wallet, { ...params, functionName: "collateralToOperational" });
+}
+
+export async function writeOperationalToCollateral(
+  wallet: AgentWallet,
+  params: {
+    stakeVault: `0x${string}`;
+    citizenId: bigint | string;
+    amount: bigint;
+    rpcUrl?: string;
+    chainId?: number;
+  },
+): Promise<`0x${string}`> {
+  return writeStakeVaultEntry(wallet, { ...params, functionName: "operationalToCollateral" });
+}
+
+/**
+ * Send settlement ERC-20 from **this SDK wallet** to another address (`to`).
+ * Typical use: consolidate profits after withdrawals land in-custody locally.
+ *
+ * Defaults `token` to the arena settlement currency from `{@link resolveChainAddresses}` unless you override it.
+ */
+export async function writeWithdrawFromCitizenWallet(
+  wallet: AgentWallet,
+  params: {
+    to: `0x${string}`;
+    amount: bigint;
+    token?: `0x${string}`;
+    rpcUrl?: string;
+    chainId?: number;
+  },
+): Promise<`0x${string}`> {
+  const token = params.token ?? resolveChainAddresses().settlementToken;
+  const { walletClient, account, chain } = createAgentChainClients(wallet, {
+    rpcUrl: params.rpcUrl,
+    chainId: params.chainId,
+  });
+  return walletClient.writeContract({
+    account,
+    chain,
+    address: token,
+    abi: erc20Abi,
+    functionName: "transfer",
+    args: [params.to, params.amount],
+  });
+}
+
+async function readStakeVaultCollateralOperational(
   publicClient: PublicClient,
   stakeVault: `0x${string}`,
   citizenId: bigint | string,
@@ -384,4 +534,27 @@ export async function readStakeVaultBalances(
     }) as Promise<bigint>,
   ]);
   return { collateral, operational };
+}
+
+/** Snapshot how much lives in collateral vs operational within the vault for one citizen ID. */
+export async function readCitizenArenaBalances(
+  publicClient: PublicClient,
+  stakeVault: `0x${string}`,
+  citizenId: bigint | string,
+): Promise<{ collateral: bigint; operational: bigint }> {
+  return readStakeVaultCollateralOperational(publicClient, stakeVault, citizenId);
+}
+
+/** How much settlement ERC-20 a wallet holds (use after withdrawals to sanity-check totals). */
+export async function readCitizenWalletBalance(
+  publicClient: PublicClient,
+  settlementToken: `0x${string}`,
+  walletAddress: `0x${string}`,
+): Promise<bigint> {
+  return publicClient.readContract({
+    address: settlementToken,
+    abi: erc20Abi,
+    functionName: "balanceOf",
+    args: [walletAddress],
+  }) as Promise<bigint>;
 }

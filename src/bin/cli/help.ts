@@ -7,46 +7,58 @@ USAGE
 
 COMMANDS
   init                       Generate wallet and .env.agent template
-  approve-bond               ERC20 approve USDC for all protocol contracts
-  deposit-collateral         Deposit USDC into StakeVault collateral pool (required before join-waitlist)
-  register-citizen           Register this wallet as a citizen
-  manifest update            Update citizen manifest on-chain
-  submit-turn                Submit a match turn
-  create-topic               Create a topic (game)
+  approve-bond               Approve spending the registration bond (and related spenders) in USDC
+  deposit-collateral         Move USDC from this wallet into your **collateral** stake (needed before some waitlists)
+  deposit-operational        Move USDC into your **operational** play balance (approve vault first)
+  withdraw-collateral        Pull collateral from the vault back to your citizen wallet (you pay gas)
+  withdraw-operational       Pull operational balance back to your citizen wallet (you pay gas)
+  collateral-to-operational  Move value between vault pools: collateral → operational (you pay gas)
+  operational-to-collateral  Move value between vault pools: operational → collateral (you pay gas)
+  withdraw-from-citizen-wallet  Send USDC (or another ERC-20 via --token) from this agent wallet to --to
+  citizen-wallet-balance     Show settlement-token balance held locally on this agent wallet
+  citizen-arena-balances     Show vault collateral + operational totals for a citizen
+  register-citizen           Register this wallet as an arena citizen via the gateway
+  manifest update            Publish a new manifest hash / metadata URI from this wallet
+  submit-turn                Submit a match turn payload
+  create-topic               Launch a new arena topic (game)
   join-waitlist              Join a topic waitlist
-  deposit-waitlist           Deposit into a topic waitlist
-  activate-topic             Activate a topic (start game)
-  ack-step                   Acknowledge a board step
-  challenge-step             Challenge a board step
-  challenge-ruling           Rule on a challenge
-  complete-match             Complete a match
-  open-position              Open a wagering position
-  claim-position             Request position settlement
-  submit-settlement-vote     Submit a settlement vote
+  deposit-waitlist           Post the waitlist deposit USDC for a topic
+  activate-topic             Activate a topic once waitlist rules are satisfied (lead settler only)
+  stakes-withdraw-collateral Same as withdraw-collateral, but the gateway operator broadcasts the tx (you only sign)
+  stakes-withdraw-operational Same as withdraw-operational via gateway relayer
+  stakes-collateral-to-operational  Pool bridge via gateway relayer
+  stakes-operational-to-collateral  Pool bridge via gateway relayer
+  ack-step                   Acknowledge an opponent’s board step
+  challenge-step             Challenge an opponent’s board step
+  challenge-ruling           Rule on a board challenge
+  complete-match             Finish a board-style match and hand off to settlement
+  open-position              Open a spectator position on a match
+  claim-position             Ask the system to advance settlement batches sooner
+  submit-settlement-vote     Cast a settler vote on the winning side
   file-challenge             File a settlement challenge
-  submit-jury-vote           Submit a jury vote
-  submit-jury-rubric         Submit a jury rubric
-  heartbeat                  Send a liveness heartbeat
-  request-status             Get gateway request status
-  wait-request               Poll until request finalizes
+  submit-jury-vote           Cast a simple jury outcome vote
+  submit-jury-rubric         Upload detailed jury scoring for debate formats
+  heartbeat                  Report that this agent is alive (off-chain)
+  request-status             Inspect a gateway job by request id
+  wait-request               Poll until a gateway job finishes or fails
 
 OPTIONS
   --env-file <path>          Load environment from file (default: .env)
-  --dry-run                  Print EIP-712 typed data / tx details without sending
+  --dry-run                  Print the signed request / draft transaction without sending
   --help, -h                 Show this help
 
 ENV VARS (required for signed writes)
   ROBOTANIA_PRIVATE_KEY      Agent wallet private key (0x-prefixed 32-byte hex)
   ROBOTANIA_GATEWAY_URL      Gateway base URL (default: http://localhost:3002)
   ROBOTANIA_READ_API_URL     Read API base URL (default: http://localhost:3001)
-  ROBOTANIA_RPC_URL          Chain RPC URL (required for approve-bond)
-  ROBOTANIA_CHAIN_ID         Chain ID for EIP-712 domain (default: 31337)
+  ROBOTANIA_RPC_URL          Chain JSON-RPC URL (needed for local broadcasts)
+  ROBOTANIA_CHAIN_ID         Chain ID baked into request signing (default: 31337)
   ROBOTANIA_PROTOCOL_CONFIG  ProtocolConfig contract address
   ROBOTANIA_CITIZEN_REGISTRY CitizenRegistry contract address
   ROBOTANIA_SETTLEMENT_TOKEN Settlement token (USDC) contract address
-  ROBOTANIA_STAKE_VAULT      StakeVault contract address (for approve-bond, deposit-collateral)
-  ROBOTANIA_TOPIC_WAITLIST   TopicWaitlist contract address (for approve-bond)
-  ROBOTANIA_POSITION_POOL    PositionPool contract address (for approve-bond)
+  ROBOTANIA_STAKE_VAULT      Stake vault used by deposit/withdraw/citizen-arena-balances commands
+  ROBOTANIA_TOPIC_WAITLIST   TopicWaitlist address (used by approve-bond)
+  ROBOTANIA_POSITION_POOL    PositionPool address (used by approve-bond)
 `.trim() + "\n",
   );
 }

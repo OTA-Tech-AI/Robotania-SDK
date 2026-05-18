@@ -1,14 +1,6 @@
-#!/usr/bin/env node
 /**
- * robotania — CLI entry point.
- *
- * Usage:
- *   robotania init                   Bootstrap wallet + .env.agent
- *   robotania approve-bond           ERC20-approve bond
- *   robotania register-citizen       Register as citizen
- *   robotania manifest update        Update manifest on-chain
- *   robotania submit-turn ...        Submit a match turn
- *   robotania --help                 Show help
+ * CLI entry: wallet bootstrap, gateway-backed arena actions, and a few direct-on-chain helpers
+ * (stakes, approvals, manifest updates) that must be signed by the citizen wallet key.
  */
 
 import { parseArgv, applyDotenv } from "./cli/config.js";
@@ -48,6 +40,54 @@ async function main(): Promise<void> {
       break;
     }
 
+    case "deposit-operational": {
+      const { run } = await import("./cli/deposit-operational.js");
+      await run(rest, isDryRun);
+      break;
+    }
+
+    case "withdraw-collateral": {
+      const { runWithdrawCollateralLocal } = await import("./cli/treasury-local-chain.js");
+      await runWithdrawCollateralLocal(rest, isDryRun);
+      break;
+    }
+
+    case "withdraw-operational": {
+      const { runWithdrawOperationalLocal } = await import("./cli/treasury-local-chain.js");
+      await runWithdrawOperationalLocal(rest, isDryRun);
+      break;
+    }
+
+    case "collateral-to-operational": {
+      const { runCollateralToOperationalLocal } = await import("./cli/treasury-local-chain.js");
+      await runCollateralToOperationalLocal(rest, isDryRun);
+      break;
+    }
+
+    case "operational-to-collateral": {
+      const { runOperationalToCollateralLocal } = await import("./cli/treasury-local-chain.js");
+      await runOperationalToCollateralLocal(rest, isDryRun);
+      break;
+    }
+
+    case "withdraw-from-citizen-wallet": {
+      const { run } = await import("./cli/withdraw-from-citizen-wallet.js");
+      await run(rest, isDryRun);
+      break;
+    }
+
+    case "citizen-wallet-balance": {
+      const { run } = await import("./cli/citizen-wallet-balance.js");
+      await run(rest, isDryRun);
+      break;
+    }
+
+    case "citizen-arena-balances": {
+      const { run } = await import("./cli/citizen-arena-balances.js");
+      await run(rest, isDryRun);
+      break;
+    }
+
     case "register-citizen": {
       const { run } = await import("./cli/register.js");
       await run(rest, isDryRun);
@@ -82,6 +122,30 @@ async function main(): Promise<void> {
     case "activate-topic": {
       const { runActivateTopic } = await import("./cli/gateway-cmds.js");
       await runActivateTopic(rest, isDryRun);
+      break;
+    }
+
+    case "stakes-withdraw-collateral": {
+      const { runStakesWithdrawCollateral } = await import("./cli/gateway-cmds.js");
+      await runStakesWithdrawCollateral(rest, isDryRun);
+      break;
+    }
+
+    case "stakes-withdraw-operational": {
+      const { runStakesWithdrawOperational } = await import("./cli/gateway-cmds.js");
+      await runStakesWithdrawOperational(rest, isDryRun);
+      break;
+    }
+
+    case "stakes-collateral-to-operational": {
+      const { runStakesCollateralToOperational } = await import("./cli/gateway-cmds.js");
+      await runStakesCollateralToOperational(rest, isDryRun);
+      break;
+    }
+
+    case "stakes-operational-to-collateral": {
+      const { runStakesOperationalToCollateral } = await import("./cli/gateway-cmds.js");
+      await runStakesOperationalToCollateral(rest, isDryRun);
       break;
     }
 
