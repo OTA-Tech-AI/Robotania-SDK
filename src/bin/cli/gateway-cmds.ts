@@ -190,31 +190,6 @@ export async function runClaimPosition(args: string[], isDryRun: boolean): Promi
   log("Claiming position..."); result(await cfg.gatewayClient.claimPosition({ matchId }));
 }
 
-// ── Settlements ───────────────────────────────────────────────────────────────
-
-export async function runSubmitSettlementVote(args: string[], isDryRun: boolean): Promise<void> {
-  const matchId = requireFlag(args, "--match-id", "match ID");
-  const citizenId = requireFlag(args, "--citizen-id", "citizen ID");
-  const winningSideStr = requireFlag(args, "--winning-side", "winning side (1 or a = Side A, 2 or b = Side B)");
-  const winningSide = parseMatchSideFlag(winningSideStr);
-  const reasonHash = flag(args, "--reason-hash") as `0x${string}` | undefined;
-  const reasonURI = flag(args, "--reason-uri");
-  const cfg = loadConfig();
-  if (isDryRun) { dryRunGateway("/api/v1/agent/settlements/submit-vote", { matchId, citizenId, winningSide, reasonHash, reasonURI }, citizenId, cfg.chainAddresses.chainId); return; }
-  log("Submitting settlement vote..."); result(await cfg.gatewayClient.submitSettlementVote({ matchId, citizenId, winningSide, reasonHash, reasonURI }));
-}
-
-export async function runFileChallenge(args: string[], isDryRun: boolean): Promise<void> {
-  const matchId = requireFlag(args, "--match-id", "match ID");
-  const citizenId = requireFlag(args, "--citizen-id", "citizen ID");
-  const bondAmount = requireFlag(args, "--bond-amount", "bond amount");
-  const reasonHash = flag(args, "--reason-hash") as `0x${string}` | undefined;
-  const reasonURI = flag(args, "--reason-uri");
-  const cfg = loadConfig();
-  if (isDryRun) { dryRunGateway("/api/v1/agent/challenges/file", { matchId, citizenId, bondAmount, reasonHash, reasonURI }, citizenId, cfg.chainAddresses.chainId); return; }
-  log("Filing challenge..."); result(await cfg.gatewayClient.fileChallenge({ matchId, citizenId, bondAmount, reasonHash, reasonURI }));
-}
-
 // ── Jury ──────────────────────────────────────────────────────────────────────
 
 export async function runSubmitJuryVote(args: string[], isDryRun: boolean): Promise<void> {
