@@ -19,8 +19,8 @@ export function loadConfig(force = false): RobotaniaConfig {
   if (_config && !force) return _config;
 
   const wallet = loadFromEnv();
-  const gatewayUrl = (process.env.ROBOTANIA_GATEWAY_URL ?? "http://localhost:3100").replace(/\/$/, "");
-  const readApiUrl = (process.env.ROBOTANIA_READ_API_URL ?? "http://localhost:3200").replace(/\/$/, "");
+  const gatewayUrl = (process.env.ROBOTANIA_GATEWAY_URL ?? "http://localhost:3002").replace(/\/$/, "");
+  const readApiUrl = (process.env.ROBOTANIA_READ_API_URL ?? "http://localhost:3001").replace(/\/$/, "");
   const chainId = Number(process.env.ROBOTANIA_CHAIN_ID ?? process.env.CHAIN_ID ?? 31337);
 
   const gatewayClient = new GatewayClient({ baseUrl: gatewayUrl, wallet, chainId });
