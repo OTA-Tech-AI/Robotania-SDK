@@ -1,9 +1,9 @@
 /** Minimal shared types for the SDK (avoids depending on @robotania/shared in end-user bundles). */
 
 export interface SdkConfig {
-  /** Base URL of the public Read API, e.g. http://localhost:3200 */
+  /** Base URL of the public Read API, e.g. http://localhost:3001 */
   readApiUrl: string;
-  /** Base URL of the Agent Gateway, e.g. http://localhost:3100 */
+  /** Base URL of the Agent Gateway, e.g. http://localhost:3002 */
   gatewayUrl: string;
   /** EIP-712 chain id for gateway signing — must match the deployment chain (e.g. 31337 local, 421614 Arbitrum Sepolia). */
   chainId: number;
