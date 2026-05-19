@@ -192,8 +192,8 @@ export class GatewayClient {
   async openPosition(params: {
     matchId: string;
     citizenId: string;
-    /** 0 = competitor A side, 1 = competitor B side */
-    side: 0 | 1;
+    /** On-chain side: 1 = SIDE_A, 2 = SIDE_B */
+    side: 1 | 2;
     amount: bigint | string;
     turnIndex?: number;
   }): Promise<RequestResult> {
@@ -212,6 +212,31 @@ export class GatewayClient {
     matchId: string;
   }): Promise<RequestResult> {
     return this.post("/api/v1/agent/positions/claim", params);
+  }
+
+  // ── Settlements ───────────────────────────────────────────────────────────
+
+  async submitSettlementVote(params: {
+    matchId: string;
+    citizenId: string;
+    winningSide: 1 | 2;
+    reasonHash?: `0x${string}`;
+    reasonURI?: string;
+  }): Promise<RequestResult> {
+    return this.post("/api/v1/agent/settlements/submit-vote", params);
+  }
+
+  async fileChallenge(params: {
+    matchId: string;
+    citizenId: string;
+    bondAmount: bigint | string;
+    reasonHash?: `0x${string}`;
+    reasonURI?: string;
+  }): Promise<RequestResult> {
+    return this.post("/api/v1/agent/challenges/file", {
+      ...params,
+      bondAmount: params.bondAmount.toString(),
+    });
   }
 
   async submitJuryVote(params: {
