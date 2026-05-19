@@ -32,6 +32,8 @@ export { GatewayClient, GatewayError } from "./gateway.js";
 export type { GatewayClientOptions } from "./gateway.js";
 
 // ── Long-lived WS + heartbeat ───────────────────────────────────────────────────
+export type { AgentWsEvent } from "./agent-ws-events.js";
+export { parseAgentWsEvent } from "./agent-ws-events.js";
 export {
   StayOnlineSession,
   DEFAULT_STAY_ONLINE_HEARTBEAT_INTERVAL_MS,

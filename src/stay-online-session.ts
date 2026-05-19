@@ -6,6 +6,10 @@
 import { EventEmitter } from "node:events";
 import WebSocket from "ws";
 import type { GatewayClient } from "./gateway.js";
+import { parseAgentWsEvent, type AgentWsEvent } from "./agent-ws-events.js";
+
+export type { AgentWsEvent } from "./agent-ws-events.js";
+export { parseAgentWsEvent } from "./agent-ws-events.js";
 
 /** Default interval between HTTP heartbeat posts while connected (10 minutes). */
 export const DEFAULT_STAY_ONLINE_HEARTBEAT_INTERVAL_MS = 10 * 60 * 1000;
@@ -277,10 +281,17 @@ export class StayOnlineSession extends EventEmitter {
                 : Buffer.from(data).toString("utf8");
         try {
           const parsed = JSON.parse(raw) as Record<string, unknown>;
-          this.emit("message", parsed);
-          this.emit("*", parsed);
-          const t = parsed.type;
-          if (typeof t === "string" && t !== "") this.emit(t, parsed);
+          const event = parseAgentWsEvent(parsed);
+          if (event) {
+            this.emit("message", event);
+            this.emit("*", event);
+            this.emit(event.type, event);
+          } else {
+            this.emit("message", parsed);
+            this.emit("*", parsed);
+            const t = parsed.type;
+            if (typeof t === "string" && t !== "") this.emit(t, parsed);
+          }
         } catch {
           /* ignore malformed */
         }
@@ -308,5 +319,43 @@ export class StayOnlineSession extends EventEmitter {
       this.emit("connectError", e);
       if (this.active) this.scheduleReconnect();
     }
+  }
+
+  /**
+   * Async iterator over typed {@link AgentWsEvent} `message` emissions.
+   * Ends when {@link StayOnlineSession.stop} is called and the queue drains.
+   */
+  events(): AsyncIterable<AgentWsEvent> {
+    const self = this;
+    const queue: AgentWsEvent[] = [];
+    let wake: (() => void) | undefined;
+    const onMessage = (ev: AgentWsEvent) => {
+      queue.push(ev);
+      wake?.();
+    };
+    self.on("message", onMessage);
+    return {
+      [Symbol.asyncIterator]() {
+        return {
+          async next(): Promise<IteratorResult<AgentWsEvent>> {
+            while (queue.length === 0) {
+              if (!self.isRunning()) {
+                self.off("message", onMessage);
+                return { done: true, value: undefined };
+              }
+              await new Promise<void>((r) => {
+                wake = r;
+              });
+              wake = undefined;
+            }
+            return { done: false, value: queue.shift()! };
+          },
+          async return(): Promise<IteratorResult<AgentWsEvent>> {
+            self.off("message", onMessage);
+            return { done: true, value: undefined };
+          },
+        };
+      },
+    };
   }
 }

@@ -162,72 +162,72 @@ export class ReadClient {
     q?: string;
   }): Promise<MatchSummary[]> {
     const qs = toQs(params as Record<string, unknown>);
-    const res = await this.getEnvelope<MatchSummary[]>(this.pub(`/matches${qs}`));
+    const res = await this.getEnvelope<MatchSummary[]>(this.pub(`/games${qs}`));
     return res.data;
   }
 
   async getMatch(matchId: string): Promise<MatchSummary> {
-    return this.get<MatchSummary>(this.pub(`/matches/${matchId}`));
+    return this.get<MatchSummary>(this.pub(`/games/${matchId}`));
   }
 
   /** Board arena: latest step + wire-format board_state (Read API). */
   async getMatchBoard(matchId: string): Promise<MatchBoardBundle> {
-    return this.get<MatchBoardBundle>(this.pub(`/matches/${matchId}/board`));
+    return this.get<MatchBoardBundle>(this.pub(`/games/${matchId}/board`));
   }
 
   /** All board steps for a match, with challenge + jury hooks per step. */
   async listMatchBoardSteps(matchId: string): Promise<MatchBoardStepRow[]> {
-    const res = await this.getEnvelope<MatchBoardStepRow[]>(this.pub(`/matches/${matchId}/board/steps`));
+    const res = await this.getEnvelope<MatchBoardStepRow[]>(this.pub(`/games/${matchId}/board/steps`));
     return res.data;
   }
 
   async getMatchTimeline(matchId: string, params?: { page?: number; page_size?: number }): Promise<unknown[]> {
     const qs = toQs(params as Record<string, unknown>);
-    const res = await this.getEnvelope<unknown[]>(this.pub(`/matches/${matchId}/timeline${qs}`));
+    const res = await this.getEnvelope<unknown[]>(this.pub(`/games/${matchId}/timeline${qs}`));
     return res.data;
   }
 
   async listMatchCompetitors(matchId: string): Promise<unknown[]> {
-    const res = await this.getEnvelope<unknown[]>(this.pub(`/matches/${matchId}/competitors`));
+    const res = await this.getEnvelope<unknown[]>(this.pub(`/games/${matchId}/competitors`));
     return res.data;
   }
 
   async getMatchReplay(matchId: string): Promise<Record<string, unknown>> {
-    return this.get<Record<string, unknown>>(this.pub(`/matches/${matchId}/replay`));
+    return this.get<Record<string, unknown>>(this.pub(`/games/${matchId}/replay`));
   }
 
   async getMatchAudit(matchId: string): Promise<Record<string, unknown>> {
-    return this.get<Record<string, unknown>>(this.pub(`/matches/${matchId}/audit`));
+    return this.get<Record<string, unknown>>(this.pub(`/games/${matchId}/audit`));
   }
 
   async getMatchSettlementBreakdown(matchId: string): Promise<Record<string, unknown>> {
-    return this.get<Record<string, unknown>>(this.pub(`/matches/${matchId}/settlement-breakdown`));
+    return this.get<Record<string, unknown>>(this.pub(`/games/${matchId}/settlement-breakdown`));
   }
 
   async listMatchSyntheticPositions(matchId: string): Promise<unknown[]> {
-    const res = await this.getEnvelope<unknown[]>(this.pub(`/matches/${matchId}/synthetic-positions`));
+    const res = await this.getEnvelope<unknown[]>(this.pub(`/games/${matchId}/synthetic-positions`));
     return res.data;
   }
 
   /** List all positions opened on a match. */
   async listMatchPositions(matchId: string, params?: { page?: number; page_size?: number }): Promise<PositionSummary[]> {
     const qs = toQs(params as Record<string, unknown>);
-    const res = await this.getEnvelope<PositionSummary[]>(this.pub(`/matches/${matchId}/positions${qs}`));
+    const res = await this.getEnvelope<PositionSummary[]>(this.pub(`/games/${matchId}/positions${qs}`));
     return res.data;
   }
 
   async getMatchPositionBoard(matchId: string): Promise<Record<string, unknown> | null> {
-    return this.get<Record<string, unknown> | null>(this.pub(`/matches/${matchId}/position-board`));
+    return this.get<Record<string, unknown> | null>(this.pub(`/games/${matchId}/position-board`));
   }
 
   // ── Settlement (public views; settlement `challenges` table is not exposed) ─
 
   async getMatchSettlement(matchId: string): Promise<Record<string, unknown>> {
-    return this.get<Record<string, unknown>>(this.pub(`/matches/${matchId}/settlement`));
+    return this.get<Record<string, unknown>>(this.pub(`/games/${matchId}/settlement`));
   }
 
   async getMatchSettlementBuckets(matchId: string): Promise<Record<string, unknown>> {
-    return this.get<Record<string, unknown>>(this.pub(`/matches/${matchId}/settlement/buckets`));
+    return this.get<Record<string, unknown>>(this.pub(`/games/${matchId}/settlement/buckets`));
   }
 
   // ── Jury cases ─────────────────────────────────────────────────────────────
@@ -272,7 +272,7 @@ export class ReadClient {
 
   async getTimelineForMatch(matchId: string, params?: { page?: number; page_size?: number }): Promise<unknown[]> {
     const qs = toQs(params as Record<string, unknown>);
-    const res = await this.getEnvelope<unknown[]>(this.pub(`/timelines/match/${matchId}${qs}`));
+    const res = await this.getEnvelope<unknown[]>(this.pub(`/games/${matchId}/timeline${qs}`));
     return res.data;
   }
 
