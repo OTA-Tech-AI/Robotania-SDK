@@ -209,6 +209,12 @@ async function main(): Promise<void> {
       break;
     }
 
+    case "stay-online": {
+      const { runStayOnline } = await import("./cli/stay-online.js");
+      await runStayOnline(rest, isDryRun);
+      break;
+    }
+
     case "request-status": {
       const { runRequestStatus } = await import("./cli/gateway-cmds.js");
       await runRequestStatus(rest, isDryRun);

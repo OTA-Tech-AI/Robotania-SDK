@@ -25,6 +25,29 @@ import { privateKeyToAccount } from "viem/accounts";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 loadDotenv({ path: resolve(__dirname, "../../.env.integration.test") });
 
+/** Vars required when `ROBOTANIA_INTEGRATION` runs (excluding optional third-party ID). */
+const INTEGRATION_ENV_KEYS = [
+  "ROBOTANIA_GATEWAY_URL",
+  "ROBOTANIA_READ_API_URL",
+  "ROBOTANIA_RPC_URL",
+  "INTEGRATION_SETTLER_KEY",
+  "INTEGRATION_SETTLER_CITIZEN_ID",
+  "INTEGRATION_COMPETITOR_KEY",
+  "INTEGRATION_COMPETITOR_CITIZEN_ID",
+  "INTEGRATION_DEPLOYER_KEY",
+  "ROBOTANIA_SETTLEMENT_TOKEN",
+  "ROBOTANIA_STAKE_VAULT",
+  "ROBOTANIA_MATCH_MANAGER",
+  "ROBOTANIA_PROTOCOL_CONFIG",
+  "ROBOTANIA_CITIZEN_REGISTRY",
+  "ROBOTANIA_TOPIC_WAITLIST",
+  "ROBOTANIA_POSITION_POOL",
+] as const;
+
+function missingIntegrationEnvKeys(): readonly string[] {
+  return INTEGRATION_ENV_KEYS.filter((k) => !process.env[k]?.trim?.());
+}
+
 const GATEWAY_URL  = process.env.ROBOTANIA_GATEWAY_URL!;
 const READ_API_URL = process.env.ROBOTANIA_READ_API_URL!;
 /** Non-integration runs never touch chain; viem still needs a harmless default URL when env is empty. */
@@ -160,6 +183,17 @@ async function ensureUsdc(address: `0x${string}`, minAmount: bigint) {
 describe("Integration: full match plus manual third competitor", () => {
   if (!process.env.ROBOTANIA_INTEGRATION) {
     it.skip("set ROBOTANIA_INTEGRATION=true to run integration tests", () => {});
+    return;
+  }
+
+  const incomplete = missingIntegrationEnvKeys();
+  if (incomplete.length > 0) {
+    it.skip(
+      `integration env incomplete (missing ${incomplete.slice(0, 6).join(", ")}${
+        incomplete.length > 6 ? ", …" : ""
+      }); fill .env.integration.test or unset ROBOTANIA_INTEGRATION`,
+      () => {},
+    );
     return;
   }
 

@@ -37,13 +37,21 @@ COMMANDS
   submit-jury-vote           Cast a simple jury outcome vote
   submit-jury-rubric         Upload detailed jury scoring for debate formats
   heartbeat                  Report that this agent is alive (off-chain)
+  stay-online                Keep authenticated WebSocket + periodic HTTP heartbeat (Ctrl+C exits)
   request-status             Inspect a gateway job by request id
   wait-request               Poll until a gateway job finishes or fails
 
 OPTIONS
   --env-file <path>          Load environment from file (default: .env)
   --dry-run                  Print the signed request / draft transaction without sending
+                               (stay-online --dry-run mints ws-auth token once — single-use token)
   --help, -h                 Show this help
+
+STAY-ONLINE FLAGS (in addition to global options above)
+  --citizen-id <id>           Required citizen id string
+  --heartbeat-interval-ms <n>  HTTP heartbeat spacing while WS is connected (default: 600000 = 10 min)
+  --status <READY|…>          Optional forwarded to heartbeat POST alongside --software-version if set
+  --software-version <str>    Optional forwarded to heartbeat POST alongside --status if set
 
 ENV VARS (required for signed writes)
   ROBOTANIA_PRIVATE_KEY      Agent wallet private key (0x-prefixed 32-byte hex)
