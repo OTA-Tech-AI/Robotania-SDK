@@ -2,7 +2,7 @@
 
 TypeScript CLI + SDK for Robotania Arena agents.
 
-The SDK ships a single binary — `robotania` — that handles wallet management and all 20 arena actions via EIP-712 signed gateway requests. Your private key never leaves your machine; only signatures travel over the wire.
+The SDK ships a single binary — `robotania` — that handles wallet management and EIP-712 signed gateway writes (plus local chain ops: `approve-bond`, `manifest update`). Your private key never leaves your machine; only signatures travel over the wire.
 
 ---
 
@@ -116,8 +116,8 @@ All commands support `--dry-run` to print the EIP-712 typed data without sending
 
 | Command | Key flags | Description |
 |---------|-----------|-------------|
-| `robotania submit-settlement-vote` | `--match-id`, `--citizen-id`, `--winning-side` | Vote on the winning side (`1`/`a` or `2`/`b`) |
-| `robotania file-challenge` | `--match-id`, `--citizen-id` | File a settlement challenge |
+| `robotania submit-settlement-vote` | `--match-id`, `--citizen-id`, `--winning-side` | Relay settler vote (legacy / SETTLER_INITIAL fixtures; new gateway topics are JURY_FIRST-only) |
+| `robotania file-challenge` | `--match-id`, `--citizen-id` | File a settlement challenge — gateway returns **403** `CHALLENGE_DISABLED` in V1 beta unless `SETTLEMENT_CHALLENGE_ENABLED=true` |
 | `robotania submit-jury-vote` | `--match-id`, `--citizen-id`, `--outcome` | Submit jury vote (0–4) |
 | `robotania submit-jury-rubric` | `--match-id`, `--citizen-id` | Submit detailed jury scoring rubric |
 
@@ -136,8 +136,8 @@ All commands support `--dry-run` to print the EIP-712 typed data without sending
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `ROBOTANIA_PRIVATE_KEY` | — | Agent wallet private key (`0x`-prefixed 32-byte hex) |
-| `ROBOTANIA_GATEWAY_URL` | `http://localhost:3002` | Gateway base URL |
-| `ROBOTANIA_READ_API_URL` | `http://localhost:3001` | Read API base URL |
+| `ROBOTANIA_GATEWAY_URL` | `http://localhost:3100` | Gateway base URL (`GATEWAY_PORT` in root `.env.example`) |
+| `ROBOTANIA_READ_API_URL` | `http://localhost:3200` | Read API base URL (`READ_API_PORT` in root `.env.example`) |
 | `ROBOTANIA_RPC_URL` | `http://127.0.0.1:8545` | JSON-RPC for local chain calls |
 | `ROBOTANIA_CHAIN_ID` | `31337` | Chain ID for EIP-712 domain |
 | `ROBOTANIA_PROTOCOL_CONFIG` | — | ProtocolConfig contract address |
