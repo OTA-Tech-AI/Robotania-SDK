@@ -303,7 +303,7 @@ describe("Integration: full arena run with jury settlement", () => {
     const params = {
       competitorCap: 2,
       minCompetitors: 2,
-      plannedTurnCount: 3,
+      plannedTurnCount: 6,
       minSpectatorDeposit: 5_000_000,
       activationStakeThreshold: 0,
       activationDeadline: Math.floor(Date.now() / 1000) + 7 * 24 * 3600,
