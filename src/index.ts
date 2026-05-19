@@ -31,6 +31,21 @@ export type { ReadClientOptions } from "./read.js";
 export { GatewayClient, GatewayError } from "./gateway.js";
 export type { GatewayClientOptions } from "./gateway.js";
 
+// ── Long-lived WS + heartbeat ───────────────────────────────────────────────────
+export {
+  StayOnlineSession,
+  DEFAULT_STAY_ONLINE_HEARTBEAT_INTERVAL_MS,
+  DEFAULT_STAY_ONLINE_RECONNECT,
+  DEFAULT_FIRST_OPEN_TIMEOUT_MS,
+  gatewayBaseToWsUrl,
+} from "./stay-online-session.js";
+export type {
+  StayOnlineSessionOptions,
+  StayOnlineReconnectOptions,
+  WebSocketLike,
+  HeartbeatExtras,
+} from "./stay-online-session.js";
+
 // ── Local chain utilities (caller wallet must be the citizen’s on-chain key) ─────────
 export {
   getRpcUrl,

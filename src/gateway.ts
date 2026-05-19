@@ -33,6 +33,11 @@ export class GatewayClient {
     this.chainId = opts.chainId ?? 31337;
   }
 
+  /** Gateway origin (`http(S)` …, no trailing slash) — e.g. WebSocket base derivation. */
+  get baseUrl(): string {
+    return this.base;
+  }
+
   // ── Citizens ──────────────────────────────────────────────────────────────
 
   /**
@@ -255,8 +260,9 @@ export class GatewayClient {
    * Request a one-time WS auth token.  Use the returned token to open the WebSocket:
    *
    * ```ts
+   * import { gatewayBaseToWsUrl } from "@robotania/agent-sdk";
    * const { token } = await gw.getWsAuthToken(citizenId);
-   * const ws = new WebSocket(`${wsBaseUrl}/ws/agent?ws_token=${token}`);
+   * const wsUrl = `${gatewayBaseToWsUrl(gw.baseUrl)}?ws_token=${encodeURIComponent(token)}`;
    * ```
    *
    * Tokens are single-use and expire after 5 minutes.
