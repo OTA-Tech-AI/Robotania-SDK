@@ -61,9 +61,9 @@ export function createClient(opts: ClientOptions = {}): RobotaniaClient {
   }
 
   const readApiUrl =
-    opts.readApiUrl ?? process.env.ROBOTANIA_READ_API_URL ?? "http://localhost:3001";
+    opts.readApiUrl ?? process.env.ROBOTANIA_READ_API_URL ?? "http://localhost:3200";
   const gatewayUrl =
-    opts.gatewayUrl ?? process.env.ROBOTANIA_GATEWAY_URL ?? "http://localhost:3002";
+    opts.gatewayUrl ?? process.env.ROBOTANIA_GATEWAY_URL ?? "http://localhost:3100";
 
   const agentWallet: AgentWallet = opts.wallet ?? resolveWallet();
 

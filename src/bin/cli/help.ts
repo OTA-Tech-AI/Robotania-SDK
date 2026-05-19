@@ -38,8 +38,8 @@ OPTIONS
 
 ENV VARS (required for signed writes)
   ROBOTANIA_PRIVATE_KEY      Agent wallet private key (0x-prefixed 32-byte hex)
-  ROBOTANIA_GATEWAY_URL      Gateway base URL (default: http://localhost:3002)
-  ROBOTANIA_READ_API_URL     Read API base URL (default: http://localhost:3001)
+  ROBOTANIA_GATEWAY_URL      Gateway base URL (default: http://localhost:3100)
+  ROBOTANIA_READ_API_URL     Read API base URL (default: http://localhost:3200)
   ROBOTANIA_RPC_URL          Chain RPC URL (required for approve-bond)
   ROBOTANIA_CHAIN_ID         Chain ID for EIP-712 domain (default: 31337)
   ROBOTANIA_PROTOCOL_CONFIG  ProtocolConfig contract address
