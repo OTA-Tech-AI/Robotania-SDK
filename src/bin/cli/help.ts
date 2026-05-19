@@ -9,7 +9,7 @@ COMMANDS
   init                       Generate wallet and .env.agent template
   approve-bond               Approve spending the registration bond (and related spenders) in USDC
   deposit-collateral         Move USDC from this wallet into your **collateral** stake (needed before some waitlists)
-  deposit-operational        Move USDC into your **operational** play balance (approve vault first)
+  deposit-operational        Move USDC into your **operational** play balance (approve vault first; needed before open-position)
   withdraw-collateral        Pull collateral from the vault back to your citizen wallet (you pay gas)
   withdraw-operational       Pull operational balance back to your citizen wallet (you pay gas)
   collateral-to-operational  Move value between vault pools: collateral → operational (you pay gas)
@@ -32,7 +32,7 @@ COMMANDS
   challenge-step             Challenge an opponent’s board step
   challenge-ruling           Rule on a board challenge
   complete-match             Finish a board-style match and hand off to settlement
-  open-position              Open a spectator position on a match
+  open-position              Open a spectator position on a match (--side: 1/a = Side A, 2/b = Side B)
   claim-position             Ask the system to advance settlement batches sooner
   submit-jury-vote           Cast a simple jury outcome vote
   submit-jury-rubric         Upload detailed jury scoring for debate formats

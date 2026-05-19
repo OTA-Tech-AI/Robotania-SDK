@@ -3,6 +3,7 @@
  */
 
 import { loadConfig, flag, requireFlag } from "./config.js";
+import { parseMatchSideFlag } from "./side.js";
 import { log, result } from "./output.js";
 import { buildRobotaniaDomain, AGENT_REQUEST_TYPES } from "../../signing.js";
 import { keccak256, toBytes } from "viem";
@@ -30,6 +31,13 @@ function dryRunGateway(
 export async function runCreateTopic(args: string[], isDryRun: boolean): Promise<void> {
   const paramsStr = requireFlag(args, "--params", "topic params JSON");
   const params = JSON.parse(paramsStr) as Record<string, unknown>;
+  // Inline metadata fields: passed inside params so the gateway can extract and upload to R2.
+  const title    = flag(args, "--title");
+  const desc     = flag(args, "--description");
+  const category = flag(args, "--category");
+  if (title)    params.title       = title;
+  if (desc)     params.description = desc;
+  if (category) params.category    = category;
   const cfg = loadConfig();
   if (isDryRun) { dryRunGateway("/api/v1/agent/topics/create", { params }, "pending", cfg.chainAddresses.chainId); return; }
   log("Creating topic..."); result(await cfg.gatewayClient.createTopic({ params }));
@@ -165,8 +173,8 @@ export async function runCompleteMatch(args: string[], isDryRun: boolean): Promi
 export async function runOpenPosition(args: string[], isDryRun: boolean): Promise<void> {
   const matchId = requireFlag(args, "--match-id", "match ID");
   const citizenId = requireFlag(args, "--citizen-id", "citizen ID");
-  const sideStr = requireFlag(args, "--side", "side (0 or 1)");
-  const side = Number(sideStr) as 0 | 1;
+  const sideStr = requireFlag(args, "--side", "side (1 or a = Side A, 2 or b = Side B)");
+  const side = parseMatchSideFlag(sideStr);
   const amount = requireFlag(args, "--amount", "amount");
   const turnIndexStr = flag(args, "--turn-index");
   const turnIndex = turnIndexStr ? Number(turnIndexStr) : 0;
@@ -180,6 +188,31 @@ export async function runClaimPosition(args: string[], isDryRun: boolean): Promi
   const cfg = loadConfig();
   if (isDryRun) { dryRunGateway("/api/v1/agent/positions/claim", { matchId }, "pending", cfg.chainAddresses.chainId); return; }
   log("Claiming position..."); result(await cfg.gatewayClient.claimPosition({ matchId }));
+}
+
+// ── Settlements ───────────────────────────────────────────────────────────────
+
+export async function runSubmitSettlementVote(args: string[], isDryRun: boolean): Promise<void> {
+  const matchId = requireFlag(args, "--match-id", "match ID");
+  const citizenId = requireFlag(args, "--citizen-id", "citizen ID");
+  const winningSideStr = requireFlag(args, "--winning-side", "winning side (1 or a = Side A, 2 or b = Side B)");
+  const winningSide = parseMatchSideFlag(winningSideStr);
+  const reasonHash = flag(args, "--reason-hash") as `0x${string}` | undefined;
+  const reasonURI = flag(args, "--reason-uri");
+  const cfg = loadConfig();
+  if (isDryRun) { dryRunGateway("/api/v1/agent/settlements/submit-vote", { matchId, citizenId, winningSide, reasonHash, reasonURI }, citizenId, cfg.chainAddresses.chainId); return; }
+  log("Submitting settlement vote..."); result(await cfg.gatewayClient.submitSettlementVote({ matchId, citizenId, winningSide, reasonHash, reasonURI }));
+}
+
+export async function runFileChallenge(args: string[], isDryRun: boolean): Promise<void> {
+  const matchId = requireFlag(args, "--match-id", "match ID");
+  const citizenId = requireFlag(args, "--citizen-id", "citizen ID");
+  const bondAmount = requireFlag(args, "--bond-amount", "bond amount");
+  const reasonHash = flag(args, "--reason-hash") as `0x${string}` | undefined;
+  const reasonURI = flag(args, "--reason-uri");
+  const cfg = loadConfig();
+  if (isDryRun) { dryRunGateway("/api/v1/agent/challenges/file", { matchId, citizenId, bondAmount, reasonHash, reasonURI }, citizenId, cfg.chainAddresses.chainId); return; }
+  log("Filing challenge..."); result(await cfg.gatewayClient.fileChallenge({ matchId, citizenId, bondAmount, reasonHash, reasonURI }));
 }
 
 // ── Jury ──────────────────────────────────────────────────────────────────────
