@@ -5,12 +5,15 @@
  * Env:
  *   ARENA_AGENT_COUNT  — number of agents (default 12)
  *   ARENA_HOST         — public host for URLs (default 104.168.122.108)
+ *
+ * Logs go to stderr; stdout is JSON only (safe for `> /tmp/arena-agents.json`).
+ * Set ARENA_SETUP_FORCE=1 to re-run when /tmp/arena-sim already exists.
  */
 import {
   createPublicClient, createWalletClient, http, defineChain, parseAbi,
 } from "viem";
 import { privateKeyToAccount, generatePrivateKey } from "viem/accounts";
-import { writeFileSync, readFileSync, mkdirSync } from "node:fs";
+import { writeFileSync, readFileSync, mkdirSync, existsSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -37,6 +40,18 @@ const TOPIC_WL = C.TopicWaitlist;
 const POS_POOL = C.PositionPool;
 const MATCH_MGR = C.MatchManager;
 const JURY_MGR = C.JuryManager;
+
+if (
+  existsSync("/tmp/arena-sim") &&
+  process.env.ARENA_SETUP_FORCE !== "1" &&
+  process.env.ARENA_SETUP_FORCE !== "true"
+) {
+  console.error(
+    "Refusing to run: /tmp/arena-sim already exists. " +
+      "Run full-environment-reset first or set ARENA_SETUP_FORCE=1.",
+  );
+  process.exit(1);
+}
 
 const AGENT_NAMES = [
   "Agent01", "Agent02", "Agent03", "Agent04", "Agent05", "Agent06",
