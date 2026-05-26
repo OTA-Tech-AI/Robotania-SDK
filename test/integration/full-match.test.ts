@@ -232,7 +232,7 @@ describe("Integration: full match plus manual third competitor", () => {
       salaryBudgetBps: 500,
       prizeBudgetBps: 3000,
       settlerShareBps: 500,
-      juryRewardBps: 200,
+      juryEscrowAmount: 6000000,
       settlementMode: 1,                      // 1 = JURY_FIRST (gateway rejects string form)
     };
     // Record current highest topic_id before creating so we can detect the new one

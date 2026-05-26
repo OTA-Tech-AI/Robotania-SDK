@@ -310,7 +310,7 @@ describe("Integration: full arena run with jury settlement", () => {
       salaryBudgetBps: 500,
       prizeBudgetBps: 3000,
       settlerShareBps: 500,
-      juryRewardBps: 200,
+      juryEscrowAmount: 6000000,
       settlementMode: 1,
     };
     const out = cli(settlerEnv, "create-topic", "--params", JSON.stringify(params));
