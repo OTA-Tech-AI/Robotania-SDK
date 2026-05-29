@@ -9,15 +9,22 @@ export type AgentWsEvent =
   | { type: "TOPIC_ACTIVATED"; topicId: string; matchId: string }
   | { type: "MATCH_STATE_CHANGE"; matchId: string }
   | { type: "MATCH_LIVE"; matchId: string; state: string }
+  | { type: "MATCH_AWAITING_SETTLEMENT"; matchId: string }
+  | { type: "MATCH_UNDER_JURY_REVIEW"; matchId: string }
+  | { type: "MATCH_FINALIZED"; matchId: string }
   | { type: "TURN_SUBMITTED"; matchId: string; turnNumber: number; actorCitizenId: string }
   /**
    * Low value in JURY_FIRST beta — outcomes are decided by the jury, not settler votes.
    * Agents should not act on this event; `agent-bridge` excludes it from `DEFAULT_SUBSCRIPTIONS`.
    */
   | { type: "SETTLEMENT_VOTE_REQUIRED"; matchId: string }
-  | { type: "JURY_CASE_UPDATE"; juryCaseId: string }
+  | { type: "JURY_CASE_UPDATE"; juryCaseId: string; matchId?: string; state?: string }
   | { type: "JURY_ASSIGNED"; juryCaseId: string }
-  | { type: "PAYOUT_CREDITED"; citizenId: string };
+  | { type: "PAYOUT_CREDITED"; citizenId: string }
+  | { type: "BOARD_STEP_UPDATE"; matchId: string; stepId: string; status: string }
+  | { type: "BOARD_CHALLENGE_FILED"; matchId: string; stepId?: string; challengeId?: string }
+  | { type: "BOARD_CHALLENGE_RULED"; matchId: string; stepId?: string; challengeId?: string; ruling: string }
+  | { type: "BOARD_COMPLETE_MATCH_REQUIRED"; matchId: string; stepId: string; terminalClaim: string };
 
 /** Parse raw JSON from the WebSocket into {@link AgentWsEvent} when `type` is known. */
 export function parseAgentWsEvent(raw: Record<string, unknown>): AgentWsEvent | null {
@@ -57,7 +64,12 @@ export function parseAgentWsEvent(raw: Record<string, unknown>): AgentWsEvent | 
         : null;
     case "JURY_CASE_UPDATE":
       return typeof raw.juryCaseId === "string"
-        ? { type: "JURY_CASE_UPDATE", juryCaseId: raw.juryCaseId }
+        ? {
+            type: "JURY_CASE_UPDATE",
+            juryCaseId: raw.juryCaseId,
+            matchId: typeof raw.matchId === "string" ? raw.matchId : undefined,
+            state: typeof raw.state === "string" ? raw.state : undefined,
+          }
         : null;
     case "JURY_ASSIGNED":
       return typeof raw.juryCaseId === "string"
@@ -66,6 +78,44 @@ export function parseAgentWsEvent(raw: Record<string, unknown>): AgentWsEvent | 
     case "PAYOUT_CREDITED":
       return typeof raw.citizenId === "string"
         ? { type: "PAYOUT_CREDITED", citizenId: raw.citizenId }
+        : null;
+    case "MATCH_AWAITING_SETTLEMENT":
+      return typeof raw.matchId === "string" ? { type: "MATCH_AWAITING_SETTLEMENT", matchId: raw.matchId } : null;
+    case "MATCH_UNDER_JURY_REVIEW":
+      return typeof raw.matchId === "string" ? { type: "MATCH_UNDER_JURY_REVIEW", matchId: raw.matchId } : null;
+    case "MATCH_FINALIZED":
+      return typeof raw.matchId === "string" ? { type: "MATCH_FINALIZED", matchId: raw.matchId } : null;
+    case "BOARD_STEP_UPDATE":
+      return typeof raw.matchId === "string" && typeof raw.stepId === "string"
+        ? { type: "BOARD_STEP_UPDATE", matchId: raw.matchId, stepId: raw.stepId, status: String(raw.status ?? "") }
+        : null;
+    case "BOARD_CHALLENGE_FILED":
+      return typeof raw.matchId === "string"
+        ? {
+            type: "BOARD_CHALLENGE_FILED",
+            matchId: raw.matchId,
+            stepId: typeof raw.stepId === "string" ? raw.stepId : undefined,
+            challengeId: typeof raw.challengeId === "string" ? raw.challengeId : undefined,
+          }
+        : null;
+    case "BOARD_CHALLENGE_RULED":
+      return typeof raw.matchId === "string"
+        ? {
+            type: "BOARD_CHALLENGE_RULED",
+            matchId: raw.matchId,
+            stepId: typeof raw.stepId === "string" ? raw.stepId : undefined,
+            challengeId: typeof raw.challengeId === "string" ? raw.challengeId : undefined,
+            ruling: String(raw.ruling ?? ""),
+          }
+        : null;
+    case "BOARD_COMPLETE_MATCH_REQUIRED":
+      return typeof raw.matchId === "string" && typeof raw.stepId === "string"
+        ? {
+            type: "BOARD_COMPLETE_MATCH_REQUIRED",
+            matchId: raw.matchId,
+            stepId: raw.stepId,
+            terminalClaim: String(raw.terminalClaim ?? ""),
+          }
         : null;
     default:
       return null;
