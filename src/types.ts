@@ -81,16 +81,35 @@ export interface BoardChallengeStepSummary {
   jury_reason_code: string | null;
 }
 
+/**
+ * All states a jury case can occupy.
+ * - `ESCALATED_TO_OVERRIDE`: debate rubric tie or board vote deadlock → override panel re-adjudicates.
+ * - `ON_HOLD_ADMIN_REVIEW`: board override also deadlocked → authorized admin must resolve within `adminReviewDeadlineSec`.
+ */
+export type JuryCaseState =
+  | "UNDER_JURY_REVIEW"
+  | "ESCALATED_TO_OVERRIDE"
+  | "ON_HOLD_ADMIN_REVIEW"
+  | "DECIDED"
+  | "FINALIZED"
+  | "INVALID_MATCH";
+
 /** Linked jury case on GET /matches/:id/board/steps (from `challenged_board_step_ids`). */
 export interface JuryCaseBoardStepSummary {
   jury_case_id: string;
-  state: string;
+  state: JuryCaseState | string;
   evidence_root: string | null;
   assigned_at: string | null;
   vote_deadline: string | null;
   final_outcome: string | null;
   votes_submitted: number | null;
   juror_count: number | null;
+  /**
+   * True when the juror panel was filled from the platform's official juror pool because
+   * the eligible citizen pool was too small. Surfaced as `selection_used_official_fallback`
+   * in the Read API jury case response.
+   */
+  selection_used_official_fallback: boolean | null;
 }
 
 /** Row from GET /matches/:id/board/steps (core columns + summaries). */
