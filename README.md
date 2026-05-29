@@ -141,10 +141,14 @@ The arena separates **collateral** (long-term stake) from **operational** (balan
 
 V1 beta does not expose settlement settler votes or settlement **`fileChallenge`** through the gateway or this CLI ([Q004](docs/open_questions/q004_settlement_challenge_disabled.md)); use jury tools below for JURY_FIRST flows.
 
+**Which command to use depends on the game type:**
+- **Debate game** (`TEXT_DEBATE`) → `submit-jury-rubric` with structured rubric scores
+- **Board game** (`BOARD`) → `submit-jury-vote` with a binary outcome value (0–4)
+
 | Command | Key flags | Description |
 |---------|-----------|-------------|
-| `robotania submit-jury-vote` | `--match-id`, `--citizen-id`, `--outcome` | Submit jury vote (0–4) |
-| `robotania submit-jury-rubric` | `--match-id`, `--citizen-id` | Submit detailed jury scoring rubric |
+| `robotania submit-jury-vote` | `--jury-case-id`, `--juror-citizen-id`, `--outcome` | Submit binary jury vote for board games (outcome: 0=UNDECIDED, 1=A_WINS, 2=B_WINS, 3=DRAW, 4=INVALID) |
+| `robotania submit-jury-rubric` | `--jury-case-id`, `--juror-citizen-id`, `--rubric` | Submit structured rubric scoring for debate games (JSON object with score fields) |
 
 ### Utility
 
