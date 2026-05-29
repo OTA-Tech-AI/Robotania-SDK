@@ -4,9 +4,10 @@
 
 import { loadConfig, flag, requireFlag } from "./config.js";
 import { parseMatchSideFlag } from "./side.js";
-import { log, result } from "./output.js";
+import { log, result, fatal } from "./output.js";
 import { buildRobotaniaDomain, AGENT_REQUEST_TYPES } from "../../signing.js";
 import { keccak256, toBytes } from "viem";
+import { createAgentChainClients, readCitizenArenaBalances } from "../../chain.js";
 
 function dryRunGateway(
   path: string,
@@ -40,6 +41,42 @@ export async function runCreateTopic(args: string[], isDryRun: boolean): Promise
   if (category) params.category    = category;
   const cfg = loadConfig();
   if (isDryRun) { dryRunGateway("/api/v1/agent/topics/create", { params }, "pending", cfg.chainAddresses.chainId); return; }
+
+  const settlerIds = params.settlerIds as string[] | number[] | undefined;
+  let leadSettlerId = settlerIds?.[0] != null ? String(settlerIds[0]) : "";
+  const juryEscrow = params.juryEscrowAmount != null ? BigInt(String(params.juryEscrowAmount)) : 0n;
+  if (!leadSettlerId && juryEscrow > 0n && cfg.chainAddresses.citizenRegistry) {
+    const { publicClient } = createAgentChainClients(cfg.wallet);
+    const regAbi = [
+      {
+        type: "function",
+        name: "getCitizenIdByWallet",
+        stateMutability: "view",
+        inputs: [{ name: "wallet", type: "address" }],
+        outputs: [{ type: "uint256" }],
+      },
+    ] as const;
+    leadSettlerId = String(
+      await publicClient.readContract({
+        address: cfg.chainAddresses.citizenRegistry,
+        abi: regAbi,
+        functionName: "getCitizenIdByWallet",
+        args: [cfg.wallet.address],
+      }),
+    );
+  }
+  if (leadSettlerId && juryEscrow > 0n && cfg.chainAddresses.stakeVault) {
+    const { publicClient } = createAgentChainClients(cfg.wallet);
+    const bal = await readCitizenArenaBalances(publicClient, cfg.chainAddresses.stakeVault, leadSettlerId);
+    const minRecommended = juryEscrow + 10_000_000n;
+    if (bal.collateral < minRecommended) {
+      fatal(
+        `Insufficient collateral for citizen ${leadSettlerId}: have ${bal.collateral}, need ~${minRecommended} ` +
+          `(juryEscrow ${juryEscrow} + creation fee). Run: robotania deposit-collateral --citizen-id ${leadSettlerId} --amount ${minRecommended - bal.collateral}`,
+      );
+    }
+  }
+
   log("Creating topic..."); result(await cfg.gatewayClient.createTopic({ params }));
 }
 
@@ -238,5 +275,9 @@ export async function runWaitRequest(args: string[], _isDryRun: boolean): Promis
   const timeoutMs = flag(args, "--timeout-ms");
   const cfg = loadConfig();
   log(`Waiting for request ${requestId} to finalize...`);
-  result(await cfg.gatewayClient.waitForRequest(requestId, timeoutMs ? { timeoutMs: Number(timeoutMs) } : undefined));
+  const final = await cfg.gatewayClient.waitForRequest(requestId, timeoutMs ? { timeoutMs: Number(timeoutMs) } : undefined);
+  if (final.status === "FAILED") {
+    fatal(final.error_message ?? `Request ${requestId} failed`);
+  }
+  result(final);
 }
