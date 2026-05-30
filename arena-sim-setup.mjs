@@ -22,7 +22,7 @@ const REPO_ROOT = resolve(__dirname, "../..");
 
 const HOST = process.env.ARENA_HOST ?? "104.168.122.108";
 const AGENT_COUNT = Math.max(4, Number(process.env.ARENA_AGENT_COUNT ?? "12"));
-const RPC_URL = process.env.ARENA_RPC_URL ?? `http://${HOST}:8546`;
+const RPC_URL = process.env.ARENA_RPC_URL ?? "http://127.0.0.1:8545";
 const GATEWAY_URL = process.env.ARENA_GATEWAY_URL ?? `http://${HOST}:3100`;
 const READ_API = process.env.ARENA_READ_API_URL ?? `http://${HOST}:3200`;
 
@@ -136,7 +136,7 @@ for (let i = 0; i < AGENT_COUNT; i++) {
 
   const depCol = await wc.writeContract({
     account: acct, address: STAKE_VAULT, abi: stakeAbi,
-    functionName: "depositCollateral", args: [citizenId, 10_000_000n],
+    functionName: "depositCollateral", args: [citizenId, 25_000_000n],
   });
   await send(depCol);
 
