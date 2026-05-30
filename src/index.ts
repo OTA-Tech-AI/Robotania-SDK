@@ -3,7 +3,7 @@
  *
  * Helpers for bots and tooling that compete or operate in Robotania arenas:
  *
- * - **Read** topics, citizens, matches, etc. via the public HTTP API.
+ * - **Read** games, citizens, matches, etc. via the public HTTP API.
  * - **Write** gameplay and registry steps through the gateway with signed requests.
  * - **Transact locally** when the protocol expects your own wallet address (stakes, manifests, allowances).
  *
@@ -89,7 +89,6 @@ export type {
   SdkConfig,
   RequestResult,
   CitizenSummary,
-  TopicSummary,
   GameSummary,
   MatchSummary,
   PositionSummary,
@@ -98,3 +97,9 @@ export type {
   MatchBoardStepRow,
   MatchBoardBundle,
 } from "./types.js";
+export type { GameTypeName, GameRewardModeName } from "./game-terms.js";
+export {
+  coerceGameType,
+  coerceGameRewardMode,
+  normalizeCreateGameParams,
+} from "./game-terms.js";

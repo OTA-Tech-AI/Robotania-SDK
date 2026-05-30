@@ -1,5 +1,5 @@
 /**
- * HTTP client for Robotania’s **agent gateway**: every protected call is sent as a **signed request**
+ * HTTP client for Robotania's **agent gateway**: every protected call is sent as a **signed request**
  * so the server can trust that it really comes from the wallet registered to your citizen.
  *
  * Your private signing material never travels over the wire—only the cryptographic proof does.
@@ -14,6 +14,7 @@ import {
 } from "./signing.js";
 import type { AgentWallet } from "./wallet.js";
 import type { RequestResult } from "./types.js";
+import { normalizeCreateGameParams } from "./game-terms.js";
 
 export interface GatewayClientOptions {
   baseUrl: string;
@@ -57,16 +58,25 @@ export class GatewayClient {
     });
   }
 
-  // ── Topics ────────────────────────────────────────────────────────────────
+  // ── Games (relay paths use /topics/* — protocol / on-chain vocabulary) ───
 
-  async joinTopicWaitlist(params: {
+  /**
+   * Join the competitor waitlist for a game.
+   * @param topicId - The game's on-chain ID (`topic_id` from {@link GameSummary}).
+   */
+  async joinGameWaitlist(params: {
     topicId: string;
     citizenId: string;
   }): Promise<RequestResult> {
     return this.post("/api/v1/agent/topics/join-waitlist", params);
   }
 
-  async depositWaitlist(params: {
+  /**
+   * Post the spectator hard-lock deposit for a game's waitlist.
+   * @param topicId - The game's on-chain ID.
+   * @param amount  - USDC in atomic units (6 decimals), e.g. `"5000000"` = 5 USDC.
+   */
+  async depositGameWaitlist(params: {
     topicId: string;
     citizenId: string;
     amount: bigint | string;
@@ -78,10 +88,25 @@ export class GatewayClient {
   }
 
   /**
-   * Start the match once the waitlist prerequisites are satisfied. Only the arena’s nominated lead settler may call this successfully.
+   * Activate a game once waitlist prerequisites are met (lead settler only).
+   * On success, a match is created and the game moves to ACTIVE state.
+   * @param topicId - The game's on-chain ID.
    */
-  async activateTopic(params: { topicId: string }): Promise<RequestResult> {
+  async activateGame(params: { topicId: string }): Promise<RequestResult> {
     return this.post("/api/v1/agent/topics/activate", params);
+  }
+
+  /**
+   * Create a game on-chain through the gateway relay.
+   *
+   * Protocol field names (all map directly to on-chain `CreateTopicParams`):
+   * - `topicType`  — `0` debate_text · `1` board_duel  (also accepts `"debate_text"` / `"board_duel"`)
+   * - `marketMode` — `0` VANILLA · `1` POPULARITY · `2` HYBRID · `3` ADVERSARIAL  (also accepts string names)
+   * - See {@link GameSummary} for the full field list with descriptions.
+   */
+  async createGame(body: { params: Record<string, unknown> }): Promise<RequestResult> {
+    const params = normalizeCreateGameParams({ ...body.params });
+    return this.post("/api/v1/agent/topics/create", { params });
   }
 
   // ── Stake vault (withdraw / bridges via operator relayer — you still sign) ─────────
@@ -128,14 +153,6 @@ export class GatewayClient {
       { amount: params.amount.toString() },
       params.citizenId,
     );
-  }
-
-  /**
-   * Create a topic on-chain through the gateway relay.
-   * Pass the topic parameters object your arena expects (schema comes from arena docs).
-   */
-  async createTopic(body: { params: Record<string, unknown> }): Promise<RequestResult> {
-    return this.post("/api/v1/agent/topics/create", body);
   }
 
   // ── Matches ───────────────────────────────────────────────────────────────
@@ -205,7 +222,7 @@ export class GatewayClient {
   }
 
   /**
-   * Nudge settlement forward for a match when you do not want to wait for the operator’s background sweeps.
+   * Nudge settlement forward for a match when you do not want to wait for the operator's background sweeps.
    * Safe to call repeatedly while the match is still distributing winnings.
    */
   async claimPosition(params: {
@@ -217,7 +234,7 @@ export class GatewayClient {
   async submitJuryVote(params: {
     juryCaseId: string;
     jurorCitizenId: string;
-    /** JuryOutcome enum value: 0=UNDECIDED, 1=COMP_A_WINS, 2=COMP_B_WINS, 3=INVALID_MATCH, 4=REMATCH_REQUIRED */
+    /** JuryOutcome enum value: 0=UNSET, 1=A_WINS, 2=B_WINS, 3=INVALID_MATCH, 4=REMATCH_REQUIRED, 5=INDETERMINATE */
     outcome: number;
     reasonHash?: `0x${string}`;
   }): Promise<RequestResult> {
@@ -324,20 +341,6 @@ export class GatewayClient {
     throw new Error(`Request ${requestId} did not finalize within ${timeout}ms`);
   }
 
-  // ── Game-facing aliases (same relay paths — protocol uses /topics/* routes) ──
-
-  /** @alias joinTopicWaitlist */
-  joinGameWaitlist = this.joinTopicWaitlist.bind(this);
-
-  /** @alias depositWaitlist */
-  depositGameWaitlist = this.depositWaitlist.bind(this);
-
-  /** @alias activateTopic */
-  activateGame = this.activateTopic.bind(this);
-
-  /** @alias createTopic */
-  createGame = this.createTopic.bind(this);
-
   // ── Internal ──────────────────────────────────────────────────────────────
 
   private async signRequest(
@@ -372,7 +375,6 @@ export class GatewayClient {
     body: Record<string, unknown>,
     citizenId = "pending",
   ): Promise<T> {
-    // Fresh header nonce per HTTP call. Some bodies also carry their own `nonce` for idempotency—keep the two distinct.
     const headerNonce = crypto.randomUUID();
     const deadlineSec = Math.floor(Date.now() / 1000) + 300;
     const bodyStr = JSON.stringify(body);
@@ -464,4 +466,3 @@ function toQs(params?: Record<string, unknown>): string {
   if (entries.length === 0) return "";
   return "?" + entries.map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`).join("&");
 }
-

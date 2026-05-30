@@ -3,6 +3,7 @@
  * All methods are read-only; they never mutate chain state.
  *
  * Base paths are rooted at `/api/v1/public/...` per read-api routing.
+ * Response field names match the protocol / on-chain layer (`topic_id`, `topic_type`, `market_mode`, …).
  */
 
 import type {
@@ -12,7 +13,7 @@ import type {
   MatchBoardBundle,
   MatchBoardStepRow,
   MatchSummary,
-  TopicSummary,
+  GameSummary,
 } from "./types.js";
 
 export interface ReadClientOptions {
@@ -111,9 +112,9 @@ export class ReadClient {
     return res.data;
   }
 
-  async listCitizenGamesSettled(citizenId: string, params?: { page?: number; page_size?: number }): Promise<TopicSummary[]> {
+  async listCitizenGamesSettled(citizenId: string, params?: { page?: number; page_size?: number }): Promise<GameSummary[]> {
     const qs = toQs(params as Record<string, unknown>);
-    const res = await this.getEnvelope<TopicSummary[]>(this.pub(`/citizens/${citizenId}/games-settled${qs}`));
+    const res = await this.getEnvelope<GameSummary[]>(this.pub(`/citizens/${citizenId}/games-settled${qs}`));
     return res.data;
   }
 
@@ -123,28 +124,45 @@ export class ReadClient {
     return res.data;
   }
 
-  // ── Topics ────────────────────────────────────────────────────────────────
+  // ── Games (Read API `/topics/*` — field names match protocol) ────────────
 
-  async listTopics(params?: { page?: number; page_size?: number; state?: number | string; topic_type?: number; q?: string }): Promise<TopicSummary[]> {
+  /**
+   * List games with optional filters.
+   *
+   * Filter params use protocol field names:
+   * - `topic_type` — `0` debate_text, `1` board_duel
+   * - `state`      — numeric state value
+   */
+  async listGames(params?: {
+    page?: number;
+    page_size?: number;
+    state?: number | string;
+    topic_type?: number;
+    q?: string;
+  }): Promise<GameSummary[]> {
     const qs = toQs(params as Record<string, unknown>);
-    const res = await this.getEnvelope<TopicSummary[]>(this.pub(`/topics${qs}`));
+    const res = await this.getEnvelope<GameSummary[]>(this.pub(`/topics${qs}`));
     return res.data;
   }
 
-  async getTopic(topicId: string): Promise<TopicSummary & { settlers?: unknown[]; waitlist?: unknown[] }> {
-    return this.get(this.pub(`/topics/${topicId}`));
+  /**
+   * Get a single game by its on-chain ID (`topic_id`).
+   * The returned object may include `settlers` and `waitlist` arrays.
+   */
+  async getGame(topicId: string): Promise<GameSummary & { settlers?: unknown[]; waitlist?: unknown[] }> {
+    return this.get<GameSummary & { settlers?: unknown[]; waitlist?: unknown[] }>(this.pub(`/topics/${topicId}`));
   }
 
-  async getTopicWaitlist(topicId: string): Promise<unknown[]> {
+  async getGameWaitlist(topicId: string): Promise<unknown[]> {
     const res = await this.getEnvelope<unknown[]>(this.pub(`/topics/${topicId}/waitlist`));
     return res.data;
   }
 
-  async getTopicAudit(topicId: string): Promise<Record<string, unknown>> {
+  async getGameAudit(topicId: string): Promise<Record<string, unknown>> {
     return this.get<Record<string, unknown>>(this.pub(`/topics/${topicId}/audit`));
   }
 
-  async getTopicCreationFeePreview(citizenId: string): Promise<Record<string, unknown>> {
+  async getGameCreationFeePreview(citizenId: string): Promise<Record<string, unknown>> {
     return this.get<Record<string, unknown>>(this.pub(`/topics/creation-fee-preview/${citizenId}`));
   }
 
@@ -282,28 +300,11 @@ export class ReadClient {
     return res.data;
   }
 
-  async getTimelineForTopic(topicId: string, params?: { page?: number; page_size?: number }): Promise<unknown[]> {
+  async getTimelineForGame(topicId: string, params?: { page?: number; page_size?: number }): Promise<unknown[]> {
     const qs = toQs(params as Record<string, unknown>);
     const res = await this.getEnvelope<unknown[]>(this.pub(`/timelines/topic/${topicId}${qs}`));
     return res.data;
   }
-
-  // ── Game-facing aliases (same REST paths as topics — protocol uses topic_id) ──
-
-  /** @alias listTopics */
-  listGames = this.listTopics.bind(this);
-
-  /** @alias getTopic */
-  getGame = this.getTopic.bind(this);
-
-  /** @alias getTopicWaitlist */
-  getGameWaitlist = this.getTopicWaitlist.bind(this);
-
-  /** @alias getTopicAudit */
-  getGameAudit = this.getTopicAudit.bind(this);
-
-  /** @alias getTopicCreationFeePreview */
-  getGameCreationFeePreview = this.getTopicCreationFeePreview.bind(this);
 
   // ── Internal helpers ──────────────────────────────────────────────────────
 

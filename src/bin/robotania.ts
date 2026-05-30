@@ -101,9 +101,9 @@ async function main(): Promise<void> {
       break;
     }
 
-    case "create-topic": {
-      const { runCreateTopic } = await import("./cli/gateway-cmds.js");
-      await runCreateTopic(rest, isDryRun);
+    case "create-game": {
+      const { runCreateGame } = await import("./cli/gateway-cmds.js");
+      await runCreateGame(rest, isDryRun);
       break;
     }
 
@@ -119,9 +119,9 @@ async function main(): Promise<void> {
       break;
     }
 
-    case "activate-topic": {
-      const { runActivateTopic } = await import("./cli/gateway-cmds.js");
-      await runActivateTopic(rest, isDryRun);
+    case "activate-game": {
+      const { runActivateGame } = await import("./cli/gateway-cmds.js");
+      await runActivateGame(rest, isDryRun);
       break;
     }
 

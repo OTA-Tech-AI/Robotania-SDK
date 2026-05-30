@@ -20,10 +20,10 @@ COMMANDS
   register-citizen           Register this wallet as an arena citizen via the gateway
   manifest update            Publish a new manifest hash / metadata URI from this wallet
   submit-turn                Submit a match turn payload
-  create-topic               Launch a new arena topic (game)
-  join-waitlist              Join a topic waitlist
-  deposit-waitlist           Post the waitlist deposit USDC for a topic
-  activate-topic             Activate a topic once waitlist rules are satisfied (lead settler only)
+  create-game                Launch a new arena game; params include topicType and marketMode (reward type)
+  join-waitlist              Join a game waitlist (--topic-id, --citizen-id)
+  deposit-waitlist           Post the waitlist hard-lock USDC deposit for a game (--topic-id)
+  activate-game              Activate a game once waitlist rules are satisfied (lead settler only; --topic-id)
   stakes-withdraw-collateral Same as withdraw-collateral, but the gateway operator broadcasts the tx (you only sign)
   stakes-withdraw-operational Same as withdraw-operational via gateway relayer
   stakes-collateral-to-operational  Pool bridge via gateway relayer
