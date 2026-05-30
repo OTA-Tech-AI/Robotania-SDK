@@ -22,6 +22,7 @@ const REPO_ROOT = resolve(__dirname, "../..");
 
 const HOST = process.env.ARENA_HOST ?? "104.168.122.108";
 const AGENT_COUNT = Math.max(4, Number(process.env.ARENA_AGENT_COUNT ?? "12"));
+const OFFICIAL_JUROR_COUNT = Math.max(3, Number(process.env.ARENA_OFFICIAL_JUROR_COUNT ?? "3"));
 const RPC_URL = process.env.ARENA_RPC_URL ?? "http://127.0.0.1:8545";
 const GATEWAY_URL = process.env.ARENA_GATEWAY_URL ?? `http://${HOST}:3100`;
 const READ_API = process.env.ARENA_READ_API_URL ?? `http://${HOST}:3200`;
@@ -76,6 +77,9 @@ const erc20Abi = parseAbi([
 const registryAbi = parseAbi([
   "function registerCitizen(address wallet, string metadataURI, bytes32 manifestHash) external returns (uint256)",
   "function getCitizenIdByWallet(address) external view returns (uint256)",
+]);
+const juryAbi = parseAbi([
+  "function setOfficialJurorPool(uint256[] citizenIds) external",
 ]);
 const stakeAbi = parseAbi([
   "function depositCollateral(uint256,uint256) external",
@@ -150,6 +154,37 @@ for (let i = 0; i < AGENT_COUNT; i++) {
   console.error(`Registered ${name} citizen #${citizenId} at ${acct.address}`);
 }
 
+/** Dedicated official jurors — never join topics; used when the public pool is exhausted. */
+const officialJurorIds = [];
+for (let j = 0; j < OFFICIAL_JUROR_COUNT; j += 1) {
+  const pk = generatePrivateKey();
+  const acct = privateKeyToAccount(pk);
+  const ethHash = await deployerWallet.sendTransaction({ to: acct.address, value: 1_000_000_000_000_000_000n });
+  await send(ethHash);
+  const regHash = await deployerWallet.writeContract({
+    account: deployerAccount, address: REGISTRY, abi: registryAbi,
+    functionName: "registerCitizen",
+    args: [acct.address, "official-juror", "0x0000000000000000000000000000000000000000000000000000000000000000"],
+  });
+  await send(regHash);
+  const citizenId = await pub.readContract({
+    address: REGISTRY, abi: registryAbi,
+    functionName: "getCitizenIdByWallet", args: [acct.address],
+  });
+  officialJurorIds.push(citizenId);
+  console.error(`Registered official juror #${citizenId} at ${acct.address}`);
+}
+
+if (officialJurorIds.length > 0) {
+  const poolHash = await deployerWallet.writeContract({
+    account: deployerAccount, address: JURY_MGR, abi: juryAbi,
+    functionName: "setOfficialJurorPool",
+    args: [officialJurorIds],
+  });
+  await send(poolHash);
+  console.error(`setOfficialJurorPool([${officialJurorIds.map(String).join(", ")}])`);
+}
+
 mkdirSync("/tmp/arena-sim", { recursive: true });
 
 const baseEnv = (pk) => [
@@ -178,6 +213,7 @@ console.log(JSON.stringify({
   agents: agents.map((a) => ({
     name: a.name, citizenId: a.citizenId, envFile: a.envFile, address: a.address,
   })),
+  officialJurorIds: officialJurorIds.map((id) => id.toString()),
   contracts: { USDC, STAKE_VAULT, MATCH_MGR, JURY_MGR, PROTO_CFG, REGISTRY },
   urls: { gateway: GATEWAY_URL, readApi: READ_API, rpc: RPC_URL },
   chainId: CHAIN_ID,
