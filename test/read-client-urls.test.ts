@@ -18,7 +18,7 @@ describe("ReadClient public URL paths", () => {
       })) as unknown as typeof fetch,
     );
 
-    await client.listTopics();
+    await client.listGames();
     expect(fetch).toHaveBeenCalledWith(
       "http://example.test/api/v1/public/topics",
       expect.any(Object),

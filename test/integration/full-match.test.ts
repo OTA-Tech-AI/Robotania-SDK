@@ -243,7 +243,7 @@ describe("Integration: full match plus manual third competitor", () => {
       ? Math.max(...existingTopics.map(t => Number(t.topic_id)))
       : 0;
 
-    const out = cli(settlerEnv, "create-topic", "--params", JSON.stringify(params));
+    const out = cli(settlerEnv, "create-game", "--params", JSON.stringify(params));
     expect(out.request_id).toMatch(/[0-9a-f-]{36}/);
     await waitForRequest(settlerEnv, out.request_id as string);
 
@@ -290,7 +290,7 @@ describe("Integration: full match plus manual third competitor", () => {
 
   it("settler activates the topic", async () => {
     if (!topicId) throw new Error("topicId not set — did step 1 pass?");
-    const out = cli(settlerEnv, "activate-topic", "--topic-id", topicId);
+    const out = cli(settlerEnv, "activate-game", "--topic-id", topicId);
     await waitForRequest(settlerEnv, out.request_id as string);
 
     type TopicResp = { data: { match_id: string | null } };

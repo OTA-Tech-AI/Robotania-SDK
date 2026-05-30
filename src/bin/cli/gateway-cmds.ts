@@ -6,6 +6,7 @@ import { loadConfig, flag, requireFlag } from "./config.js";
 import { parseMatchSideFlag } from "./side.js";
 import { log, result } from "./output.js";
 import { buildRobotaniaDomain, AGENT_REQUEST_TYPES } from "../../signing.js";
+import { normalizeCreateGameParams } from "../../game-terms.js";
 import { keccak256, toBytes } from "viem";
 
 function dryRunGateway(
@@ -26,12 +27,20 @@ function dryRunGateway(
   });
 }
 
-// ── Topics ────────────────────────────────────────────────────────────────────
+function requireTopicIdFlag(args: string[]): string {
+  return requireFlag(args, "--topic-id", "game/topic ID (--topic-id)");
+}
 
-export async function runCreateTopic(args: string[], isDryRun: boolean): Promise<void> {
-  const paramsStr = requireFlag(args, "--params", "topic params JSON");
-  const params = JSON.parse(paramsStr) as Record<string, unknown>;
-  // Inline metadata fields: passed inside params so the gateway can extract and upload to R2.
+// ── Games ─────────────────────────────────────────────────────────────────────
+
+export async function runCreateGame(args: string[], isDryRun: boolean): Promise<void> {
+  const paramsStr = requireFlag(args, "--params", "game params JSON");
+  let params: Record<string, unknown>;
+  try {
+    params = normalizeCreateGameParams(JSON.parse(paramsStr) as Record<string, unknown>);
+  } catch (e) {
+    throw new Error(e instanceof Error ? e.message : String(e));
+  }
   const title    = flag(args, "--title");
   const desc     = flag(args, "--description");
   const category = flag(args, "--category");
@@ -40,32 +49,34 @@ export async function runCreateTopic(args: string[], isDryRun: boolean): Promise
   if (category) params.category    = category;
   const cfg = loadConfig();
   if (isDryRun) { dryRunGateway("/api/v1/agent/topics/create", { params }, "pending", cfg.chainAddresses.chainId); return; }
-  log("Creating topic..."); result(await cfg.gatewayClient.createTopic({ params }));
+  log("Creating game..."); result(await cfg.gatewayClient.createGame({ params }));
 }
 
+
 export async function runJoinWaitlist(args: string[], isDryRun: boolean): Promise<void> {
-  const topicId = requireFlag(args, "--topic-id", "topic ID");
+  const topicId = requireTopicIdFlag(args);
   const citizenId = requireFlag(args, "--citizen-id", "citizen ID");
   const cfg = loadConfig();
   if (isDryRun) { dryRunGateway("/api/v1/agent/topics/join-waitlist", { topicId, citizenId }, citizenId, cfg.chainAddresses.chainId); return; }
-  log("Joining waitlist..."); result(await cfg.gatewayClient.joinTopicWaitlist({ topicId, citizenId }));
+  log("Joining waitlist..."); result(await cfg.gatewayClient.joinGameWaitlist({ topicId, citizenId }));
 }
 
 export async function runDepositWaitlist(args: string[], isDryRun: boolean): Promise<void> {
-  const topicId = requireFlag(args, "--topic-id", "topic ID");
+  const topicId = requireTopicIdFlag(args);
   const citizenId = requireFlag(args, "--citizen-id", "citizen ID");
   const amount = requireFlag(args, "--amount", "amount");
   const cfg = loadConfig();
   if (isDryRun) { dryRunGateway("/api/v1/agent/topics/deposit-waitlist", { topicId, citizenId, amount }, citizenId, cfg.chainAddresses.chainId); return; }
-  log("Depositing to waitlist..."); result(await cfg.gatewayClient.depositWaitlist({ topicId, citizenId, amount }));
+  log("Depositing to waitlist..."); result(await cfg.gatewayClient.depositGameWaitlist({ topicId, citizenId, amount }));
 }
 
-export async function runActivateTopic(args: string[], isDryRun: boolean): Promise<void> {
-  const topicId = requireFlag(args, "--topic-id", "topic ID");
+export async function runActivateGame(args: string[], isDryRun: boolean): Promise<void> {
+  const topicId = requireTopicIdFlag(args);
   const cfg = loadConfig();
   if (isDryRun) { dryRunGateway("/api/v1/agent/topics/activate", { topicId }, "pending", cfg.chainAddresses.chainId); return; }
-  log("Activating topic..."); result(await cfg.gatewayClient.activateTopic({ topicId }));
+  log("Activating game..."); result(await cfg.gatewayClient.activateGame({ topicId }));
 }
+
 
 // ── StakeVault via gateway relayer ────────────────────────────────────────────
 

@@ -72,10 +72,6 @@ export interface StayOnlineSessionOptions {
   heartbeatIntervalMs?: number;
   /** Fields forwarded to {@link GatewayClient.heartbeat} (excluding `citizenId`). */
   heartbeatParams?: HeartbeatExtras;
-  /**
-   * @deprecated Prefer {@link StayOnlineSessionOptions.heartbeatParams}
-   */
-  heartbeat?: HeartbeatExtras;
   /** Exponential backoff when the socket closes or connect fails. */
   reconnect?: Partial<StayOnlineReconnectOptions>;
   /**
@@ -110,7 +106,7 @@ export class StayOnlineSession extends EventEmitter {
     this.gateway = opts.gateway;
     this.citizenId = opts.citizenId;
     this.intervalMs = opts.heartbeatIntervalMs ?? DEFAULT_STAY_ONLINE_HEARTBEAT_INTERVAL_MS;
-    this.heartbeatExtras = opts.heartbeatParams ?? opts.heartbeat ?? {};
+    this.heartbeatExtras = opts.heartbeatParams ?? {};
     this.logger = opts.logger;
     this.reconnectOpts = {
       ...DEFAULT_STAY_ONLINE_RECONNECT,

@@ -313,7 +313,7 @@ describe("Integration: full arena run with jury settlement", () => {
       juryEscrowAmount: 6000000,
       settlementMode: 1,
     };
-    const out = cli(settlerEnv, "create-topic", "--params", JSON.stringify(params));
+    const out = cli(settlerEnv, "create-game", "--params", JSON.stringify(params));
     expect(out.request_id).toMatch(/[0-9a-f-]{36}/);
     await waitForRequest(settlerEnv, out.request_id as string);
 
@@ -351,7 +351,7 @@ describe("Integration: full arena run with jury settlement", () => {
   it("settler activates the topic and starts the match", async () => {
     if (!topicId) throw new Error("topicId not set");
 
-    const out = cli(settlerEnv, "activate-topic", "--topic-id", topicId);
+    const out = cli(settlerEnv, "activate-game", "--topic-id", topicId);
     await waitForRequest(settlerEnv, out.request_id as string);
 
     type TopicResp = { data: { match_id: string | null } };

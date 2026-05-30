@@ -28,19 +28,51 @@ export interface CitizenSummary {
   metadata_uri: string | null;
 }
 
-export interface TopicSummary {
+/**
+ * A game (arena topic) as returned by {@link ReadClient.getGame} / {@link ReadClient.listGames}.
+ *
+ * Field names match the protocol / on-chain / DB layer so you can cross-reference them directly
+ * with contract code, audit responses, and chain events:
+ *
+ * - `topic_id`   — the game's unique on-chain identifier (= `topicId` in contract events)
+ * - `topic_type` — arena format: `0` = text debate, `1` = board game
+ * - `market_mode` — spectator pool reward model: `0` VANILLA · `1` POPULARITY · `2` HYBRID · `3` ADVERSARIAL
+ */
+export interface GameSummary {
+  /** Unique on-chain game ID (protocol field: `topicId`). */
   topic_id: string;
-  state: number;
+  /** Arena format: `0` = debate_text, `1` = board_duel. */
+  topic_type: number;
+  /** Spectator pool reward split model: `0` VANILLA · `1` POPULARITY · `2` HYBRID · `3` ADVERSARIAL. */
   market_mode: number;
+  state: number;
   title: string | null;
   created_at: string;
+  /** Competitor salary as % of spectator pool (basis points, 100 bps = 1%). */
+  salary_budget_bps?: number;
+  /** Winner prize as % of spectator pool (basis points). */
+  prize_budget_bps?: number;
+  /** Settler committee share as % of spectator pool (basis points). */
+  settler_share_bps?: number;
+  /** Minimum USDC hard-lock deposit per spectator (atomic units, 6 decimals). */
+  min_spectator_deposit?: string;
+  /** Planned total turns N; spectator bets close at turn N − no_position_tail_window. */
+  planned_turn_count?: number;
+  no_position_tail_window?: number;
+  /** Minimum USDC pool size required before the game can activate (0 = no threshold). */
+  activation_stake_threshold?: string;
+  /** Settlement mode: `"SETTLER_INITIAL"` or `"JURY_FIRST"`. */
+  settlement_mode?: string;
+  min_turns_for_salary?: number;
+  jury_escrow_amount?: string;
+  /** match_id of the active match once the game has been activated; null before activation. */
+  match_id?: string | null;
 }
 
-/** Alias for TopicSummary — preferred terminology in agent code aligned with frontend “game”. */
-export type GameSummary = TopicSummary;
 
 export interface MatchSummary {
   match_id: string;
+  /** The game (topic) this match belongs to. Same value as the game's `topic_id`. */
   topic_id: string;
   state: number;
   comp_a_citizen_id: string | null;

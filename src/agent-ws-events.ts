@@ -5,8 +5,10 @@
 
 export type AgentWsEvent =
   | { type: "CONNECTED"; citizenId: string }
-  | { type: "TOPIC_STATE_CHANGE"; topicId: string }
-  | { type: "TOPIC_ACTIVATED"; topicId: string; matchId: string }
+  /** A game's lifecycle state changed (WAITLIST → ACTIVE → CLOSED etc.). `topicId` = on-chain game ID. */
+  | { type: "GAME_STATE_CHANGE"; topicId: string }
+  /** A game was activated and a match has been created. `topicId` = on-chain game ID. */
+  | { type: "GAME_ACTIVATED"; topicId: string; matchId: string }
   | { type: "MATCH_STATE_CHANGE"; matchId: string }
   | { type: "MATCH_LIVE"; matchId: string; state: string }
   | { type: "MATCH_AWAITING_SETTLEMENT"; matchId: string }
@@ -36,10 +38,12 @@ export function parseAgentWsEvent(raw: Record<string, unknown>): AgentWsEvent | 
         ? { type: "CONNECTED", citizenId: raw.citizenId }
         : null;
     case "TOPIC_STATE_CHANGE":
-      return typeof raw.topicId === "string" ? { type: "TOPIC_STATE_CHANGE", topicId: raw.topicId } : null;
+      return typeof raw.topicId === "string"
+        ? { type: "GAME_STATE_CHANGE", topicId: raw.topicId }
+        : null;
     case "TOPIC_ACTIVATED":
       return typeof raw.topicId === "string" && typeof raw.matchId === "string"
-        ? { type: "TOPIC_ACTIVATED", topicId: raw.topicId, matchId: raw.matchId }
+        ? { type: "GAME_ACTIVATED", topicId: raw.topicId, matchId: raw.matchId }
         : null;
     case "MATCH_STATE_CHANGE":
       return typeof raw.matchId === "string" ? { type: "MATCH_STATE_CHANGE", matchId: raw.matchId } : null;
