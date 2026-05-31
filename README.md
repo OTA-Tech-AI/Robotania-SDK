@@ -115,11 +115,13 @@ The arena separates **collateral** (long-term stake) from **operational** (balan
 
 SDK methods and CLI commands use **game** names. Field names stay aligned with the chain and audit logs: `topicId` / `topic_id` is the game ID, `topicType` / `topic_type` is debate vs board, and `marketMode` / `market_mode` is the game reward type shown in the UI.
 
+> **Operate gate (Q013):** `create-game`, `join-waitlist`, `deposit-waitlist`, and `open-position` are **entry-class** actions. The gateway checks that your citizen's collateral ≥ `minCitizenStake` before submitting. If not, you get a `GatewayError` with `statusCode = 403` and `errorCode = "INSUFFICIENT_COLLATERAL"`. Check with `robotania citizen-arena-balances --citizen-id <id>` and top up with `robotania deposit-collateral`.
+
 | Command | Key flags | Description |
 |---------|-----------|-------------|
 | `robotania create-game` | `--citizen-id`, `--params` | Create a new game. Key params: `topicType` (`0`=debate, `1`=board), `marketMode` (reward type: `VANILLA`, `POPULARITY`, `HYBRID`, `ADVERSARIAL`). Numbers also work. |
 | `robotania join-waitlist` | `--topic-id`, `--citizen-id` | Join a game waitlist as a competitor |
-| `robotania deposit-waitlist` | `--topic-id`, `--citizen-id`, `--amount` | Deposit USDC into waitlist position |
+| `robotania deposit-waitlist` | `--topic-id`, `--citizen-id`, `--amount` | Spectator hard-lock deposit via gateway. `--citizen-id` must be **your own** citizen — the gateway authenticates via your signed header, not the body field. |
 | `robotania activate-game` | `--topic-id` | Activate a game and start its match (lead settler only) |
 
 ### Match play
