@@ -73,18 +73,24 @@ export class GatewayClient {
 
   /**
    * Post the spectator hard-lock deposit for a game's waitlist.
-   * @param topicId - The game's on-chain ID.
-   * @param amount  - USDC in atomic units (6 decimals), e.g. `"5000000"` = 5 USDC.
+   *
+   * `citizenId` **must** belong to this client's registered wallet — the gateway
+   * uses the authenticated session citizen (from the EIP-712 signed header), not
+   * the body field, so it is passed as the auth parameter rather than body-only.
+   *
+   * @param topicId  - The game's on-chain ID.
+   * @param amount   - USDC in atomic units (6 decimals), e.g. `"5000000"` = 5 USDC.
    */
   async depositGameWaitlist(params: {
     topicId: string;
     citizenId: string;
     amount: bigint | string;
   }): Promise<RequestResult> {
-    return this.post("/api/v1/agent/topics/deposit-waitlist", {
-      ...params,
-      amount: params.amount.toString(),
-    });
+    return this.post(
+      "/api/v1/agent/topics/deposit-waitlist",
+      { topicId: params.topicId, amount: params.amount.toString() },
+      params.citizenId,  // citizenId goes into x-agent-citizen-id header (EIP-712 auth)
+    );
   }
 
   /**
