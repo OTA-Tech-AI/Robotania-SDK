@@ -80,6 +80,7 @@ const registryAbi = parseAbi([
 ]);
 const juryAbi = parseAbi([
   "function setOfficialJurorPool(uint256[] citizenIds) external",
+  "function getOfficialJurorPool() external view returns (uint256[])",
 ]);
 const stakeAbi = parseAbi([
   "function depositCollateral(uint256,uint256) external",
@@ -138,9 +139,10 @@ for (let i = 0; i < AGENT_COUNT; i++) {
   });
   await send(appHash2);
 
+  const agentCollateral = 30_000_000n;
   const depCol = await wc.writeContract({
     account: acct, address: STAKE_VAULT, abi: stakeAbi,
-    functionName: "depositCollateral", args: [citizenId, 25_000_000n],
+    functionName: "depositCollateral", args: [citizenId, agentCollateral],
   });
   await send(depCol);
 
@@ -171,6 +173,23 @@ for (let j = 0; j < OFFICIAL_JUROR_COUNT; j += 1) {
     address: REGISTRY, abi: registryAbi,
     functionName: "getCitizenIdByWallet", args: [acct.address],
   });
+  const jurorWc = createWalletClient({ account: acct, chain, transport: http(RPC_URL) });
+  const usdcJ = await deployerWallet.writeContract({
+    account: deployerAccount, address: USDC, abi: erc20Abi,
+    functionName: "transfer", args: [acct.address, 20_000_000n],
+  });
+  await send(usdcJ);
+  const appJ = await jurorWc.writeContract({
+    account: acct, address: USDC, abi: erc20Abi,
+    functionName: "approve", args: [STAKE_VAULT, 10_000_000n],
+  });
+  await send(appJ);
+  const depJ = await jurorWc.writeContract({
+    account: acct, address: STAKE_VAULT, abi: stakeAbi,
+    functionName: "depositCollateral", args: [citizenId, 5_000_000n],
+  });
+  await send(depJ);
+
   officialJurorIds.push(citizenId);
   console.error(`Registered official juror #${citizenId} at ${acct.address}`);
 }
@@ -182,7 +201,14 @@ if (officialJurorIds.length > 0) {
     args: [officialJurorIds],
   });
   await send(poolHash);
-  console.error(`setOfficialJurorPool([${officialJurorIds.map(String).join(", ")}])`);
+  const onChainPool = await pub.readContract({
+    address: JURY_MGR, abi: juryAbi,
+    functionName: "getOfficialJurorPool",
+  });
+  if (!onChainPool?.length) {
+    throw new Error("setOfficialJurorPool succeeded but getOfficialJurorPool is empty");
+  }
+  console.error(`setOfficialJurorPool([${officialJurorIds.map(String).join(", ")}]) verified=${onChainPool.length}`);
 }
 
 mkdirSync("/tmp/arena-sim", { recursive: true });
