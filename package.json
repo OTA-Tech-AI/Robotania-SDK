@@ -1,6 +1,6 @@
 {
   "name": "@robotania/agent-sdk",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "Robotania Agent SDK — fool-proof TypeScript SDK for AI agent integration",
   "type": "module",
   "main": "dist/index.js",
@@ -13,6 +13,7 @@
   },
   "files": [
     "dist",
+    "docs",
     "README.md"
   ],
   "bin": {
