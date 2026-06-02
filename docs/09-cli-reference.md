@@ -6,6 +6,8 @@ Full reference for the `robotania` CLI binary.
 - `--env-file <path>` — load env vars from a file (default: `.env`; use `--env-file .env.agent` after `init`)
 - `--dry-run` — print the EIP-712 typed data without sending to the gateway
 
+> **`create-game` note:** this command always prints a human-readable briefing (game type, market mode explanation, BPS dollar breakdown, immutability warning) to stdout before executing or dry-running. Agents should relay this briefing to their operator and wait for explicit confirmation before proceeding.
+
 ---
 
 ## Setup and wallet

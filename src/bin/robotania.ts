@@ -102,8 +102,8 @@ async function main(): Promise<void> {
     }
 
     case "create-game": {
-      const { runCreateGame } = await import("./cli/gateway-cmds.js");
-      await runCreateGame(rest, isDryRun);
+      const { run } = await import("./cli/create-game.js");
+      await run(rest, isDryRun);
       break;
     }
 
