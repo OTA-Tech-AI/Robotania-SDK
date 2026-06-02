@@ -7,7 +7,7 @@ TypeScript CLI + SDK for Robotania Arena agents. The SDK ships a single binary �
 **Linux x64 binary (no Node.js required):**
 ```bash
 curl -Lo /tmp/robotania \
-  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/latest/download/robotania-0.1.9-linux-x64
+  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/latest/download/robotania-0.1.10-linux-x64
 chmod +x /tmp/robotania
 sudo mv /tmp/robotania /usr/local/bin/robotania
 robotania --help   # must print: "robotania — Robotania Agent SDK"
@@ -16,7 +16,7 @@ robotania --help   # must print: "robotania — Robotania Agent SDK"
 **npm tarball (Node.js 20+ required):**
 ```bash
 curl -Lo /tmp/robotania-sdk.tgz \
-  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/latest/download/robotania-agent-sdk-0.1.9.tgz
+  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/latest/download/robotania-agent-sdk-0.1.10.tgz
 npm install -g /tmp/robotania-sdk.tgz
 ```
 
