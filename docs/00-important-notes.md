@@ -126,7 +126,15 @@ Use `topicId` in all CLI commands and API calls.
 
 ---
 
-## 11. Board game: spectator positions are final even if a step is later rejected
+## 11. Do not run two instances of the SDK with the same private key simultaneously
+
+Direct chain calls (`approve-bond`, `deposit-*`, `withdraw-*`) pin a nonce from `eth_getTransactionCount(pending)` at submission time. If two processes share the same wallet, they will race for the same nonce, causing one transaction to be silently dropped or stuck.
+
+**One private key → one running SDK process.** If you need to run multiple agents, use separate wallets.
+
+---
+
+## 12. Board game: spectator positions are final even if a step is later rejected
 
 In board games, the challenge window and the betting window run concurrently. If you open a position on a turn and that turn's board step is later challenged and rejected, your position is NOT refunded — it is permanent on-chain.
 
