@@ -239,6 +239,157 @@ export function createAgentChainClients(
   return { publicClient, walletClient, account, chain, chainId, rpcUrl };
 }
 
+// ─── Transaction Manager ──────────────────────────────────────────────────────
+
+const TX_MAX_RETRIES = 3;
+const TX_RECEIPT_TIMEOUT_MS = 90_000;
+const TX_POLL_INTERVAL_MS = 3_000;
+const TX_POLL_ATTEMPTS = 3;
+
+type ChainTxParams = {
+  address: `0x${string}`;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  abi: readonly any[];
+  functionName: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  args?: readonly any[];
+};
+
+function isNonRetryableError(err: unknown): boolean {
+  const msg = (err instanceof Error ? err.message : String(err)).toLowerCase();
+  return (
+    msg.includes("execution reverted") ||
+    msg.includes("reverted with reason") ||
+    msg.includes("insufficient funds") ||
+    msg.includes("nonce too low")
+  );
+}
+
+async function pollForReceipt(
+  publicClient: PublicClient,
+  txHash: `0x${string}`,
+): Promise<{ status: "success" | "reverted" } | null> {
+  for (let i = 0; i < TX_POLL_ATTEMPTS; i++) {
+    if (i > 0) await new Promise<void>((r) => setTimeout(r, TX_POLL_INTERVAL_MS));
+    try {
+      const receipt = await publicClient.getTransactionReceipt({ hash: txHash });
+      if (receipt) return { status: receipt.status };
+    } catch {
+      // not yet indexed — continue polling
+    }
+  }
+  return null;
+}
+
+async function resolveEip1559Fees(
+  publicClient: PublicClient,
+  multiplier: bigint,
+): Promise<{ maxFeePerGas: bigint; maxPriorityFeePerGas: bigint }> {
+  try {
+    const feeData = await publicClient.estimateFeesPerGas();
+    if (feeData.maxFeePerGas != null && feeData.maxPriorityFeePerGas != null) {
+      return {
+        maxFeePerGas: (feeData.maxFeePerGas * multiplier) / 100n,
+        maxPriorityFeePerGas: (feeData.maxPriorityFeePerGas * multiplier) / 100n,
+      };
+    }
+  } catch {
+    // fall through to legacy
+  }
+  // Legacy fallback (eth_gasPrice) — used when EIP-1559 fee data is unavailable
+  const gasPrice = await publicClient.getGasPrice();
+  const boosted = (gasPrice * multiplier) / 100n;
+  return { maxFeePerGas: boosted, maxPriorityFeePerGas: boosted / 10n };
+}
+
+/**
+ * Broadcast a contract write with automatic gas buffer, pinned nonce, EIP-1559 fee estimation
+ * (with legacy fallback), and replace-by-fee retry on timeout.
+ *
+ * Nonce is derived once from `eth_getTransactionCount(pending)` and pinned for all bump retries,
+ * ensuring replacements target the same mempool slot rather than issuing new transactions.
+ *
+ * Callers must not supply `fixedNonce` or `attempt` — these are used internally during recursion.
+ */
+async function sendChainTx(
+  clients: AgentChainClients,
+  txParams: ChainTxParams,
+  fixedNonce?: number,
+  attempt = 0,
+): Promise<`0x${string}`> {
+  const { publicClient, walletClient, account, chain } = clients;
+
+  // Nonce — read once on first attempt, pinned for all bump retries
+  const nonce =
+    fixedNonce ??
+    (await publicClient.getTransactionCount({ address: account.address as `0x${string}`, blockTag: "pending" }));
+
+  // Gas estimate with 30% buffer; non-retryable errors (e.g. revert simulation) surface immediately
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const estimatedGas = await (publicClient.estimateContractGas as any)({
+    account,
+    address: txParams.address,
+    abi: txParams.abi,
+    functionName: txParams.functionName,
+    args: txParams.args ?? [],
+  });
+  const gas = ((estimatedGas as bigint) * 130n) / 100n;
+
+  // EIP-1559 fees: base +30%, then additional +30% per retry attempt (attempt 0 → ×1.3, 1 → ×1.6, …)
+  const feeMultiplier = 130n + BigInt(attempt) * 30n;
+  const { maxFeePerGas, maxPriorityFeePerGas } = await resolveEip1559Fees(publicClient, feeMultiplier);
+
+  // Broadcast
+  let txHash: `0x${string}`;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    txHash = await (walletClient.writeContract as any)({
+      account,
+      chain,
+      nonce,
+      gas,
+      maxFeePerGas,
+      maxPriorityFeePerGas,
+      address: txParams.address,
+      abi: txParams.abi,
+      functionName: txParams.functionName,
+      args: txParams.args ?? [],
+    });
+  } catch (broadcastErr) {
+    if (isNonRetryableError(broadcastErr)) throw broadcastErr;
+    if (attempt >= TX_MAX_RETRIES) throw broadcastErr;
+    await new Promise<void>((r) => setTimeout(r, TX_POLL_INTERVAL_MS));
+    return sendChainTx(clients, txParams, nonce, attempt + 1);
+  }
+
+  // Wait for receipt with timeout
+  try {
+    const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash, timeout: TX_RECEIPT_TIMEOUT_MS });
+    if (receipt.status === "reverted") throw new Error(`Transaction reverted on-chain: ${txHash}`);
+    return txHash;
+  } catch (waitErr) {
+    const waitMsg = waitErr instanceof Error ? waitErr.message : String(waitErr);
+    if (waitMsg.includes("reverted on-chain")) throw waitErr;
+
+    // Poll to confirm not already mined before issuing a replacement (prevents double-spend)
+    const mined = await pollForReceipt(publicClient, txHash);
+    if (mined) {
+      if (mined.status === "reverted") throw new Error(`Transaction reverted on-chain: ${txHash}`);
+      return txHash;
+    }
+
+    if (attempt >= TX_MAX_RETRIES) {
+      throw new Error(
+        `Transaction unconfirmed after ${TX_MAX_RETRIES} retries. Last tx: ${txHash}. ` +
+          `Check the block explorer for the current status.`,
+      );
+    }
+
+    // Replace-by-fee: same nonce, higher fees on next attempt
+    return sendChainTx(clients, txParams, nonce, attempt + 1);
+  }
+}
+
 export async function readErc20Allowance(
   publicClient: PublicClient,
   params: { token: `0x${string}`; owner: `0x${string}`; spender: `0x${string}` },
@@ -262,13 +413,8 @@ export async function writeErc20Approve(
     chainId?: number;
   },
 ): Promise<`0x${string}`> {
-  const { walletClient, account, chain } = createAgentChainClients(wallet, {
-    rpcUrl: params.rpcUrl,
-    chainId: params.chainId,
-  });
-  return walletClient.writeContract({
-    account,
-    chain,
+  const clients = createAgentChainClients(wallet, { rpcUrl: params.rpcUrl, chainId: params.chainId });
+  return sendChainTx(clients, {
     address: params.token,
     abi: erc20Abi,
     functionName: "approve",
@@ -290,13 +436,8 @@ export async function writeUpdateManifest(
     chainId?: number;
   },
 ): Promise<`0x${string}`> {
-  const { walletClient, account, chain } = createAgentChainClients(wallet, {
-    rpcUrl: params.rpcUrl,
-    chainId: params.chainId,
-  });
-  return walletClient.writeContract({
-    account,
-    chain,
+  const clients = createAgentChainClients(wallet, { rpcUrl: params.rpcUrl, chainId: params.chainId });
+  return sendChainTx(clients, {
     address: params.citizenRegistry,
     abi: updateManifestAbi,
     functionName: "updateManifest",
@@ -331,11 +472,8 @@ export async function ensureErc20Allowance(
     chainId?: number;
   },
 ): Promise<{ txHash?: `0x${string}`; alreadySufficient: boolean }> {
-  const { publicClient, walletClient, account, chain } = createAgentChainClients(wallet, {
-    rpcUrl: params.rpcUrl,
-    chainId: params.chainId,
-  });
-  const allowance = await readErc20Allowance(publicClient, {
+  const clients = createAgentChainClients(wallet, { rpcUrl: params.rpcUrl, chainId: params.chainId });
+  const allowance = await readErc20Allowance(clients.publicClient, {
     token: params.token,
     owner: wallet.address,
     spender: params.spender,
@@ -343,9 +481,7 @@ export async function ensureErc20Allowance(
   if (allowance >= params.amount) {
     return { alreadySufficient: true };
   }
-  const txHash = await walletClient.writeContract({
-    account,
-    chain,
+  const txHash = await sendChainTx(clients, {
     address: params.token,
     abi: erc20Abi,
     functionName: "approve",
@@ -365,13 +501,8 @@ export async function writeDepositCollateral(
     chainId?: number;
   },
 ): Promise<`0x${string}`> {
-  const { walletClient, account, chain } = createAgentChainClients(wallet, {
-    rpcUrl: params.rpcUrl,
-    chainId: params.chainId,
-  });
-  return walletClient.writeContract({
-    account,
-    chain,
+  const clients = createAgentChainClients(wallet, { rpcUrl: params.rpcUrl, chainId: params.chainId });
+  return sendChainTx(clients, {
     address: params.stakeVault,
     abi: stakeVaultAbi,
     functionName: "depositCollateral",
@@ -390,13 +521,8 @@ export async function writeDepositOperational(
     chainId?: number;
   },
 ): Promise<`0x${string}`> {
-  const { walletClient, account, chain } = createAgentChainClients(wallet, {
-    rpcUrl: params.rpcUrl,
-    chainId: params.chainId,
-  });
-  return walletClient.writeContract({
-    account,
-    chain,
+  const clients = createAgentChainClients(wallet, { rpcUrl: params.rpcUrl, chainId: params.chainId });
+  return sendChainTx(clients, {
     address: params.stakeVault,
     abi: stakeVaultAbi,
     functionName: "depositOperational",
@@ -415,13 +541,8 @@ async function writeStakeVaultEntry(
     functionName: "withdrawCollateral" | "withdrawOperational" | "collateralToOperational" | "operationalToCollateral";
   },
 ): Promise<`0x${string}`> {
-  const { walletClient, account, chain } = createAgentChainClients(wallet, {
-    rpcUrl: params.rpcUrl,
-    chainId: params.chainId,
-  });
-  return walletClient.writeContract({
-    account,
-    chain,
+  const clients = createAgentChainClients(wallet, { rpcUrl: params.rpcUrl, chainId: params.chainId });
+  return sendChainTx(clients, {
     address: params.stakeVault,
     abi: stakeVaultAbi,
     functionName: params.functionName,
@@ -500,13 +621,8 @@ export async function writeWithdrawFromCitizenWallet(
   },
 ): Promise<`0x${string}`> {
   const token = params.token ?? resolveChainAddresses().settlementToken;
-  const { walletClient, account, chain } = createAgentChainClients(wallet, {
-    rpcUrl: params.rpcUrl,
-    chainId: params.chainId,
-  });
-  return walletClient.writeContract({
-    account,
-    chain,
+  const clients = createAgentChainClients(wallet, { rpcUrl: params.rpcUrl, chainId: params.chainId });
+  return sendChainTx(clients, {
     address: token,
     abi: erc20Abi,
     functionName: "transfer",
