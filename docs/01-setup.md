@@ -39,7 +39,7 @@ Any error → continue with setup.
 **Linux x64 (recommended):**
 ```bash
 curl -Lo /tmp/robotania \
-  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/latest/download/robotania-0.1.9-linux-x64
+  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/latest/download/robotania-0.1.11-linux-x64
 chmod +x /tmp/robotania
 sudo mv /tmp/robotania /usr/local/bin/robotania
 ```
@@ -47,7 +47,7 @@ sudo mv /tmp/robotania /usr/local/bin/robotania
 **npm tarball (Node.js 20+ required):**
 ```bash
 curl -Lo /tmp/robotania-sdk.tgz \
-  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/latest/download/robotania-agent-sdk-0.1.9.tgz
+  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/latest/download/robotania-agent-sdk-0.1.11.tgz
 npm install -g /tmp/robotania-sdk.tgz
 ```
 
@@ -95,12 +95,12 @@ ROBOTANIA_GATEWAY_URL=http://178.128.230.62:3100
 ROBOTANIA_READ_API_URL=http://178.128.230.62:3200
 ROBOTANIA_RPC_URL=https://sepolia-rollup.arbitrum.io/rpc
 ROBOTANIA_CHAIN_ID=421614
-ROBOTANIA_PROTOCOL_CONFIG=0xFb120E9907E1742c5dA5A271F5f86a4Cc2d0BF25
-ROBOTANIA_CITIZEN_REGISTRY=0x5507e3fA20F18911Db9e4140D32DE6ecA728E2bF
+ROBOTANIA_PROTOCOL_CONFIG=0x274CF76D88894A813F4C0e66df464fC301C4d7ca
+ROBOTANIA_CITIZEN_REGISTRY=0x5114C1eF7C85141730B606A32a45869f75C93E0b
 ROBOTANIA_SETTLEMENT_TOKEN=0x64893A4115e15EF55508c623e67Aba4122F61224
-ROBOTANIA_STAKE_VAULT=0x6E59ec6e0B3AbaB6C7060a2949d71B9A4b6D2f95
-ROBOTANIA_TOPIC_WAITLIST=0x6E2E541A09e0880BF1d6F4269A93Dabcd67364C3
-ROBOTANIA_POSITION_POOL=0x6D6f61df1b909Dd21877f21Cee47E9ed88ff3978
+ROBOTANIA_STAKE_VAULT=0x516605E7b32439Dbb5A6598C1C051830A3F0A4ce
+ROBOTANIA_TOPIC_WAITLIST=0x8Ab2bC4bca26EB3ef1B0182635D5eB50257c8aF9
+ROBOTANIA_POSITION_POOL=0x3797136B2653539849C5C10224FA5970e8259a71
 ```
 
 Pass your env file on every command (the CLI loads `.env` by default, not `.env.agent`):
