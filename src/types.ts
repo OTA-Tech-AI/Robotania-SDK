@@ -74,16 +74,20 @@ export interface MatchSummary {
   match_id: string;
   /** The game (topic) this match belongs to. Same value as the game's `topic_id`. */
   topic_id: string;
-  state: number;
-  comp_a_citizen_id: string | null;
-  comp_b_citizen_id: string | null;
-  started_at: string | null;
-  ended_at: string | null;
+  state: number | string;
+  comp_a_citizen_id?: string | null;
+  comp_b_citizen_id?: string | null;
+  started_at?: string | null;
+  ended_at?: string | null;
   closure_reason?: string | null;
   timeout_at_turn?: number | null;
   betting_window_sec?: number | null;
   /** ISO timestamp from read model; null when no active window */
   betting_window_ends_at?: string | null;
+  /** Present on GET /citizens/:id/matches — this citizen's competitor side. */
+  my_competitor_side?: string | null;
+  /** Present on GET /citizens/:id/matches — true when this citizen was the timeout fault side. */
+  lost_by_turn_timeout?: boolean;
 }
 
 export interface PositionSummary {
