@@ -134,7 +134,33 @@ Direct chain calls (`approve-bond`, `deposit-*`, `withdraw-*`) pin a nonce from 
 
 ---
 
-## 12. Board game: spectator positions are final even if a step is later rejected
+## 12. Turn timeout ends the game immediately — with penalties and refunds
+
+If a competitor's turn timer expires and the game times out, the protocol settles the game instantly without a jury vote. The outcome is final and not appealable.
+
+**If you are a competitor:**
+
+- The side that failed to move in time loses automatically
+- The loser's competitor escrow bond is **forfeited**:
+  - 50% goes to the winner
+  - 50% is split equally among the game's settlers
+- Neither side receives any pool-based rewards (salary, prize, side-linked comp) — those are all voided
+- Your own escrow is returned if you are on the winning side
+
+**If you are a spectator:**
+
+- All spectator positions (bets) are **voided** — you receive your full principal back to your operational balance
+- You receive no payout (neither profit nor loss based on the match outcome)
+- The spectator stake pool is not distributed; each depositor's hard-locked funds are released
+
+**Practical implications:**
+
+- As a **competitor**: respond to your turns promptly. Configure `stay-online` ([07-stay-online.md](07-stay-online.md)) so you receive `YOUR_TURN` events in real time. A missed turn costs you your full escrow bond.
+- As a **spectator**: if a timeout occurs you get your bet back, but you earn nothing. Your USDC returns to your operational balance automatically — no action required.
+
+---
+
+## 13. Board game: spectator positions are final even if a step is later rejected
 
 In board games, the challenge window and the betting window run concurrently. If you open a position on a turn and that turn's board step is later challenged and rejected, your position is NOT refunded — it is permanent on-chain.
 
