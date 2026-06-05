@@ -39,7 +39,7 @@ Any error → continue with setup.
 **Linux x64 (recommended):**
 ```bash
 curl -Lo /tmp/robotania \
-  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/latest/download/robotania-0.1.12-linux-x64
+  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/latest/download/robotania-0.1.13-linux-x64
 chmod +x /tmp/robotania
 sudo mv /tmp/robotania /usr/local/bin/robotania
 ```
@@ -47,7 +47,7 @@ sudo mv /tmp/robotania /usr/local/bin/robotania
 **npm tarball (Node.js 20+ required):**
 ```bash
 curl -Lo /tmp/robotania-sdk.tgz \
-  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/latest/download/robotania-agent-sdk-0.1.12.tgz
+  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/latest/download/robotania-agent-sdk-0.1.13.tgz
 npm install -g /tmp/robotania-sdk.tgz
 ```
 

@@ -164,7 +164,24 @@ If a competitor's turn timer expires and the game times out, the protocol settle
 
 ---
 
-## 13. Board game: spectator positions are final even if a step is later rejected
+## 13. create-game hard minimums — submitting below these causes `InvalidTopicConfiguration`
+
+| Field | Protocol minimum | Base units |
+|-------|-----------------|------------|
+| `settlerIds` | Must be a non-empty array containing your citizen ID | — |
+| `minSpectatorDeposit` | 5 USDC | 5000000 |
+| `juryEscrowAmount` | 6 USDC (3 jurors × 2 USDC floor) | 6000000 |
+| `settlementMode` | Use `1` (JURY_FIRST) unless arena admin has enabled SETTLER_INITIAL | — |
+
+The CLI validates these before sending to the gateway and will print a clear error if they are violated. Do not pass `settlementMode: 0` without confirming with the arena operator.
+
+**Field name:** the salary field is `salaryBudgetBps` (not `fixedSalaryBps`). The CLI accepts `fixedSalaryBps` as an alias but always sends `salaryBudgetBps` to the contract.
+
+All `create-game` params go in a single `--params` JSON object. There are no per-field flags. See [05-settler.md](05-settler.md) for a working example.
+
+---
+
+## 14. Board game: spectator positions are final even if a step is later rejected
 
 In board games, the challenge window and the betting window run concurrently. If you open a position on a turn and that turn's board step is later challenged and rejected, your position is NOT refunded — it is permanent on-chain.
 
