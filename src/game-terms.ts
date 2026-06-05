@@ -126,13 +126,13 @@ export function formatCreateGameBriefing(
   const typeLabel = topicTypeNum === 1 ? "board" : "debate";
   const typeExplanation = TOPIC_TYPE_EXPLANATIONS[topicTypeNum] ?? "(unknown type)";
 
-  const fixedSalaryBps = Number(params.fixedSalaryBps ?? 0);
+  const salaryBudgetBps = Number(params.salaryBudgetBps ?? params.fixedSalaryBps ?? 0);
   const prizeBudgetBps = Number(params.prizeBudgetBps ?? 0);
   const settlerShareBps = Number(params.settlerShareBps ?? 0);
   const supporterBonusBps = Number(params.supporterBonusBps ?? 0);
   const adversarialSalaryBps = Number(params.adversarialSalaryBps ?? 0);
   const totalExplicitBps =
-    fixedSalaryBps + prizeBudgetBps + settlerShareBps + supporterBonusBps + adversarialSalaryBps;
+    salaryBudgetBps + prizeBudgetBps + settlerShareBps + supporterBonusBps + adversarialSalaryBps;
   const remainderBps = Math.max(0, 10000 - totalExplicitBps);
 
   const plannedTurnCount = Number(params.plannedTurnCount ?? 0);
@@ -157,7 +157,7 @@ export function formatCreateGameBriefing(
   lines.push(`  ${modeExplanation.split("\n").join("\n  ")}`);
   lines.push("");
   lines.push("Budget split (basis points, 1 BPS = 0.01%):");
-  if (fixedSalaryBps > 0)      lines.push(`  Fixed salary (both competitors):   ${bpsToPercent(fixedSalaryBps).padStart(6)} (${fixedSalaryBps} BPS)`);
+  if (salaryBudgetBps > 0)     lines.push(`  Salary budget (both competitors):  ${bpsToPercent(salaryBudgetBps).padStart(6)} (${salaryBudgetBps} BPS)  [salaryBudgetBps]`);
   if (supporterBonusBps > 0)   lines.push(`  Supporter bonus (own-side pool):   ${bpsToPercent(supporterBonusBps).padStart(6)} (${supporterBonusBps} BPS)`);
   if (adversarialSalaryBps > 0)lines.push(`  Adversarial salary (opp-side):    ${bpsToPercent(adversarialSalaryBps).padStart(6)} (${adversarialSalaryBps} BPS)`);
   if (prizeBudgetBps > 0)      lines.push(`  Final prize (winning side):        ${bpsToPercent(prizeBudgetBps).padStart(6)} (${prizeBudgetBps} BPS)`);
@@ -165,7 +165,7 @@ export function formatCreateGameBriefing(
   lines.push(`  Protocol fee / other:             ${bpsToPercent(remainderBps).padStart(6)} (${remainderBps} BPS)`);
   lines.push("");
   lines.push(`Example if spectators stake ${examplePoolUsdc} USDC total:`);
-  if (fixedSalaryBps > 0)      lines.push(`  Competitor salaries:    ~${(examplePoolUsdc * fixedSalaryBps / 10000).toFixed(2)} USDC`);
+  if (salaryBudgetBps > 0)     lines.push(`  Competitor salaries:    ~${(examplePoolUsdc * salaryBudgetBps / 10000).toFixed(2)} USDC`);
   if (supporterBonusBps > 0)   lines.push(`  Supporter bonus pool:   ~${(examplePoolUsdc * supporterBonusBps / 10000).toFixed(2)} USDC`);
   if (adversarialSalaryBps > 0)lines.push(`  Adversarial salary:     ~${(examplePoolUsdc * adversarialSalaryBps / 10000).toFixed(2)} USDC`);
   if (prizeBudgetBps > 0)      lines.push(`  Final prize pool:       ~${(examplePoolUsdc * prizeBudgetBps / 10000).toFixed(2)} USDC`);
@@ -190,15 +190,24 @@ export function formatCreateGameBriefing(
 }
 
 /**
- * Normalize `createGame` params for the gateway relay:
- * - Accepts protocol field names (`topicType`, `marketMode`) directly.
- * - Also accepts convenience aliases: `topicType` also accepts string names.
- *   `marketMode` also accepts string names.
- *
- * The returned object uses only protocol field names ready for the relay endpoint.
+ * Alias map: convenience field names agents may use → protocol field names.
+ * The contract struct `CreateTopicParams` uses `salaryBudgetBps`, but SDK
+ * briefing historically displayed `fixedSalaryBps`. Accept both.
  */
+const FIELD_ALIASES: Record<string, string> = {
+  fixedSalaryBps: "salaryBudgetBps",
+};
+
 export function normalizeCreateGameParams(params: Record<string, unknown>): Record<string, unknown> {
   const out = { ...params };
+
+  // Map convenience aliases to protocol field names.
+  for (const [alias, canonical] of Object.entries(FIELD_ALIASES)) {
+    if (out[alias] !== undefined && out[canonical] === undefined) {
+      out[canonical] = out[alias];
+    }
+    delete out[alias];
+  }
 
   if (out.topicType !== undefined) {
     const coerced = coerceGameType(out.topicType);
@@ -216,6 +225,69 @@ export function normalizeCreateGameParams(params: Record<string, unknown>): Reco
       );
     }
     out.marketMode = coerced;
+  }
+
+  // ── On-chain minimum checks ───────────────────────────────────────────────
+  // These mirror contract-side validation; catching them early produces clear
+  // messages instead of an opaque InvalidTopicConfiguration() revert.
+
+  if (out.settlerIds !== undefined) {
+    const ids = out.settlerIds as unknown[];
+    if (!Array.isArray(ids) || ids.length === 0) {
+      throw new Error(
+        `settlerIds must be a non-empty array. The contract requires at least one settler citizen ID. ` +
+          `When using the CLI, settlerIds is auto-resolved from your wallet if omitted.`,
+      );
+    }
+  }
+
+  if (out.minSpectatorDeposit !== undefined) {
+    const msd = Number(out.minSpectatorDeposit);
+    if (!Number.isFinite(msd) || !Number.isInteger(msd) || msd < 0) {
+      throw new Error(
+        `Invalid minSpectatorDeposit: ${String(out.minSpectatorDeposit)} (must be a non-negative integer in base units)`,
+      );
+    }
+    if (msd < 5_000_000) {
+      throw new Error(
+        `minSpectatorDeposit ${msd} is below the protocol floor of 5 USDC (5000000 base units). ` +
+          `Setting it lower causes InvalidTopicConfiguration on-chain.`,
+      );
+    }
+  }
+
+  if (out.juryEscrowAmount !== undefined) {
+    const jea = Number(out.juryEscrowAmount);
+    if (!Number.isFinite(jea) || !Number.isInteger(jea) || jea < 0) {
+      throw new Error(
+        `Invalid juryEscrowAmount: ${String(out.juryEscrowAmount)} (must be a non-negative integer in base units)`,
+      );
+    }
+    if (jea > 0 && jea < 6_000_000) {
+      throw new Error(
+        `juryEscrowAmount ${jea} is below the protocol minimum of 6 USDC (6000000 base units, ` +
+          `i.e. 3 jurors × 2 USDC floor). Setting it lower causes InvalidTopicConfiguration on-chain.`,
+      );
+    }
+  }
+
+  if (out.settlementMode !== undefined) {
+    const sm = Number(out.settlementMode);
+    if (!Number.isFinite(sm) || !Number.isInteger(sm) || (sm !== 0 && sm !== 1)) {
+      throw new Error(
+        `Invalid settlementMode: ${String(out.settlementMode)} (use 0 = SETTLER_INITIAL or 1 = JURY_FIRST)`,
+      );
+    }
+    if (sm === 0) {
+      // settlementMode 0 = SETTLER_INITIAL requires admin to enable settlerInitialTopicCreationAllowed.
+      // Warn rather than hard-fail — the arena operator may have enabled it.
+      // The contract will revert with InvalidTopicConfiguration if it hasn't been.
+      process.stderr.write(
+        "[warn] settlementMode=0 (SETTLER_INITIAL) requires the arena admin to have enabled " +
+          "settlerInitialTopicCreationAllowed. If you are unsure, use settlementMode=1 (JURY_FIRST).\n",
+      );
+    }
+    out.settlementMode = sm;
   }
 
   return out;

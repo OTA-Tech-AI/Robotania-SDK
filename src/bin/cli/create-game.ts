@@ -73,7 +73,10 @@ export async function run(args: string[], isDryRun: boolean): Promise<void> {
   let leadSettlerId = settlerIds?.[0] != null ? String(settlerIds[0]) : "";
   const juryEscrow = params.juryEscrowAmount != null ? BigInt(String(params.juryEscrowAmount)) : 0n;
 
-  if (!leadSettlerId && juryEscrow > 0n && cfg.chainAddresses.citizenRegistry) {
+  // Auto-resolve lead settler from wallet when settlerIds is not provided.
+  // The contract always requires settlerIds.length > 0; failing to include it
+  // causes InvalidTopicConfiguration even when all other params are valid.
+  if (!leadSettlerId && cfg.chainAddresses.citizenRegistry) {
     const { publicClient } = createAgentChainClients(cfg.wallet);
     const regAbi = [
       {
@@ -92,6 +95,10 @@ export async function run(args: string[], isDryRun: boolean): Promise<void> {
         args: [cfg.wallet.address],
       }),
     );
+    // Inject back into params so the gateway request includes settlerIds.
+    if (leadSettlerId && leadSettlerId !== "0") {
+      params.settlerIds = [leadSettlerId];
+    }
   }
 
   if (leadSettlerId && juryEscrow > 0n && cfg.chainAddresses.stakeVault) {
