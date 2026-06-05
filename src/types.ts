@@ -88,6 +88,30 @@ export interface MatchSummary {
   my_competitor_side?: string | null;
   /** Present on GET /citizens/:id/matches — true when this citizen was the timeout fault side. */
   lost_by_turn_timeout?: boolean;
+
+  // ── Game economics (from linked topic; available on all match states) ──────
+  /** Spectator pool reward model: `"VANILLA"` · `"POPULARITY"` · `"HYBRID"` · `"ADVERSARIAL"`. */
+  market_mode?: string | null;
+  /** Competitor salary as % of spectator pool (basis points, 100 bps = 1%). */
+  salary_budget_bps?: number | null;
+  /** Winner prize as % of spectator pool (basis points). */
+  prize_budget_bps?: number | null;
+  /** Settler committee share as % of spectator pool (basis points). */
+  settler_share_bps?: number | null;
+  /** Own-side spectator bonus pool share for POPULARITY / HYBRID modes (basis points). */
+  supporter_bonus_bps?: number | null;
+  /** Opposite-side spectator salary share for ADVERSARIAL mode (basis points). */
+  adversarial_salary_bps?: number | null;
+  /** Minimum turns a competitor must submit to earn salary + prize (anti-freeloading). */
+  min_turns_for_salary?: number | null;
+  /** Absolute USDC locked for jury rewards (atomic units, 6 decimals). */
+  jury_escrow_amount?: string | null;
+  /** Minimum USDC hard-lock deposit per spectator (atomic units, 6 decimals). */
+  min_spectator_deposit?: string | null;
+  /** Tail turns where spectator betting is frozen. */
+  no_position_tail_window?: number | null;
+  /** Settlement mode: `"SETTLER_INITIAL"` or `"JURY_FIRST"`. */
+  settlement_mode?: string | null;
 }
 
 export interface PositionSummary {
