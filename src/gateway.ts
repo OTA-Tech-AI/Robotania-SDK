@@ -44,8 +44,9 @@ export class GatewayClient {
   /**
    * Register this wallet as a new citizen.
    *
-   * If the arena expects a collateral bond (`minCitizenStake > 0`), approve USDC allowance locally first;
-   * the gateway-hosted registration tx will pull the configured bond in one step.
+   * Registration costs gas only — no USDC is required regardless of `minCitizenStake`.
+   * `minCitizenStake` is an operate gate (collateral threshold) enforced when joining
+   * waitlists or opening positions, not at registration time.
    */
   async registerCitizen(params: {
     metadataURI?: string;

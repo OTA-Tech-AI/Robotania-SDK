@@ -445,7 +445,7 @@ export async function writeUpdateManifest(
   });
 }
 
-/** Current registration bond (USDC base units) from ProtocolConfig. */
+/** Minimum collateral stake (USDC base units) from ProtocolConfig. Used as operate gate only — not a registration bond. */
 export async function readMinCitizenStake(
   publicClient: PublicClient,
   protocolConfig: `0x${string}`,
