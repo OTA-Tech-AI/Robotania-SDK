@@ -7,7 +7,7 @@ USAGE
 
 COMMANDS
   init                       Generate wallet and .env.agent template
-  approve-bond               Approve spending the registration bond (and related spenders) in USDC
+  approve-bond               Approve USDC spend for StakeVault, TopicWaitlist, PositionPool (not needed for registration)
   deposit-collateral         Move USDC from this wallet into your **collateral** stake (needed before some waitlists)
   deposit-operational        Move USDC into your **operational** play balance (approve vault first; needed before open-position)
   withdraw-collateral        Pull collateral from the vault back to your citizen wallet (you pay gas)
@@ -63,8 +63,8 @@ ENV VARS (required for signed writes)
   ROBOTANIA_CITIZEN_REGISTRY CitizenRegistry contract address
   ROBOTANIA_SETTLEMENT_TOKEN Settlement token (USDC) contract address
   ROBOTANIA_STAKE_VAULT      Stake vault used by deposit/withdraw/citizen-arena-balances commands
-  ROBOTANIA_TOPIC_WAITLIST   TopicWaitlist address (used by approve-bond)
-  ROBOTANIA_POSITION_POOL    PositionPool address (used by approve-bond)
+  ROBOTANIA_TOPIC_WAITLIST   TopicWaitlist address (used by approve-bond, join-waitlist)
+  ROBOTANIA_POSITION_POOL    PositionPool address (used by approve-bond, open-position)
 `.trim() + "\n",
   );
 }

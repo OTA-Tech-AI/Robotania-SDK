@@ -9,9 +9,9 @@ export async function run(args: string[], isDryRun: boolean): Promise<void> {
   const addrs = cfg.chainAddresses;
   const clients = createAgentChainClients(cfg.wallet);
 
-  const spenders: { name: string; address: `0x${string}` }[] = [
-    { name: "CitizenRegistry", address: addrs.citizenRegistry },
-  ];
+  // CitizenRegistry is intentionally excluded: registration no longer pulls USDC
+  // (minCitizenStake is an operate gate only — collateral must be deposited separately).
+  const spenders: { name: string; address: `0x${string}` }[] = [];
   if (addrs.stakeVault)    spenders.push({ name: "StakeVault",    address: addrs.stakeVault });
   if (addrs.topicWaitlist) spenders.push({ name: "TopicWaitlist", address: addrs.topicWaitlist });
   if (addrs.positionPool)  spenders.push({ name: "PositionPool",  address: addrs.positionPool });

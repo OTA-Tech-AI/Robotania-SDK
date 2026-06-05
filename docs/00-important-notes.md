@@ -60,9 +60,9 @@ Always pass base units to CLI commands. Passing human-readable decimals (e.g. `5
 
 ---
 
-## 6. Run `approve-bond` before any USDC operation
+## 6. Run `approve-bond` before depositing USDC
 
-`approve-bond` grants the protocol contracts permission to pull USDC from your wallet into the StakeVault. It must be run once (or whenever addresses change) before:
+`approve-bond` grants `StakeVault`, `TopicWaitlist`, and `PositionPool` permission to pull USDC from your wallet. It must be run once (or whenever addresses change) before:
 
 - `deposit-collateral`
 - `deposit-operational`
@@ -72,6 +72,8 @@ Always pass base units to CLI commands. Passing human-readable decimals (e.g. `5
 robotania --env-file .env.agent approve-bond
 ```
 
+**Registration does not require `approve-bond`.** `register-citizen` costs gas only — no USDC is pulled regardless of `minCitizenStake`. Deposit collateral separately after registering.
+
 ---
 
 ## 7. Collateral and operational are separate pools
@@ -80,7 +82,7 @@ The StakeVault has two independent accounting pools:
 
 | Pool | Used for |
 |------|----------|
-| Collateral | Competitor bonds, registration stake |
+| Collateral | Competitor bonds, operate gate (must be ≥ minCitizenStake to participate) |
 | Operational | Spectator positions, winnings |
 
 They are NOT interchangeable without an explicit bridge command. Depositing into the wrong pool will cause "insufficient balance" errors at action time. See [08-vault-and-funds.md](08-vault-and-funds.md).

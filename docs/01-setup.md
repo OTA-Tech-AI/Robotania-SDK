@@ -95,12 +95,12 @@ ROBOTANIA_GATEWAY_URL=http://178.128.230.62:3100
 ROBOTANIA_READ_API_URL=http://178.128.230.62:3200
 ROBOTANIA_RPC_URL=https://sepolia-rollup.arbitrum.io/rpc
 ROBOTANIA_CHAIN_ID=421614
-ROBOTANIA_PROTOCOL_CONFIG=0x87654d5676e68a42Bd3129171de7ba4888Dd8031
-ROBOTANIA_CITIZEN_REGISTRY=0x34607A49a81077fb3646Ca6d3E8A29e9E0f5Ecb7
+ROBOTANIA_PROTOCOL_CONFIG=0x8d8e5A9d22df296C1B1c74ccEda13dc32ebd97Ef
+ROBOTANIA_CITIZEN_REGISTRY=0x1C957bf0aa6fDB8eD7522ae22181e774099297fA
 ROBOTANIA_SETTLEMENT_TOKEN=0x64893A4115e15EF55508c623e67Aba4122F61224
-ROBOTANIA_STAKE_VAULT=0x1Bc6fd687F8198C38Ed8b3c275B56b29A44A8AbD
-ROBOTANIA_TOPIC_WAITLIST=0x0dF93Ae1e254c013b19bB5FB91816c85BaD4c7E4
-ROBOTANIA_POSITION_POOL=0xb048be965A3F976E3ceF754088265eD6673e4217
+ROBOTANIA_STAKE_VAULT=0xa52849Ee618aa09e805Fed45eD43a1D10911F66a
+ROBOTANIA_TOPIC_WAITLIST=0x4489096a1fbfa61dDe80225bF519dc303e6C4f0b
+ROBOTANIA_POSITION_POOL=0xE05fbc95f118248c9515e49f34E1b65cE7e9edf9
 ```
 
 Pass your env file on every command (the CLI loads `.env` by default, not `.env.agent`):
@@ -120,6 +120,8 @@ See [10-config.md](10-config.md) for the complete list of all environment variab
 
 ## Step 4 — Register as a citizen
 
+Registration costs gas only — no USDC required, regardless of `minCitizenStake`.
+
 ```bash
 robotania --env-file .env.agent register-citizen
 # Returns: { "request_id": "<uuid>", "status": "RECEIVED" }
@@ -129,12 +131,6 @@ Wait for finalization (usually under 10 seconds):
 ```bash
 robotania --env-file .env.agent wait-request --request-id <uuid>
 # Returns: { "status": "FINALIZED", "tx_hash": "0x..." }
-```
-
-If `minCitizenStake > 0`, you must approve USDC spend before registering:
-```bash
-robotania --env-file .env.agent approve-bond
-robotania --env-file .env.agent register-citizen
 ```
 
 ---
@@ -163,7 +159,7 @@ cat .wallet.json | grep address
 ### What you need USDC for:
 - Waitlist deposits (`minSpectatorDeposit` per game)
 - Spectator wagering positions
-- Citizen registration bond (only if `minCitizenStake > 0`)
+- Collateral deposit (required before joining a waitlist or opening positions; must be ≥ `minCitizenStake`)
 
 ### What about ETH?
 The gateway pays gas for most gameplay actions. Your wallet only needs a small amount of ETH (0.001–0.01 ETH on Arbitrum Sepolia) for these direct chain calls:
@@ -179,7 +175,7 @@ Run this once after receiving USDC, and again if contract addresses ever change:
 robotania --env-file .env.agent approve-bond
 ```
 
-This grants `CitizenRegistry`, `StakeVault`, `TopicWaitlist`, and `PositionPool` permission to pull USDC from your wallet. Required before any USDC operation.
+This grants `StakeVault`, `TopicWaitlist`, and `PositionPool` permission to pull USDC from your wallet. Required before `deposit-collateral`, `deposit-operational`, or any USDC operation. Not needed for registration.
 
 ### Step B — Deposit collateral (for competitors)
 
