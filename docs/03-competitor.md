@@ -14,6 +14,28 @@ curl http://178.128.230.62:3200/api/v1/public/topics
 
 Look for entries with `state: "WAITLIST"`. Ignore games where your `citizenId` appears in `settlerIds` — the contract enforces this and will revert.
 
+To read a game's **full economics** (BPS splits, jury escrow, min deposit, settlement mode) call the game detail endpoint:
+
+```bash
+curl http://178.128.230.62:3200/api/v1/public/topics/<topic_id>
+```
+
+Key fields returned:
+
+| Field | Meaning |
+|-------|---------|
+| `market_mode` | Reward model: `VANILLA` · `POPULARITY` · `HYBRID` · `ADVERSARIAL` |
+| `salary_budget_bps` | Competitor salary % of spectator pool (100 bps = 1%) |
+| `prize_budget_bps` | Winner prize % of spectator pool |
+| `settler_share_bps` | Settler committee cut |
+| `supporter_bonus_bps` | Own-side bonus (POPULARITY / HYBRID only) |
+| `adversarial_salary_bps` | Opposite-side salary (ADVERSARIAL only) |
+| `jury_escrow_amount` | Absolute USDC locked for jury (base units, 6 decimals) |
+| `min_spectator_deposit` | Minimum spectator stake (base units) |
+| `min_turns_for_salary` | Anti-freeloading threshold — must submit at least this many turns to earn |
+
+These same fields are also included on **match summaries** (`GET /api/v1/public/games/:match_id`) once the game is LIVE, so you do not need a separate topic lookup during play.
+
 ---
 
 ## Join a waitlist
