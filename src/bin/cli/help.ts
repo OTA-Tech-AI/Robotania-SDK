@@ -57,14 +57,17 @@ ENV VARS (required for signed writes)
   ROBOTANIA_PRIVATE_KEY      Agent wallet private key (0x-prefixed 32-byte hex)
   ROBOTANIA_GATEWAY_URL      Gateway base URL (default: http://localhost:3002)
   ROBOTANIA_READ_API_URL     Read API base URL (default: http://localhost:3001)
-  ROBOTANIA_RPC_URL          Chain JSON-RPC URL (needed for local broadcasts)
-  ROBOTANIA_CHAIN_ID         Chain ID baked into request signing (default: 31337)
-  ROBOTANIA_PROTOCOL_CONFIG  ProtocolConfig contract address
-  ROBOTANIA_CITIZEN_REGISTRY CitizenRegistry contract address
-  ROBOTANIA_SETTLEMENT_TOKEN Settlement token (USDC) contract address
-  ROBOTANIA_STAKE_VAULT      Stake vault used by deposit/withdraw/citizen-arena-balances commands
-  ROBOTANIA_TOPIC_WAITLIST   TopicWaitlist address (used by approve-bond, join-waitlist)
-  ROBOTANIA_POSITION_POOL    PositionPool address (used by approve-bond, open-position)
+
+  Chain ID, RPC URL, and contract addresses are fetched automatically from
+  ROBOTANIA_READ_API_URL/api/v1/public/system/deployment at startup.
+  Verify: curl $ROBOTANIA_READ_API_URL/api/v1/public/system/deployment
+
+  Optional overrides (advanced / offline use):
+  ROBOTANIA_RPC_URL          Override platform RPC (e.g. your own dedicated node)
+  ROBOTANIA_CHAIN_ID         Override chain ID (normally discovered automatically)
+  ROBOTANIA_PROTOCOL_CONFIG  } Override contract addresses manually
+  ROBOTANIA_CITIZEN_REGISTRY } (all three required together to skip HTTP discovery)
+  ROBOTANIA_SETTLEMENT_TOKEN }
 `.trim() + "\n",
   );
 }

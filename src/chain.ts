@@ -131,11 +131,20 @@ export interface ResolvedChainAddresses {
   topicWaitlist: `0x${string}` | undefined;
   positionPool: `0x${string}` | undefined;
   chainId: number;
+  /** Platform-supplied RPC URL from HTTP discovery. Undefined when resolved via env vars or local JSON. */
+  rpcUrl?: string;
 }
 
+let _cachedAddresses: ResolvedChainAddresses | null = null;
+
+/**
+ * Priority: local ROBOTANIA_RPC_URL override → platform-discovered rpc_url → CHAIN_RPC_URL → SEPOLIA_RPC_URL → localhost.
+ * Local override always wins so advanced users can point at their own node.
+ */
 export function getRpcUrl(): string {
   return (
     process.env.ROBOTANIA_RPC_URL ??
+    _cachedAddresses?.rpcUrl ??
     process.env.CHAIN_RPC_URL ??
     process.env.SEPOLIA_RPC_URL ??
     "http://127.0.0.1:8545"
@@ -143,10 +152,122 @@ export function getRpcUrl(): string {
 }
 
 /**
- * Loads contract addresses from environment variables first; otherwise reads a deployment JSON via
- * `ROBOTANIA_DEPLOYED_ADDRESSES_PATH` (or a default path next to the published package layout).
+ * Called once at CLI startup (in robotania.ts main) before command dispatch.
+ * Populates the module-level cache via HTTP discovery if neither env vars nor a local JSON file is available.
+ * Idempotent — safe to call multiple times (no-ops after first successful run).
+ *
+ * Note: uses raw fetch rather than ReadClient to avoid a circular dependency
+ * (chain ← config ← read ← chain). getSystemDeployment() on ReadClient is
+ * available for agent business-logic use after startup.
+ */
+export async function preloadChainAddresses(): Promise<void> {
+  if (_cachedAddresses) return;
+
+  // 1. Explicit env vars (manual override / offline)
+  const pe = process.env.ROBOTANIA_PROTOCOL_CONFIG as `0x${string}` | undefined;
+  const ce = process.env.ROBOTANIA_CITIZEN_REGISTRY as `0x${string}` | undefined;
+  const te = process.env.ROBOTANIA_SETTLEMENT_TOKEN as `0x${string}` | undefined;
+  if (pe && ce && te) {
+    _cachedAddresses = {
+      protocolConfig:  pe,
+      citizenRegistry: ce,
+      settlementToken: te,
+      stakeVault:      process.env.ROBOTANIA_STAKE_VAULT as `0x${string}` | undefined,
+      topicWaitlist:   process.env.ROBOTANIA_TOPIC_WAITLIST as `0x${string}` | undefined,
+      positionPool:    process.env.ROBOTANIA_POSITION_POOL as `0x${string}` | undefined,
+      chainId:         Number(process.env.CHAIN_ID ?? process.env.ROBOTANIA_CHAIN_ID ?? 31337),
+    };
+    return;
+  }
+
+  // 2. Local JSON file
+  const jsonPath =
+    process.env.ROBOTANIA_DEPLOYED_ADDRESSES_PATH ??
+    resolve(__dirname, "../../../ops/deployed-addresses.json");
+  if (existsSync(jsonPath)) {
+    const raw = JSON.parse(readFileSync(jsonPath, "utf-8")) as {
+      contracts?: Record<string, string>;
+      chainId?: number;
+    };
+    const c = raw.contracts ?? {};
+    const protocolConfig = c.ProtocolConfig as `0x${string}` | undefined;
+    const citizenRegistry = c.CitizenRegistry as `0x${string}` | undefined;
+    const settlementToken = c.SettlementToken as `0x${string}` | undefined;
+    if (!protocolConfig || !citizenRegistry || !settlementToken) {
+      throw new Error(
+        `deployed-addresses.json at ${jsonPath} is missing ProtocolConfig, CitizenRegistry, or SettlementToken`,
+      );
+    }
+    _cachedAddresses = {
+      protocolConfig,
+      citizenRegistry,
+      settlementToken,
+      stakeVault:    (process.env.ROBOTANIA_STAKE_VAULT ?? c.StakeVault) as `0x${string}` | undefined,
+      topicWaitlist: (process.env.ROBOTANIA_TOPIC_WAITLIST ?? c.TopicWaitlist) as `0x${string}` | undefined,
+      positionPool:  (process.env.ROBOTANIA_POSITION_POOL ?? c.PositionPool) as `0x${string}` | undefined,
+      chainId:       Number(process.env.CHAIN_ID ?? process.env.ROBOTANIA_CHAIN_ID ?? raw.chainId ?? 31337),
+    };
+    return;
+  }
+
+  // 3. HTTP discovery from Read API
+  const base = (process.env.ROBOTANIA_READ_API_URL ?? "").replace(/\/$/, "");
+  if (!base) {
+    throw new Error(
+      "Cannot discover chain addresses: set ROBOTANIA_READ_API_URL or ROBOTANIA_PROTOCOL_CONFIG.",
+    );
+  }
+  let res: Response;
+  try {
+    res = await fetch(`${base}/api/v1/public/system/deployment`);
+  } catch (err) {
+    throw new Error(
+      `Deployment discovery failed: could not reach ${base} (${(err as Error).message}). ` +
+      `Check ROBOTANIA_READ_API_URL is reachable.`,
+    );
+  }
+  if (!res.ok) {
+    throw new Error(
+      `Deployment discovery failed (HTTP ${res.status}) from ${base}. Check ROBOTANIA_READ_API_URL is reachable.`,
+    );
+  }
+  const body = (await res.json()) as { data?: { chain_id?: number; rpc_url?: string; contracts?: Record<string, string> } };
+  const data = body.data ?? {};
+  const c = data.contracts ?? {};
+
+  // Validate required fields before caching — fail fast with actionable error
+  const missing = (["ProtocolConfig", "CitizenRegistry", "SettlementToken"] as const).filter(
+    (k) => !c[k] || !/^0x[0-9a-fA-F]{40}$/.test(c[k]),
+  );
+  if (missing.length > 0 || !data.chain_id) {
+    throw new Error(
+      `Deployment discovery returned invalid data from ${base}. ` +
+      `Missing or malformed fields: ${[...missing, ...(!data.chain_id ? ["chain_id"] : [])].join(", ")}. ` +
+      `Check that DEPLOYED_ADDRESSES_JSON is correctly configured on the Read API server.`,
+    );
+  }
+
+  _cachedAddresses = {
+    protocolConfig:  c.ProtocolConfig as `0x${string}`,
+    citizenRegistry: c.CitizenRegistry as `0x${string}`,
+    settlementToken: c.SettlementToken as `0x${string}`,
+    stakeVault:      c.StakeVault as `0x${string}` | undefined,
+    topicWaitlist:   c.TopicWaitlist as `0x${string}` | undefined,
+    positionPool:    c.PositionPool as `0x${string}` | undefined,
+    chainId:         data.chain_id,
+    rpcUrl:          data.rpc_url,  // platform-supplied; no private key
+  };
+}
+
+/**
+ * Sync — returns cached addresses populated by preloadChainAddresses().
+ * Falls back to the existing env-var / local-JSON sync logic for library consumers
+ * (tests, scripts) that don't go through the CLI entrypoint.
  */
 export function resolveChainAddresses(): ResolvedChainAddresses {
+  if (_cachedAddresses) return _cachedAddresses;
+
+  // Sync fallback: env vars
   const pe = process.env.ROBOTANIA_PROTOCOL_CONFIG as `0x${string}` | undefined;
   const ce = process.env.ROBOTANIA_CITIZEN_REGISTRY as `0x${string}` | undefined;
   const te = process.env.ROBOTANIA_SETTLEMENT_TOKEN as `0x${string}` | undefined;
@@ -155,16 +276,17 @@ export function resolveChainAddresses(): ResolvedChainAddresses {
   const ppe = process.env.ROBOTANIA_POSITION_POOL as `0x${string}` | undefined;
   if (pe && ce && te) {
     return {
-      protocolConfig: pe,
+      protocolConfig:  pe,
       citizenRegistry: ce,
       settlementToken: te,
-      stakeVault: sve,
-      topicWaitlist: twe,
-      positionPool: ppe,
-      chainId: Number(process.env.CHAIN_ID ?? process.env.ROBOTANIA_CHAIN_ID ?? 31337),
+      stakeVault:      sve,
+      topicWaitlist:   twe,
+      positionPool:    ppe,
+      chainId:         Number(process.env.CHAIN_ID ?? process.env.ROBOTANIA_CHAIN_ID ?? 31337),
     };
   }
 
+  // Sync fallback: local JSON
   const path =
     process.env.ROBOTANIA_DEPLOYED_ADDRESSES_PATH ??
     resolve(__dirname, "../../../ops/deployed-addresses.json");
@@ -172,7 +294,7 @@ export function resolveChainAddresses(): ResolvedChainAddresses {
   if (!existsSync(path)) {
     throw new Error(
       "Missing chain addresses: set ROBOTANIA_PROTOCOL_CONFIG, ROBOTANIA_CITIZEN_REGISTRY, " +
-        "ROBOTANIA_SETTLEMENT_TOKEN, or point ROBOTANIA_DEPLOYED_ADDRESSES_PATH at a deployment export JSON.",
+        "ROBOTANIA_SETTLEMENT_TOKEN, or ROBOTANIA_READ_API_URL (for HTTP discovery via preloadChainAddresses).",
     );
   }
 
@@ -193,10 +315,10 @@ export function resolveChainAddresses(): ResolvedChainAddresses {
     protocolConfig,
     citizenRegistry,
     settlementToken,
-    stakeVault: (sve ?? c.StakeVault) as `0x${string}` | undefined,
+    stakeVault:    (sve ?? c.StakeVault) as `0x${string}` | undefined,
     topicWaitlist: (twe ?? c.TopicWaitlist) as `0x${string}` | undefined,
-    positionPool: (ppe ?? c.PositionPool) as `0x${string}` | undefined,
-    chainId: Number(process.env.CHAIN_ID ?? process.env.ROBOTANIA_CHAIN_ID ?? raw.chainId ?? 31337),
+    positionPool:  (ppe ?? c.PositionPool) as `0x${string}` | undefined,
+    chainId:       Number(process.env.CHAIN_ID ?? process.env.ROBOTANIA_CHAIN_ID ?? raw.chainId ?? 31337),
   };
 }
 

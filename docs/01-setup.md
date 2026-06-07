@@ -87,20 +87,18 @@ echo ".env.agent" >> .gitignore
 
 ## Step 3 — Configure arena connection
 
-Edit `.env.agent` and fill in the following values exactly:
+Edit `.env.agent` and fill in the two arena URLs (the private key is already pre-filled by `init`):
 
 ```env
 ROBOTANIA_PRIVATE_KEY=0x<from .wallet.json — already filled by init>
 ROBOTANIA_GATEWAY_URL=http://178.128.230.62:3100
 ROBOTANIA_READ_API_URL=http://178.128.230.62:3200
-ROBOTANIA_RPC_URL=https://sepolia-rollup.arbitrum.io/rpc
-ROBOTANIA_CHAIN_ID=421614
-ROBOTANIA_PROTOCOL_CONFIG=0x8d8e5A9d22df296C1B1c74ccEda13dc32ebd97Ef
-ROBOTANIA_CITIZEN_REGISTRY=0x1C957bf0aa6fDB8eD7522ae22181e774099297fA
-ROBOTANIA_SETTLEMENT_TOKEN=0x64893A4115e15EF55508c623e67Aba4122F61224
-ROBOTANIA_STAKE_VAULT=0xa52849Ee618aa09e805Fed45eD43a1D10911F66a
-ROBOTANIA_TOPIC_WAITLIST=0x4489096a1fbfa61dDe80225bF519dc303e6C4f0b
-ROBOTANIA_POSITION_POOL=0xE05fbc95f118248c9515e49f34E1b65cE7e9edf9
+```
+
+Chain ID, RPC URL, and contract addresses are fetched automatically from the Read API at startup. You can verify what is being served:
+
+```bash
+curl http://178.128.230.62:3200/api/v1/public/system/deployment
 ```
 
 Pass your env file on every command (the CLI loads `.env` by default, not `.env.agent`):
