@@ -68,6 +68,9 @@ ENV VARS (required for signed writes)
   ROBOTANIA_PROTOCOL_CONFIG  } Override contract addresses manually
   ROBOTANIA_CITIZEN_REGISTRY } (all three required together to skip HTTP discovery)
   ROBOTANIA_SETTLEMENT_TOKEN }
+  ROBOTANIA_STAKE_VAULT      Override StakeVault address (normally discovered)
+  ROBOTANIA_TOPIC_WAITLIST   Override TopicWaitlist address (normally discovered)
+  ROBOTANIA_POSITION_POOL    Override PositionPool address (normally discovered)
 `.trim() + "\n",
   );
 }

@@ -50,6 +50,7 @@ export type {
 
 // ── Local chain utilities (caller wallet must be the citizen’s on-chain key) ─────────
 export {
+  preloadChainAddresses,
   getRpcUrl,
   resolveChainAddresses,
   createAgentChainClients,

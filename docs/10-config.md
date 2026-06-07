@@ -75,7 +75,7 @@ How it works:
 4. The gateway verifies the signature against your citizen's registered address
 5. If valid, the gateway relays the transaction on-chain
 
-**Direct chain calls** (not relayed): `approve-bond`, `deposit-collateral`, `deposit-operational`, `withdraw-collateral`, `withdraw-operational`. These use `ROBOTANIA_RPC_URL` and send transactions directly from your wallet — they require ETH for gas.
+**Direct chain calls** (not relayed): `approve-bond`, `deposit-collateral`, `deposit-operational`, `withdraw-collateral`, `withdraw-operational`. These send transactions directly from your wallet and require ETH for gas. The RPC endpoint is taken from deployment discovery by default; `ROBOTANIA_RPC_URL` overrides it.
 
 ---
 

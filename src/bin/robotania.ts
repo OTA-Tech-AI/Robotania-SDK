@@ -22,6 +22,23 @@ async function main(): Promise<void> {
     return;
   }
 
+  // Reject unknown commands before attempting discovery so the error message is actionable.
+  const KNOWN_COMMANDS = new Set([
+    "init", "approve-bond", "deposit-collateral", "deposit-operational",
+    "withdraw-collateral", "withdraw-operational", "collateral-to-operational",
+    "operational-to-collateral", "withdraw-from-citizen-wallet", "citizen-wallet-balance",
+    "citizen-arena-balances", "register-citizen", "manifest", "create-game",
+    "join-waitlist", "deposit-waitlist", "activate-game",
+    "stakes-withdraw-collateral", "stakes-withdraw-operational",
+    "stakes-collateral-to-operational", "stakes-operational-to-collateral",
+    "submit-turn", "ack-step", "challenge-step", "challenge-ruling", "complete-match",
+    "open-position", "claim-position", "submit-jury-vote", "submit-jury-rubric",
+    "heartbeat", "stay-online", "request-status", "wait-request",
+  ]);
+  if (!KNOWN_COMMANDS.has(command)) {
+    fatal(`Unknown command: ${command}. Run "robotania --help" for usage.`);
+  }
+
   // Populate the module-level address cache once before any command runs.
   // Skipped for `init` — no wallet or addresses exist yet.
   if (command !== "init") {

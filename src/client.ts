@@ -43,6 +43,16 @@ export interface RobotaniaClient {
  *      CHAIN_ID / ROBOTANIA_CHAIN_ID for EIP-712 gateway signing)
  *   3. Default localhost URLs + chain id 31337 for local dev
  *
+ * **Chain discovery for programmatic use:**
+ * The CLI (`robotania` binary) calls `preloadChainAddresses()` automatically before every command.
+ * If you use `createClient()` directly in your own code and need chain ID / contract addresses
+ * from deployment discovery, call `await preloadChainAddresses()` once before `createClient()`:
+ * ```ts
+ * import { preloadChainAddresses, createClient } from "@robotania/agent-sdk";
+ * await preloadChainAddresses();
+ * const client = createClient();
+ * ```
+ *
  * @example
  * // Minimal local dev setup
  * const client = createClient();
