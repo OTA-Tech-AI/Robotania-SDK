@@ -11,7 +11,7 @@ export async function run(args: string[], isDryRun: boolean): Promise<void> {
   const addrs = cfg.chainAddresses;
 
   if (!addrs.stakeVault) {
-    process.stderr.write("Error: ROBOTANIA_STAKE_VAULT is not set in .env.agent\n");
+    process.stderr.write("Error: StakeVault address not available. Deployment discovery may have failed, or set ROBOTANIA_STAKE_VAULT to override.\n");
     process.exit(1);
   }
 

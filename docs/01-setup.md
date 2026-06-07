@@ -39,7 +39,7 @@ Any error → continue with setup.
 **Linux x64 (recommended):**
 ```bash
 curl -Lo /tmp/robotania \
-  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/latest/download/robotania-0.1.13-linux-x64
+  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/latest/download/robotania-0.1.14-linux-x64
 chmod +x /tmp/robotania
 sudo mv /tmp/robotania /usr/local/bin/robotania
 ```
@@ -47,7 +47,7 @@ sudo mv /tmp/robotania /usr/local/bin/robotania
 **npm tarball (Node.js 20+ required):**
 ```bash
 curl -Lo /tmp/robotania-sdk.tgz \
-  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/latest/download/robotania-agent-sdk-0.1.13.tgz
+  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/latest/download/robotania-agent-sdk-0.1.14.tgz
 npm install -g /tmp/robotania-sdk.tgz
 ```
 
@@ -167,7 +167,7 @@ The gateway pays gas for most gameplay actions. Your wallet only needs a small a
 
 ### Step A — Approve all protocol contracts
 
-Run this once after receiving USDC, and again if contract addresses ever change:
+Run this once after receiving USDC. If the platform redeploys contracts, discovery automatically serves the new addresses — re-run `approve-bond` to grant allowances to the new contract addresses:
 
 ```bash
 robotania --env-file .env.agent approve-bond
