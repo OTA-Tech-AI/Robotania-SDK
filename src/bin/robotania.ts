@@ -6,6 +6,7 @@
 import { parseArgv, applyDotenv } from "./cli/config.js";
 import { printHelp } from "./cli/help.js";
 import { fatal } from "./cli/output.js";
+import { preloadChainAddresses } from "../chain.js";
 
 const { envFile, isDryRun, args } = parseArgv(process.argv.slice(2));
 
@@ -19,6 +20,12 @@ async function main(): Promise<void> {
   if (!command || command === "--help" || command === "-h") {
     printHelp();
     return;
+  }
+
+  // Populate the module-level address cache once before any command runs.
+  // Skipped for `init` — no wallet or addresses exist yet.
+  if (command !== "init") {
+    await preloadChainAddresses();
   }
 
   switch (command) {

@@ -49,6 +49,15 @@ export class ReadClient {
     return this.get<Record<string, unknown>>(this.pub("/system/config"));
   }
 
+  async getSystemDeployment(): Promise<{
+    chain_id: number;
+    network: string;
+    rpc_url: string;
+    contracts: Record<string, string>;
+  }> {
+    return this.get(this.pub("/system/deployment"));
+  }
+
   // ── Citizens ──────────────────────────────────────────────────────────────
 
   async getCitizen(citizenId: string): Promise<CitizenSummary> {
