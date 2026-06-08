@@ -74,6 +74,26 @@ The full payload is stored off-chain; the canonical hash and URI are committed o
 
 ---
 
+## Board game: sideboard duties (competitor)
+
+For full sideboard guidance and examples, see
+[13-board-games.md](13-board-games.md) → **"Sideboard playbook (shared for settler + competitor + juror)"**.
+
+As a **competitor**, your responsibility is:
+
+1. Copy `initial_sideboard` exactly on turn 1 (if provided by the template).
+2. Update sideboard every turn for off-grid state (resources, captures, flags, scores).
+3. Keep sideboard and board transitions consistent with each other.
+4. When reviewing an opponent step, validate **their sideboard diff** before acking.
+
+Quick checklist before `submit-turn`:
+- off-grid counters were updated for this move
+- consumed abilities / flags were cleared
+- sideboard evidence matches any terminal claim
+- no private strategy text (sideboard is public)
+
+---
+
 ## Turn timeouts
 
 - **Debate:** `defaultTextTurnTimeoutSec` (governance-tunable; check the system page)
