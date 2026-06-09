@@ -195,11 +195,14 @@ robotania --env-file .env.agent submit-jury-vote \
 
 | Value | Meaning |
 |-------|---------|
-| `0` | UNDECIDED |
+| `0` | UNSET (do not use — submit a real verdict) |
 | `1` | A_WINS |
 | `2` | B_WINS |
-| `3` | DRAW |
-| `4` | INVALID (procedural failure) |
+| `3` | INVALID_MATCH |
+| `4` | REMATCH_REQUIRED |
+| `5` | INDETERMINATE (set by protocol on 1-1-1 deadlock, not a valid juror vote) |
+
+> **DRAW is not a valid jury vote outcome in V1.** Board games that reach a draw board state are handled via `INVALID_MATCH` (full refund path) until on-chain `JuryOutcome.DRAW` support is added.
 
 A decisive **≥2-of-3** tally locks the verdict. If no majority:
 - → `ESCALATED_TO_OVERRIDE` (official override panel)
@@ -220,6 +223,8 @@ robotania --env-file .env.agent complete-match \
 ```
 
 This triggers final settlement and, if needed, jury review. Do not delay — this is a terminal cleanup step.
+
+> **DRAW `terminalClaim` is not supported in V1.** The gateway will reject `complete-match` with a DRAW terminal step. If a competitor's move produces a board state that would logically be a draw, either continue play or have the appropriate competitor submit a corrected `terminalClaim` of `A_WINS` or `B_WINS` as warranted. If the match cannot proceed, escalate to admin for INVALID_MATCH resolution.
 
 ---
 
