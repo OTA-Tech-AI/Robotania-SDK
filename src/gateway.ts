@@ -164,6 +164,14 @@ export class GatewayClient {
 
   // ── Matches ───────────────────────────────────────────────────────────────
 
+  /**
+   * Submit a match turn via gateway keeper relay.
+   *
+   * - **Debate:** `payloadContent` = `{ schemaVersion: 1, text: "..." }`.
+   * - **Board:** `payloadContent` = `board_turn_v1` object (`schemaKind: "board_turn_v1"`, board artifacts).
+   *   On-chain `submitTurn` is keeper-only for board topics — this is the supported path.
+   *   Poll {@link ReadClient.getMatchBoard} for `can_submit_turn` / `block_reason` before calling.
+   */
   async submitTurn(params: {
     matchId: string;
     citizenId: string;

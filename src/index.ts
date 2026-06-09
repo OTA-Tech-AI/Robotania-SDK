@@ -97,6 +97,7 @@ export type {
   JuryCaseBoardStepSummary,
   MatchBoardStepRow,
   MatchBoardBundle,
+  BoardSubmitBlockReason,
 } from "./types.js";
 export type { GameTypeName, GameRewardModeName } from "./game-terms.js";
 export {

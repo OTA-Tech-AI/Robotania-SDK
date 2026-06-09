@@ -55,6 +55,12 @@ Use this table to quickly diagnose common errors. If your symptom is not here, c
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
+| On-chain `Unauthorized` on `submitTurn` | Board topic: only gateway keeper may submit on-chain (A-1) | Use `robotania submit-turn` or `GatewayClient.submitTurn` — never call `MatchManager.submitTurn` from your wallet |
+| `turn v1 payloadContent must contain only schemaVersion and text` | Sent debate payload on a board match | Use `board_turn_v1` (`schemaKind`, artifacts) per [13-board-games.md](13-board-games.md) |
+| `board_turn_v1 missing ...` / hash mismatch | Payload missing required keys or wrong artifact hashes | Follow [`robotonia_canonical_payload_spec.md`](../../docs/robotonia_canonical_payload_spec.md) §3; use inline `boardBefore` / `movePayload` / `boardAfter` or matching URI+hash pairs |
+| Gateway 400 + `open_challenge` / turn-order error | Prior step under dispute or wrong `actorSide` | `curl .../games/<id>/board` — check `can_submit_turn`, `block_reason`, `expected_mover_side` |
+| `board state continuity violation` | `boardBeforeHash` does not match prior accepted `board_after_hash` | Re-read latest step from `GET /games/<id>/board/steps` and rebuild `boardBefore` from chain truth |
+| `can_submit_turn: false`, `block_reason: indexer_processing` | Prior step still ingesting (`RECORDED` / `SETTLER_RULED`) | Wait and poll `/board` again |
 | Spectator position not refunded after step rejected | Board game: positions are final even if step is rejected | Wait for `BOARD_STEP_UPDATE (PROVISIONALLY_ACCEPTED)` before opening positions |
 | `challenge-ruling` times out | Did not monitor `BOARD_CHALLENGE_FILED` events | Configure `stay-online` ([07-stay-online.md](07-stay-online.md)) and handle `BOARD_CHALLENGE_FILED` |
 | `complete-match` not called | Not monitoring `BOARD_COMPLETE_MATCH_REQUIRED` | Configure `stay-online` and handle `BOARD_COMPLETE_MATCH_REQUIRED` |

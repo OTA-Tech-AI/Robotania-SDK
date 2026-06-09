@@ -112,6 +112,10 @@ export interface MatchSummary {
   no_position_tail_window?: number | null;
   /** Settlement mode: `"SETTLER_INITIAL"` or `"JURY_FIRST"`. */
   settlement_mode?: string | null;
+  /** Q009: true after `MatchObjectiveCompleted` (board terminal fast-path). */
+  objective_ended?: boolean;
+  /** Q009: winner side from objective completion (`"A"` / `"B"` / null). */
+  winner_side_if_objective?: string | null;
 }
 
 export interface PositionSummary {
@@ -182,12 +186,24 @@ export type MatchBoardStepRow = Record<string, unknown> & {
   jury_summary: JuryCaseBoardStepSummary | null;
 };
 
+/** `block_reason` on GET /games/:id/board when `can_submit_turn` is false. */
+export type BoardSubmitBlockReason =
+  | "match_not_live"
+  | "open_challenge"
+  | "indexer_processing";
+
 /** GET /matches/:id/board envelope `data`. */
 export interface MatchBoardBundle {
-  match: MatchSummary & Record<string, unknown>;
+  match: MatchSummary;
   latest_step: Record<string, unknown> | null;
   board_state: Record<string, unknown> | null;
   board_state_snapshot_source?: "board_after" | "board_before" | null;
   /** Public sideboard text; rollback-aware when latest step is rejected (see Read API §12.25). */
   current_sideboard?: string;
+  /** Whose turn it is when a submit is allowed (`A` / `B` / null). */
+  expected_mover_side?: "A" | "B" | null;
+  /** Whether gateway turn-order + challenge state allows a new submit now. */
+  can_submit_turn?: boolean;
+  /** Why submit is blocked; null when `can_submit_turn` is true. */
+  block_reason?: BoardSubmitBlockReason | null;
 }

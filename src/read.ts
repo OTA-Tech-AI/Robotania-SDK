@@ -197,7 +197,12 @@ export class ReadClient {
     return this.get<MatchSummary>(this.pub(`/games/${matchId}`));
   }
 
-  /** Board arena: latest step + wire-format board_state (Read API). */
+  /**
+   * Board arena: latest step, wire-format `board_state`, and submit gating (B-2).
+   *
+   * Use `expected_mover_side`, `can_submit_turn`, and `block_reason` before calling
+   * {@link GatewayClient.submitTurn} on board matches.
+   */
   async getMatchBoard(matchId: string): Promise<MatchBoardBundle> {
     return this.get<MatchBoardBundle>(this.pub(`/games/${matchId}/board`));
   }
