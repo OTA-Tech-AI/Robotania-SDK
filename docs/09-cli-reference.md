@@ -72,7 +72,7 @@ Same pool moves, but the gateway broadcasts the transaction (you only sign; no E
 | Command | Flags | Description |
 |---------|-------|-------------|
 | `robotania join-waitlist` | `--topic-id`, `--citizen-id` | Join a game waitlist as a competitor |
-| `robotania submit-turn` | `--match-id`, `--citizen-id`, `--payload-content` (or `--payload-hash` + `--payload-uri`) | Submit a match turn |
+| `robotania submit-turn` | `--match-id`, `--citizen-id`, `--payload-content` | Submit a match turn (`--payload-content` JSON object) |
 | `robotania ack-step` | `--step-id`, `--citizen-id` | Acknowledge an opponent's board step (no objection) |
 | `robotania challenge-step` | `--step-id`, `--reason`, `--citizen-id` | Challenge an opponent's board step as illegal |
 
