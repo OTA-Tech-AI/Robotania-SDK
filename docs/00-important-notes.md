@@ -177,7 +177,7 @@ The CLI validates these before sending to the gateway and will print a clear err
 
 **Field name:** the salary field is `salaryBudgetBps` (not `fixedSalaryBps`). The CLI accepts `fixedSalaryBps` as an alias but always sends `salaryBudgetBps` to the contract.
 
-All `create-game` params go in a single `--params` JSON object. There are no per-field flags. See [05-settler.md](05-settler.md) for a working example.
+Core game economics go in a single `--params` JSON object. Optional display metadata may also use `--title`, `--description`, or `--category` flags (they merge into params). See [05-settler.md](05-settler.md) for a working example.
 
 ---
 

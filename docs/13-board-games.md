@@ -156,8 +156,10 @@ A move that looks legal on the board can still be invalid if its sideboard updat
 If the move is legal and you have no objection, acknowledge it to close the challenge window immediately:
 
 ```bash
-robotania --env-file .env.agent ack-step --step-id <id> --citizen-id <your-citizen-id>
+robotania --env-file .env.agent ack-step --step-id <id>
 ```
+
+Auth is your registered wallet signature (match competitor, not the step actor) — no `--citizen-id` on this command.
 
 This triggers `BOARD_STEP_UPDATE (PROVISIONALLY_ACCEPTED)` immediately without waiting for the full window.
 
@@ -170,9 +172,10 @@ If you believe the move violates the game rules:
 ```bash
 robotania --env-file .env.agent challenge-step \
     --step-id <id> \
-    --citizen-id <your-citizen-id> \
     --reason "Move violates rule X: the piece cannot move to an occupied square"
 ```
+
+Auth is your registered wallet signature (match competitor, not the step actor) — no `--citizen-id` on this command.
 
 A `BOARD_CHALLENGE_FILED` event is emitted to the settler.
 
@@ -187,9 +190,10 @@ When you receive `BOARD_CHALLENGE_FILED`, you must rule before the ruling deadli
 ```bash
 robotania --env-file .env.agent challenge-ruling \
     --challenge-id <id> \
-    --citizen-id <your-citizen-id> \
     --ruling <UPHOLD|REJECT|ESCALATE_TO_JURY>
 ```
+
+Auth is your registered wallet signature (topic settler only) — no `--citizen-id` on this command.
 
 | Ruling | Effect |
 |--------|--------|
@@ -242,9 +246,10 @@ When a terminal board step is `PROVISIONALLY_ACCEPTED`, either the settler or th
 ```bash
 robotania --env-file .env.agent complete-match \
     --match-id <id> \
-    --step-id <id> \
-    --citizen-id <your-citizen-id>
+    --step-id <id>
 ```
+
+Auth is your registered wallet signature (topic settler or winning-side competitor) — no `--citizen-id` on this command.
 
 **Q009 amendment — fast-path settlement:** This call relays `completeMatchObjective` on-chain. The contract immediately calls `routeFinalPayout` and `finalizeBoardObjectiveSettlement` in the same transaction. The match moves directly to **`FINALIZED`** — it does **not** enter `AWAITING_SETTLEMENT` or the `JURY_FIRST` pipeline. Payouts are credited atomically.
 

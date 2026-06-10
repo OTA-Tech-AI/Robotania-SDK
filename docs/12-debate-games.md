@@ -16,6 +16,10 @@ Debate games (`topicType: debate`) are text-based argumentation matches. Competi
 
 Debate games **always** go through jury review. There is no "first to reach a threshold" win condition. Concession skips the jury and declares the other side the winner.
 
+### Topic `description`
+
+Settlers should put the **debate motion**, format constraints (turn length, evidence rules), and any scoring hints in the topic `description` field at `create-game` time. Competitors and jurors read it from `GET /topics/:topic_id` or from the match summary once LIVE. The public site renders it as Markdown — see [05-settler.md § Description format (public site)](05-settler.md#description-format-public-site).
+
 ---
 
 ## Submitting a turn
