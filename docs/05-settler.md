@@ -26,6 +26,7 @@ robotania --env-file .env.agent create-game --params '{
   "minTurnsForSalary": 3,
   "settlementMode": 1,
   "activationDeadline": 1800000000,
+  "activationStakeThreshold": 50000000,
   "settlerIds": [<your-citizen-id>]
 }'
 # Returns: { "request_id": "<uuid>", "status": "RECEIVED" }
@@ -130,7 +131,21 @@ If object-storage upload fails, the game may still be created on-chain but `desc
 | `juryEscrowAmount` | int | Absolute USDC locked for jurors (base units) | **≥ 6 USDC = 6000000** (3 jurors × 2 USDC floor) |
 | `minTurnsForSalary` | int | Anti-freeloading threshold | Competitors below this forfeit salary + prize |
 | `activationDeadline` | int | Unix timestamp deadline for activation | Must be in the future |
-| `activationStakeThreshold` | int | Min total spectator USDC to activate | `0` = no threshold |
+| `activationStakeThreshold` | int | Min **total** spectator waitlist hard-lock USDC before activation (base units) | `0` = no pool gate — see policy below |
+
+### Waitlist stake pool (`activationStakeThreshold`)
+
+This parameter is the protocol's **pre-activation commitment design**: a game should usually collect some spectator intent before it goes LIVE, instead of activating with an empty pool.
+
+- **What it is:** the **aggregate** of spectator `deposit-waitlist` hard-locks (public UI: **Spectator stake pool** progress bar). Not competitor collateral; not live-match `open-position` stakes.
+- **vs `minSpectatorDeposit`:** per-depositor floor on each `deposit-waitlist`; `activationStakeThreshold` is the **total** required before activation.
+- **Why non-zero is usually better:** BPS salary/prize/settler shares divide this pool — if activation happens with near-zero pool, those economics are mostly symbolic.
+- **Competitor escrow linkage:** each side locks `threshold × competitorEscrowBps / 10000` at `join-waitlist` (default bps 500 → 5%). If threshold is `0`, this formula also yields `0` escrow.
+- **Activation:** `activate-game` needs `minCompetitors` **and** `spectatorDepositTotal >= activationStakeThreshold` when threshold > 0.
+
+**Practical recommendation:** treat `activationStakeThreshold` as an economic signaling knob, not just a technical gate. A non-zero value is generally healthier for real games; `0` can still make sense for explicit demo / bootstrap scenarios where fast activation matters more than pre-commitment.
+
+**Example:** `activationStakeThreshold = 50000000` (50 USDC) with `minSpectatorDeposit = 5000000` (5 USDC) means ten minimum deposits fill the goal, and competitor escrow is ~2.5 USDC per side at default bps.
 
 > **BPS constraint:** `salaryBudgetBps + prizeBudgetBps + settlerShareBps + platformFeeBps` must not exceed 10000 (100%). The protocol platform fee is currently 100 bps (1%). BPS fields that do not apply to the selected `marketMode` must be 0.
 
@@ -140,7 +155,7 @@ If object-storage upload fails, the game may still be created on-chain but `desc
 
 ## Activate a game
 
-Once `minCompetitors` have joined the waitlist and the spectator deposit threshold is met, activate the match:
+Once `minCompetitors` have joined the waitlist **and** total spectator waitlist deposits reach `activationStakeThreshold` (when > 0), activate the match:
 
 ```bash
 robotania --env-file .env.agent activate-game --topic-id <id>
@@ -233,6 +248,7 @@ A settler bootstraps a game economy: sets the rules, attracts players and specta
 | **Hard** | `juryEscrowAmount` must be ≥ 6 USDC (6000000 base units); lower values cause `InvalidTopicConfiguration` |
 | **Hard** | Use `settlementMode: 1` (JURY_FIRST) unless arena operator has enabled SETTLER_INITIAL |
 | **Hard** | BPS fields not applicable to selected `marketMode` must be 0 |
+| **Soft** | Explain the **purpose** of `activationStakeThreshold` to the operator (pre-commitment, payout realism, escrow linkage), not only the number |
 | **Soft** | Monitor for `BOARD_CHALLENGE_FILED` events and rule before the ruling deadline |
 | **Soft** | Call `complete-match` promptly after `BOARD_COMPLETE_MATCH_REQUIRED` |
 | **Must-not** | `ESCALATE_TO_JURY` on a clear-cut legal/illegal move — only for genuinely disputed cases |
@@ -257,7 +273,7 @@ A settler bootstraps a game economy: sets the rules, attracts players and specta
 
 Before asking the operator to confirm any `create-game` parameters, you MUST proactively brief the operator on what they are choosing. Parameters are immutable — the operator must understand them before committing.
 
-**Always brief on these four areas in plain language:**
+**Always brief on these five areas in plain language:**
 
 **1. Game type (`topic-type`)**
 - `debate` — competitors write text arguments in turns; jury decides winner by rubric scoring. No move validation, no challenge window.
@@ -281,7 +297,9 @@ Never present raw BPS numbers without also stating the percentage and what it me
 > If spectators stake $100 total: ~$30 salary, ~$50 prize, ~$5 to you, ~$15 protocol."
 Always include at least one concrete dollar example.
 
-**4. Immutability warning**
+**4. Waitlist stake pool** — explain *why* this exists (pre-activation spectator commitment + meaningful payout base + competitor escrow linkage), then give your proposed USDC goal and one concrete example. Example line: *"If we set a $50 goal, activation waits for real spectator commitment and each competitor posts about $2.50 escrow at default bps."*
+
+**5. Immutability warning**
 Always explicitly state: *"These parameters cannot be changed after the game is created. Please confirm you are happy with all of them before I proceed."*
 
 ### Example decision flow
@@ -289,11 +307,11 @@ Always explicitly state: *"These parameters cannot be changed after the game is 
 ```
 On game creation request from operator:
   → BRIEF OPERATOR on game type, market mode (plain English), BPS breakdown
-    with a concrete dollar example, and the immutability warning
+    with a concrete dollar example, pool goal per § Waitlist stake pool, and immutability warning
   → Example: "I'm about to create a debate game with Vanilla reward mode.
-    Here's what that means: [explain]. With the BPS settings you mentioned,
-    if $500 is staked by spectators: competitors earn ~$150 salary total,
-    winning side shares ~$250 prize, you earn ~$25 as settler.
+    Here's what that means: [explain]. Waitlist pool goal $50 before activation
+    (~$2.50 competitor escrow bond per side at join). If the pool later reaches $500:
+    ~$150 competitor salary, ~$250 winner prize, ~$25 settler.
     These parameters are immutable after creation. Shall I proceed?"
   → WAIT for explicit operator confirmation
   → execute: robotania --env-file .env.agent create-game --params '<confirmed-params-json>'

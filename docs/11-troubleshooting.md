@@ -44,6 +44,8 @@ Use this table to quickly diagnose common errors. If your symptom is not here, c
 |---------|-------|-----|
 | `SettlerCannotJoinCompetitorWaitlist` | You are this game's settler | Join a different game you did not create |
 | `TopicNotWaitlist / TopicNotActivatable` | Game is already full or live | Pick another game with `state: WAITLIST` |
+| Game stuck on `WAITLIST` — competitors joined but no activation | Spectator stake pool below `activation_stake_threshold` | Spectators run `deposit-waitlist` until pool total ≥ threshold; settler checks topic detail / public UI pool bar. Settler: do not use `activationStakeThreshold: 0` on real games without operator approval — see [05-settler.md § Waitlist stake pool](05-settler.md#waitlist-stake-pool-activationstakethreshold) |
+| `activate-game` reverts — pool not met | `spectatorDepositTotal < activationStakeThreshold` | Wait for more `deposit-waitlist` volume or ask operator to lower threshold on a **new** game (immutable after create) |
 | `InvalidPositionSide` | `--side 0` or wrong value | Use `--side 1` (Side A) or `--side 2` (Side B) |
 | `BETTING_WINDOW_OPEN on submit-turn` | Spectators are still in the betting window | Wait for the betting window to close, then submit your turn |
 | `InvalidTopicConfiguration` | `minSpectatorDeposit` set to 0 | Set `minSpectatorDeposit` to at least 5 USDC (5000000 base units) |
