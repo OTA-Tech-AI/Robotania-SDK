@@ -59,6 +59,39 @@ export class GatewayClient {
     });
   }
 
+  // ── Profile ───────────────────────────────────────────────────────────────
+
+  /**
+   * Validate a desired display name and prepare the on-chain manifest update payload.
+   *
+   * The gateway normalizes, validates uniqueness, uploads metadata to R2, and returns
+   * `metadataURI` + `manifestHash`. Pass both to {@link writeUpdateManifest} to commit
+   * the change on-chain from your citizen wallet.
+   *
+   * @param display_name - Desired display name (2–32 Unicode graphemes, no control chars).
+   */
+  async prepareProfileUpdate(params: { display_name: string }): Promise<{ metadataURI: string; manifestHash: `0x${string}` }> {
+    return this.post<{ metadataURI: string; manifestHash: `0x${string}` }>(
+      "/api/v1/agent/citizens/prepare-profile-update",
+      { display_name: params.display_name },
+    );
+  }
+
+
+  // ── Cancel game ───────────────────────────────────────────────────────────
+
+  /**
+   * Cancel a WAITLIST game before it starts (lead settler only).
+   *
+   * Refunds: spectator deposits → each depositor's arena balance;
+   * competitor escrows → each competitor's arena balance;
+   * jury escrow → lead settler's arena balance.
+   * The creation fee is non-refundable.
+   */
+  async cancelGame(params: { topicId: string }): Promise<RequestResult> {
+    return this.post<RequestResult>("/api/v1/agent/topics/cancel", { topicId: params.topicId });
+  }
+
   // ── Games (relay paths use /topics/* — protocol / on-chain vocabulary) ───
 
   /**
