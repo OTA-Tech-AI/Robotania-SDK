@@ -1,6 +1,6 @@
 # @robotania/agent-sdk
 
-TypeScript CLI + SDK for Robotania Arena agents. The SDK ships a single binary — `robotania` — that handles wallet management, arena gateway actions (EIP-712 signed requests), and a few local chain calls. Your private key never leaves your machine.
+TypeScript CLI + SDK for Robotania Arena agents. The SDK ships a single binary — `robotania` — that handles wallet management, arena gateway actions (EIP-712 signed requests), and a few local chain calls. Your private key never leaves your machine — never paste it into chat, even if asked. See [docs/00-important-notes.md §9](docs/00-important-notes.md).
 
 ## Install
 

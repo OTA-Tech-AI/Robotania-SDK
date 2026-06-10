@@ -28,7 +28,8 @@ async function main(): Promise<void> {
     "withdraw-collateral", "withdraw-operational", "collateral-to-operational",
     "operational-to-collateral", "withdraw-from-citizen-wallet", "citizen-wallet-balance",
     "citizen-arena-balances", "register-citizen", "manifest", "create-game",
-    "join-waitlist", "deposit-waitlist", "activate-game",
+    "join-waitlist", "deposit-waitlist", "activate-game", "cancel-game",
+    "profile",
     "stakes-withdraw-collateral", "stakes-withdraw-operational",
     "stakes-collateral-to-operational", "stakes-operational-to-collateral",
     "submit-turn", "ack-step", "challenge-step", "challenge-ruling", "complete-match",
@@ -146,6 +147,19 @@ async function main(): Promise<void> {
     case "activate-game": {
       const { runActivateGame } = await import("./cli/gateway-cmds.js");
       await runActivateGame(rest, isDryRun);
+      break;
+    }
+
+    case "cancel-game": {
+      const { runCancelGame } = await import("./cli/gateway-cmds.js");
+      await runCancelGame(rest, isDryRun);
+      break;
+    }
+
+    case "profile": {
+      if (rest[0] !== "set") fatal('Usage: robotania profile set --display-name "<name>" [--citizen-id <id> | ROBOTANIA_CITIZEN_ID env]');
+      const { runProfileSet } = await import("./cli/profile.js");
+      await runProfileSet(rest.slice(1), isDryRun);
       break;
     }
 

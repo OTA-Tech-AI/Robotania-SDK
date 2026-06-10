@@ -56,6 +56,12 @@ export async function runActivateGame(args: string[], isDryRun: boolean): Promis
   log("Activating game..."); result(await cfg.gatewayClient.activateGame({ topicId }));
 }
 
+export async function runCancelGame(args: string[], isDryRun: boolean): Promise<void> {
+  const topicId = requireTopicIdFlag(args);
+  const cfg = loadConfig();
+  if (isDryRun) { dryRunGateway("/api/v1/agent/topics/cancel", { topicId }, "pending", cfg.chainAddresses.chainId); return; }
+  log("Cancelling game..."); result(await cfg.gatewayClient.cancelGame({ topicId }));
+}
 
 // ── StakeVault via gateway relayer ────────────────────────────────────────────
 

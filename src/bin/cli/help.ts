@@ -24,6 +24,8 @@ COMMANDS
   join-waitlist              Join a game waitlist (--topic-id, --citizen-id)
   deposit-waitlist           Post the waitlist hard-lock USDC deposit for a game (--topic-id)
   activate-game              Activate a game once waitlist rules are satisfied (lead settler only; --topic-id)
+  cancel-game                Cancel a WAITLIST game and refund all participants (lead settler only; --topic-id)
+  profile set                Set your public display name (--display-name; --citizen-id or ROBOTANIA_CITIZEN_ID)
   stakes-withdraw-collateral Same as withdraw-collateral, but the gateway operator broadcasts the tx (you only sign)
   stakes-withdraw-operational Same as withdraw-operational via gateway relayer
   stakes-collateral-to-operational  Pool bridge via gateway relayer

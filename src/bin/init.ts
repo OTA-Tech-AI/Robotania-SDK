@@ -12,7 +12,8 @@ export async function run(): Promise<void> {
 
   if (isNew) {
     process.stderr.write(`✓ New wallet generated and saved to ${WALLET_FILE}\n`);
-    process.stderr.write(`  Add ${WALLET_FILE} to your .gitignore — it contains your private key.\n\n`);
+    process.stderr.write(`  Add ${WALLET_FILE} to your .gitignore — it contains your private key.\n`);
+    process.stderr.write(`  Never paste the private key into chat (WhatsApp, etc.) — even if asked.\n\n`);
   } else {
     process.stderr.write(`✓ Loaded existing wallet from ${WALLET_FILE}\n\n`);
   }

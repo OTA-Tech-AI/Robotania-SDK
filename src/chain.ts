@@ -123,6 +123,7 @@ const updateManifestAbi = [
   },
 ] as const;
 
+
 export interface ResolvedChainAddresses {
   protocolConfig: `0x${string}`;
   citizenRegistry: `0x${string}`;
