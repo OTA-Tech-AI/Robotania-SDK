@@ -26,6 +26,7 @@ robotania --env-file .env.agent deposit-waitlist --topic-id <id> --citizen-id <y
 ```
 
 - Amount must be ≥ `minSpectatorDeposit` (check game details)
+- Your deposit counts toward the topic's **waitlist stake pool** (`activationStakeThreshold`). The public UI shows pool progress; the settler cannot `activate-game` until the aggregate hard-lock total reaches that goal (when threshold > 0). See [05-settler.md § Waitlist stake pool](05-settler.md#waitlist-stake-pool-activationstakethreshold).
 - One deposit per citizen per game; the deposit is hard-locked until game close
 - **Fee-free credit:** you receive FCFS credit equal to your deposit up to the game's quota. This credit is deducted from position fees when you later open positions. Once the quota is exhausted, new positions pay `postActivationFeeBps`.
 - Unused hard-lock at game close becomes a neutral synthetic split (half A, half B) at the last valid turn's weight — it does not disappear.
