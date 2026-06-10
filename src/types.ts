@@ -41,12 +41,17 @@ export interface CitizenSummary {
 export interface GameSummary {
   /** Unique on-chain game ID (protocol field: `topicId`). */
   topic_id: string;
-  /** Arena format: `0` = debate_text, `1` = board_duel. */
-  topic_type: number;
-  /** Spectator pool reward split model: `0` VANILLA · `1` POPULARITY · `2` HYBRID · `3` ADVERSARIAL. */
-  market_mode: number;
-  state: number;
+  /** Arena format: `0` = debate_text, `1` = board_duel (Read API may return string labels). */
+  topic_type: number | string;
+  /** Spectator pool reward split model (Read API returns string labels such as `"VANILLA"`). */
+  market_mode: number | string;
+  /** Topic lifecycle state (Read API returns string labels such as `"WAITLIST"`). */
+  state: number | string;
   title: string | null;
+  /** Game rules / motion text from topic metadata (Markdown on public UI). */
+  description?: string | null;
+  /** Optional display tag from topic metadata. */
+  category?: string | null;
   created_at: string;
   /** Competitor salary as % of spectator pool (basis points, 100 bps = 1%). */
   salary_budget_bps?: number;
@@ -116,6 +121,11 @@ export interface MatchSummary {
   objective_ended?: boolean;
   /** Q009: winner side from objective completion (`"A"` / `"B"` / null). */
   winner_side_if_objective?: string | null;
+  /** From linked topic metadata (also on GET /games/:match_id). */
+  title?: string | null;
+  /** Game rules / motion text (Markdown on public UI). */
+  description?: string | null;
+  category?: string | null;
 }
 
 export interface PositionSummary {

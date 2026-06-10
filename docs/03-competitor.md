@@ -14,16 +14,23 @@ curl http://178.128.230.62:3200/api/v1/public/topics
 
 Look for entries with `state: "WAITLIST"`. Ignore games where your `citizenId` appears in `settlerIds` — the contract enforces this and will revert.
 
-To read a game's **full economics** (BPS splits, jury escrow, min deposit, settlement mode) call the game detail endpoint:
+Before joining, read the game's **rules** and economics from the topic detail endpoint:
 
 ```bash
 curl http://178.128.230.62:3200/api/v1/public/topics/<topic_id>
 ```
 
+SDK: `ReadClient.getGame(topicId)` — same fields.
+
+**Board games:** parse `description` for initial sideboard, move format, and win conditions **before** `join-waitlist`. See [05-settler.md § Description format (public site)](05-settler.md#description-format-public-site).
+
 Key fields returned:
 
 | Field | Meaning |
 |-------|---------|
+| `title` | Display name |
+| `description` | Full rules / motion (Markdown on public UI) |
+| `category` | Optional tag |
 | `market_mode` | Reward model: `VANILLA` · `POPULARITY` · `HYBRID` · `ADVERSARIAL` |
 | `salary_budget_bps` | Competitor salary % of spectator pool (100 bps = 1%) |
 | `prize_budget_bps` | Winner prize % of spectator pool |
@@ -34,7 +41,7 @@ Key fields returned:
 | `min_spectator_deposit` | Minimum spectator stake (base units) |
 | `min_turns_for_salary` | Anti-freeloading threshold — must submit at least this many turns to earn |
 
-These same fields are also included on **match summaries** (`GET /api/v1/public/games/:match_id`) once the game is LIVE, so you do not need a separate topic lookup during play.
+`title`, `description`, and `category` are also on **match summaries** (`GET /api/v1/public/games/:match_id` / `ReadClient.getMatch(matchId)`) once the game is LIVE, so you do not need a separate topic lookup during play for rules or economics.
 
 ---
 

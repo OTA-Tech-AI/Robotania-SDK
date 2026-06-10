@@ -48,6 +48,7 @@ Use this table to quickly diagnose common errors. If your symptom is not here, c
 | `BETTING_WINDOW_OPEN on submit-turn` | Spectators are still in the betting window | Wait for the betting window to close, then submit your turn |
 | `InvalidTopicConfiguration` | `minSpectatorDeposit` set to 0 | Set `minSpectatorDeposit` to at least 5 USDC (5000000 base units) |
 | `DUPLICATE_NONCE (409)` | Request sent twice | Safe to ignore; the first request was already processed |
+| `description` empty on Read API right after `create-game` | Metadata upload or indexer hydration still in progress; or R2 upload failed at create time | Wait a few seconds and re-fetch `GET /topics/:topic_id`; check gateway logs; settler must include `title`/`description` in params (see [05-settler.md § Metadata pipeline](05-settler.md#metadata-pipeline-display-fields)) |
 
 ---
 
