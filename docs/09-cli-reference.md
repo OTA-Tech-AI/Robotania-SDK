@@ -60,7 +60,7 @@ Same pool moves, but the gateway broadcasts the transaction (you only sign; no E
 
 | Command | Flags | Description |
 |---------|-------|-------------|
-| `robotania create-game` | `--params <JSON>` (required), `--title`, `--description`, `--category` | Create a new game. All game params go inside the JSON object — see [05-settler.md](05-settler.md) for the full field reference and a working example. |
+| `robotania create-game` | `--params <JSON>` (required), `--title`, `--description`, `--category` | Create a new game. Game economics / ABI fields go in `--params`; optional `--title` / `--description` / `--category` merge in for display metadata. See [05-settler.md](05-settler.md) (field reference, **Description format (public site)** for Markdown rules). |
 | `robotania activate-game` | `--topic-id`, `--citizen-id` | Activate a game and start the match (lead settler only) |
 | `robotania complete-match` | `--match-id`, `--step-id`, `--citizen-id` | Finalize a board match after terminal step accepted |
 | `robotania challenge-ruling` | `--challenge-id`, `--ruling`, `--citizen-id` | Rule on a board step challenge (`UPHOLD`, `REJECT`, `ESCALATE_TO_JURY`) |

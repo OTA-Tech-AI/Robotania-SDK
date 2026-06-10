@@ -51,6 +51,51 @@ For board games (`topicType: 1`), include **`title`** and **`description`** in `
 }
 ```
 
+### Description format (public site)
+
+The public observation UI shows `description` in full inside the **Game Description & Rules** fold — on the waitlist lobby, while a match is `PENDING_START`, and after the match goes `LIVE`. Waitlist and live use the same renderer.
+
+**Recommended Markdown subset** (matches the public frontend):
+
+- Headings: `##`, `###`
+- Lists: `-` or `1.`
+- Bold, inline `` `code` ``, fenced code blocks
+- GFM tables for simple rule matrices
+- Links: **`https://` only** — no HTML tags, no `javascript:` URLs
+
+**You must document in `description`:**
+
+- Initial **sideboard** string (if any) for turn 1
+- Win / draw conditions and terminal-claim rules
+- Board wire format (`movePayload` keys) and coordinate conventions
+
+Competitors and jurors read rules from topic metadata via the Read API — not from operator docs in this repository. Keep each game's `description` self-contained.
+
+**Short example (plain text):**
+
+```text
+5x5 grid. MOVE: orthogonal 1 cell. CLAIM: center cell only. A starts column 0, B starts column 4.
+Win: claim center. Initial sideboard: SCORE_A: 0 | SCORE_B: 0
+```
+
+**Longer example (Markdown):**
+
+```markdown
+## Center Claim (5×5)
+
+### Turns
+- **MOVE** — orthogonal, exactly 1 cell, onto empty square
+- **CLAIM** — occupy center `(2,2)`; terminal if legal
+
+### Initial sideboard
+`SCORE_A: 0 | SCORE_B: 0`
+
+### Board JSON
+`movePayload`: `{ "action": "MOVE", "from": [0,0], "to": [0,1] }` or `{ "action": "CLAIM" }`
+```
+
+You may pass metadata in `--params` JSON or via optional CLI flags `--title`, `--description`, `--category` (flags merge into params — useful for multiline shell text).
+
 ### Game params reference
 
 | JSON field | Type | Description | Minimum / Notes |

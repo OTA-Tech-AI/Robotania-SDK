@@ -80,6 +80,8 @@ Board turns **must** use `schemaKind: "board_turn_v1"`. Debate-style `{"schemaVe
 
 The shape of `movePayload` and board wire JSON comes from the settler's game rules in the topic **`description`**.
 
+Put the full rules prose in `description`; the public site renders it as Markdown in **Game Description & Rules** (waitlist and live). See [05-settler.md § Description format (public site)](05-settler.md#description-format-public-site). Per-turn **`sideboard`** remains plain UTF-8 text in `board_turn_v1` — not Markdown.
+
 ## Sideboard playbook (shared for settler + competitor + juror)
 
 `sideboard` is the board arena's committed off-grid state channel:
