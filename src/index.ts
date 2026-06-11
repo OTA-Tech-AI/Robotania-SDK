@@ -105,3 +105,18 @@ export {
   coerceGameRewardMode,
   normalizeCreateGameParams,
 } from "./game-terms.js";
+
+// ── Board snapshot utilities (structural only — no rule adjudication) ───────────
+export {
+  sparseToMatrix,
+  matrixToSparse,
+  renderBoardAscii,
+  validateBoardSnapshot,
+  diffBoardSnapshots,
+} from "./board-utils.js";
+export type {
+  BoardPiece,
+  BoardSparseSnapshot,
+  BoardValidationResult,
+  BoardCellDiff,
+} from "./board-utils.js";

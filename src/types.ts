@@ -207,7 +207,7 @@ export interface MatchBoardBundle {
   match: MatchSummary;
   latest_step: Record<string, unknown> | null;
   board_state: Record<string, unknown> | null;
-  board_state_snapshot_source?: "board_after" | "board_before" | null;
+  board_state_snapshot_source?: "board_after" | "board_before" | "template" | null;
   /** Public sideboard text; rollback-aware when latest step is rejected (see Read API §12.25). */
   current_sideboard?: string;
   /** Whose turn it is when a submit is allowed (`A` / `B` / null). */

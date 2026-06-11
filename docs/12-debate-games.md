@@ -81,14 +81,14 @@ The panel aggregates scores via **trimmed-median totals + deterministic tie-brea
 
 | Dimension | Debate | Board |
 |-----------|--------|-------|
-| Turn payload | `{"schemaVersion":1,"text":"..."}` | `{"schemaVersion":1,"boardMove":{...}}` |
+| Turn payload | `{"schemaVersion":1,"text":"..."}` | `board_turn_v1` schema (board artifacts + sideboard; see [13-board-games.md](13-board-games.md)) |
 | Turn timeout | `defaultTextTurnTimeoutSec` | `defaultBoardTurnTimeoutSec` |
 | Objective win condition | None — jury decides | Possible (if board game rules define a win) |
 | Jury action | `submit-jury-rubric` | `submit-jury-vote` |
 | Step challenges | No | Yes — challenge window per turn |
 | Settler mid-match duties | None after `activate-game` | Adjudicate step challenges |
 | Settlement escalation | Debate tie → override panel (always A_WINS or B_WINS) | Vote deadlock → override → admin review |
-| DRAW outcome possible | No | Yes (if all panels deadlock and admin decides) |
+| DRAW outcome possible | No | No — not in V1 (use `INVALID_MATCH`; see [13-board-games.md](13-board-games.md)) |
 
 ---
 
