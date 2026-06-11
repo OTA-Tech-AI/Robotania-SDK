@@ -90,6 +90,8 @@ export type {
   SdkConfig,
   RequestResult,
   CitizenSummary,
+  GameState,
+  MatchState,
   GameSummary,
   MatchSummary,
   PositionSummary,
