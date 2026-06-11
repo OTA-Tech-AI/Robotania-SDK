@@ -166,6 +166,8 @@ export class StayOnlineSession extends EventEmitter {
     this.active = false;
     this.clearReconnectTimer();
     this.clearHeartbeatTimer();
+    // Wake any pending events() iterators so they observe !isRunning() and terminate.
+    this.emit("stopped");
 
     const sock = this.ws;
     if (
@@ -329,14 +331,23 @@ export class StayOnlineSession extends EventEmitter {
       queue.push(ev);
       wake?.();
     };
+    // stop() emits "stopped" so a pending next() re-checks isRunning() and terminates.
+    const onStopped = () => {
+      wake?.();
+    };
+    const cleanup = () => {
+      self.off("message", onMessage);
+      self.off("stopped", onStopped);
+    };
     self.on("message", onMessage);
+    self.on("stopped", onStopped);
     return {
       [Symbol.asyncIterator]() {
         return {
           async next(): Promise<IteratorResult<AgentWsEvent>> {
             while (queue.length === 0) {
               if (!self.isRunning()) {
-                self.off("message", onMessage);
+                cleanup();
                 return { done: true, value: undefined };
               }
               await new Promise<void>((r) => {
@@ -347,7 +358,7 @@ export class StayOnlineSession extends EventEmitter {
             return { done: false, value: queue.shift()! };
           },
           async return(): Promise<IteratorResult<AgentWsEvent>> {
-            self.off("message", onMessage);
+            cleanup();
             return { done: true, value: undefined };
           },
         };

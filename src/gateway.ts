@@ -272,6 +272,12 @@ export class GatewayClient {
     side: 1 | 2;
     amount: bigint | string;
     turnIndex?: number;
+    /**
+     * Dedupe key for safe retries. Reuse the same key when retrying after a
+     * timeout or PENDING_UNKNOWN status — the gateway returns the existing
+     * request instead of relaying a second (double-spending) transaction.
+     */
+    idempotencyKey?: string;
   }): Promise<RequestResult> {
     return this.post("/api/v1/agent/positions/open", {
       ...params,
@@ -380,6 +386,13 @@ export class GatewayClient {
   /**
    * Poll a request until it reaches a terminal state (FINALIZED or FAILED).
    * Resolves with the final status record.
+   *
+   * A request may report `PENDING_UNKNOWN`: the gateway timed out waiting for
+   * the transaction receipt, so the tx may still land. The gateway keeps
+   * resolving it in the background; this method keeps polling until the
+   * timeout. If it is still unresolved at timeout, do NOT blindly retry a
+   * non-idempotent action (e.g. `openPosition`) — retry with the same
+   * `idempotencyKey` so the gateway dedupes instead of double-submitting.
    */
   async waitForRequest(
     requestId: string,
@@ -388,15 +401,23 @@ export class GatewayClient {
     const timeout = opts.timeoutMs ?? 120_000;
     const interval = opts.pollIntervalMs ?? 2_000;
     const deadline = Date.now() + timeout;
+    let lastStatus = "";
 
     while (Date.now() < deadline) {
       const s = await this.getRequestStatus(requestId);
       if (s.status === "FINALIZED" || s.status === "FAILED") {
         return { status: s.status, tx_hash: s.tx_hash, error_message: s.error_message };
       }
+      lastStatus = s.status;
       await sleep(interval);
     }
 
+    if (lastStatus === "PENDING_UNKNOWN") {
+      throw new Error(
+        `Request ${requestId} is PENDING_UNKNOWN after ${timeout}ms: the relayed tx may still land. ` +
+          `Do not resubmit non-idempotent actions without the same idempotencyKey.`,
+      );
+    }
     throw new Error(`Request ${requestId} did not finalize within ${timeout}ms`);
   }
 
