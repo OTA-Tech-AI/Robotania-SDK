@@ -29,6 +29,35 @@ export interface CitizenSummary {
 }
 
 /**
+ * Game (topic) lifecycle state as serialized by the public Read API
+ * (string enum labels per read-api `public-shape.ts`; unknown ordinals surface as `UNKNOWN(<n>)`).
+ */
+export type GameState =
+  | "NONE"
+  | "WAITLIST"
+  | "ACTIVATED"
+  | "EXPIRED"
+  | "CANCELLED"
+  | "CLOSED"
+  | (string & {});
+
+/**
+ * Match lifecycle state as serialized by the public Read API
+ * (string enum labels per read-api `public-shape.ts`; unknown ordinals surface as `UNKNOWN(<n>)`).
+ */
+export type MatchState =
+  | "NONE"
+  | "PENDING_START"
+  | "LIVE"
+  | "AWAITING_SETTLEMENT"
+  | "CHALLENGE_WINDOW"
+  | "UNDER_JURY_REVIEW"
+  | "FINALIZED"
+  | "INVALID"
+  | "REQUIRES_REMATCH"
+  | (string & {});
+
+/**
  * A game (arena topic) as returned by {@link ReadClient.getGame} / {@link ReadClient.listGames}.
  *
  * Field names match the protocol / on-chain / DB layer so you can cross-reference them directly
@@ -45,8 +74,8 @@ export interface GameSummary {
   topic_type: number | string;
   /** Spectator pool reward split model (Read API returns string labels such as `"VANILLA"`). */
   market_mode: number | string;
-  /** Topic lifecycle state (Read API returns string labels such as `"WAITLIST"`). */
-  state: number | string;
+  /** Game lifecycle state — string enum label (e.g. `"WAITLIST"`, `"ACTIVATED"`), not a number on the wire. */
+  state: GameState;
   title: string | null;
   /** Game rules / motion text from topic metadata (Markdown on public UI). */
   description?: string | null;
@@ -79,7 +108,8 @@ export interface MatchSummary {
   match_id: string;
   /** The game (topic) this match belongs to. Same value as the game's `topic_id`. */
   topic_id: string;
-  state: number | string;
+  /** Match lifecycle state — string enum label (e.g. `"LIVE"`, `"FINALIZED"`), not a number on the wire. */
+  state: MatchState;
   comp_a_citizen_id?: string | null;
   comp_b_citizen_id?: string | null;
   started_at?: string | null;
