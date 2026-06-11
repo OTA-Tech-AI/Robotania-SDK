@@ -11,15 +11,34 @@
 import { createPublicClient, createWalletClient, http, defineChain, parseAbi, keccak256, toBytes } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
-const RPC_URL      = "http://104.168.122.108:8546";
-const READ_API     = "http://104.168.122.108:3200";
-const MATCH_MGR    = "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6";
-const JURY_MANAGER = "0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0";
-const DEPLOYER_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+/**
+ * Required environment (no hardcoded defaults — keeper authority + endpoints must be explicit):
+ *   ARENA_RPC_URL       — chain RPC, e.g. http://127.0.0.1:8545 for a local anvil
+ *   ARENA_READ_API_URL  — public read API base, e.g. http://127.0.0.1:3200
+ *   ARENA_DEPLOYER_KEY  — keeper private key (for a local anvil sim this is typically anvil dev key #0)
+ * Optional:
+ *   ARENA_MATCH_MANAGER / ARENA_JURY_MANAGER — contract addresses (defaults: deterministic local deploy)
+ *   ARENA_MIN_TOPIC_ID  — only handle topics with ID > this value (default 0 = all topics)
+ */
+function requireEnv(name, hint) {
+  const v = process.env[name];
+  if (!v) {
+    console.error(`[keeper] missing required env var ${name} (${hint})`);
+    process.exit(1);
+  }
+  return v;
+}
+
+const RPC_URL      = requireEnv("ARENA_RPC_URL", "chain RPC URL, e.g. http://127.0.0.1:8545");
+const READ_API     = requireEnv("ARENA_READ_API_URL", "read API base URL, e.g. http://127.0.0.1:3200");
+const DEPLOYER_KEY = requireEnv("ARENA_DEPLOYER_KEY", "keeper private key; for local anvil sims use anvil dev key #0");
+const MATCH_MGR    = process.env.ARENA_MATCH_MANAGER ?? "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6";
+const JURY_MANAGER = process.env.ARENA_JURY_MANAGER ?? "0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0";
 const JURY_IDS     = [2n, 3n, 4n];
 const ZERO_HASH    = "0x0000000000000000000000000000000000000000000000000000000000000000";
-// Only handle topics created after this sim started (ID > 26 = previous sims)
-const MIN_TOPIC_ID = 26;
+// Only handle topics with ID strictly greater than this (default 0 = all topics).
+// Set ARENA_MIN_TOPIC_ID to skip topics left over from previous sim runs.
+const MIN_TOPIC_ID = Number(process.env.ARENA_MIN_TOPIC_ID ?? 0);
 // After this many ms without all rubrics, keeper submits neutral rubrics and finalizes
 const RUBRIC_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -45,6 +64,13 @@ const juryAbi   = parseAbi([
 const OUTCOME_A_WINS = 1;
 const OUTCOME_B_WINS = 2;
 
+// keccak256 of the event signature — topics[0] of JuryCaseCreated logs.
+// event JuryCaseCreated(uint256 indexed juryCaseId, uint256 indexed matchId, bytes32 evidenceRoot)
+const JURY_CASE_CREATED_TOPIC0 = keccak256(toBytes("JuryCaseCreated(uint256,uint256,bytes32)"));
+
+/** Permanent on-chain failure (revert) vs transient (RPC blip, network) — transient ops are retried. */
+const isRevert = e => Boolean(e?.message?.includes("revert"));
+
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const fetchJson = async url => { const r = await fetch(url); return r.json(); };
 const now = () => new Date().toISOString().slice(11, 19);
@@ -61,7 +87,7 @@ while (true) {
   await sleep(12_000);
   try {
     // 1. Find activated topics from this simulation → startMatch
-    const resp = await fetchJson(`${READ_API}/api/v1/public/topics?limit=30`);
+    const resp = await fetchJson(`${READ_API}/api/v1/public/topics?page_size=30`);
     const topics = (resp.data || []).filter(t => parseInt(t.topic_id) > MIN_TOPIC_ID);
 
     for (const t of topics) {
@@ -72,8 +98,12 @@ while (true) {
           startedMatches.add(t.match_id);
           console.log(`[keeper ${now()}] startMatch(${t.match_id}) topic#${t.topic_id} "${t.title || '?'}" ✓`);
         } catch (e) {
-          startedMatches.add(t.match_id); // don't retry
-          if (!e.message?.includes("revert")) console.log(`[keeper ${now()}] startMatch skip: ${e.message?.slice(0, 60)}`);
+          if (isRevert(e)) {
+            startedMatches.add(t.match_id); // permanent failure — don't retry
+            console.log(`[keeper ${now()}] startMatch(${t.match_id}) reverted, won't retry: ${e.message?.slice(0, 80)}`);
+          } else {
+            console.log(`[keeper] transient error, will retry: startMatch(${t.match_id}) ${e.message?.slice(0, 80)}`);
+          }
         }
       }
     }
@@ -86,21 +116,33 @@ while (true) {
         if (pending) {
           const hash = await wc.writeContract({ account, address: JURY_MANAGER, abi: juryAbi, functionName: "createJuryCase", args: [BigInt(matchId), JURY_IDS, ZERO_HASH] });
           const receipt = await pub.waitForTransactionReceipt({ hash });
-          // Extract jury case ID from JuryCaseCreated event logs (topic[0] signature, topic[2] = caseId)
+          // Extract jury case ID from the JuryCaseCreated event log:
+          // topics[0] = event signature, topics[1] = juryCaseId (indexed), topics[2] = matchId (indexed)
           let juryCaseId = null;
           for (const log of receipt.logs) {
-            if (log.topics.length >= 3) {
+            if (
+              log.address?.toLowerCase() === JURY_MANAGER.toLowerCase() &&
+              log.topics?.[0] === JURY_CASE_CREATED_TOPIC0 &&
+              log.topics.length >= 3
+            ) {
               try { juryCaseId = String(BigInt(log.topics[1])); } catch {}
               break;
             }
+          }
+          if (juryCaseId === null) {
+            console.log(`[keeper ${now()}] warning: createJuryCase(match=${matchId}) succeeded but no JuryCaseCreated event found in receipt`);
           }
           juryCasesByMatch.set(matchId, { juryCaseId, createdAt: Date.now() });
           console.log(`[keeper ${now()}] createJuryCase(match=${matchId}, jurors=[2,3,4]) juryCaseId=${juryCaseId} ✓`);
         }
       } catch (e) {
-        // Mark as processed even on error to avoid infinite retry
-        juryCasesByMatch.set(matchId, { juryCaseId: null, createdAt: Date.now() });
-        if (!e.message?.includes("revert")) console.log(`[keeper ${now()}] jury skip match ${matchId}: ${e.message?.slice(0, 60)}`);
+        if (isRevert(e)) {
+          // Permanent failure — mark as processed to avoid infinite retry
+          juryCasesByMatch.set(matchId, { juryCaseId: null, createdAt: Date.now() });
+          console.log(`[keeper ${now()}] createJuryCase(match=${matchId}) reverted, won't retry: ${e.message?.slice(0, 80)}`);
+        } else {
+          console.log(`[keeper] transient error, will retry: createJuryCase(match=${matchId}) ${e.message?.slice(0, 80)}`);
+        }
       }
     }
 
@@ -116,6 +158,7 @@ while (true) {
         // Submit neutral rubric for each juror that hasn't submitted yet
         const neutralHash = keccak256(toBytes(`keeper-neutral-${juryCaseId}`));
         let submitted = 0;
+        let transientFailures = 0;
         for (const jurorId of JURY_IDS) {
           const existing = await pub.readContract({ address: JURY_MANAGER, abi: juryAbi, functionName: "getJuryRubricHash", args: [BigInt(juryCaseId), jurorId] });
           if (existing !== ZERO_HASH) continue;
@@ -125,12 +168,17 @@ while (true) {
             submitted++;
             console.log(`[keeper ${now()}] rubric fallback: case ${juryCaseId} juror #${jurorId} ✓`);
           } catch (e) {
-            if (!e.message?.includes("AlreadySubmitted") && !e.message?.includes("revert")) {
-              console.log(`[keeper ${now()}] rubric fallback juror #${jurorId} skip: ${e.message?.slice(0, 60)}`);
+            if (e.message?.includes("AlreadySubmitted") || isRevert(e)) {
+              // permanent for this juror — nothing to retry
+            } else {
+              transientFailures++;
+              console.log(`[keeper] transient error, will retry: submitJuryRubric(case=${juryCaseId}, juror=${jurorId}) ${e.message?.slice(0, 80)}`);
             }
           }
         }
 
+        // Nothing submitted because of transient errors → retry next cycle, don't mark done
+        if (submitted === 0 && transientFailures > 0) continue;
         if (submitted === 0) { finalizedCases.add(juryCaseId); continue; } // all done or case already finalized
 
         // Determine winner from read API rubric scores (use existing jurors' scores if available)
@@ -150,8 +198,12 @@ while (true) {
           const winner = outcome === OUTCOME_A_WINS ? "A_WINS" : "B_WINS";
           console.log(`[keeper ${now()}] finalizeJuryRubricCase(case=${juryCaseId}, outcome=${winner}) fallback ✓`);
         } catch (e) {
-          if (!e.message?.includes("revert")) console.log(`[keeper ${now()}] finalize fallback skip: ${e.message?.slice(0, 60)}`);
-          finalizedCases.add(juryCaseId); // don't retry
+          if (isRevert(e)) {
+            finalizedCases.add(juryCaseId); // permanent failure — don't retry
+            console.log(`[keeper ${now()}] finalizeJuryRubricCase(case=${juryCaseId}) reverted, won't retry: ${e.message?.slice(0, 80)}`);
+          } else {
+            console.log(`[keeper] transient error, will retry: finalizeJuryRubricCase(case=${juryCaseId}) ${e.message?.slice(0, 80)}`);
+          }
         }
       } catch (e) {
         if (!e.message?.includes("revert")) console.log(`[keeper ${now()}] rubric fallback error case ${juryCaseId}: ${e.message?.slice(0, 60)}`);

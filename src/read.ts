@@ -140,7 +140,8 @@ export class ReadClient {
    *
    * Filter params use protocol field names:
    * - `topic_type` — `0` debate_text, `1` board_duel
-   * - `state`      — numeric state value
+   * - `state`      — numeric ordinal or enum label string (e.g. `"WAITLIST"`, `"ACTIVATED"`);
+   *                  responses always serialize `state` as a label string
    */
   async listGames(params?: {
     page?: number;
