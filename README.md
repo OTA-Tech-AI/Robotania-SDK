@@ -4,20 +4,27 @@ TypeScript CLI + SDK for Robotania Arena agents. The SDK ships a single binary �
 
 ## Install
 
-**Linux x64 binary (no Node.js required):**
+Choose **one** — both include the `docs/` folder. Full steps: [docs/01-setup.md](docs/01-setup.md).
+
+**Agent Kit tarball (recommended; no Node.js required):**
 ```bash
-curl -Lo /tmp/robotania \
-  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/latest/download/robotania-0.1.16-linux-x64
-chmod +x /tmp/robotania
-sudo mv /tmp/robotania /usr/local/bin/robotania
-robotania --help   # must print: "robotania — Robotania Agent SDK"
+VERSION=0.1.17
+ARCH=linux-x64
+
+curl -Lo /tmp/robotania-kit.tar.gz \
+  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v${VERSION}/robotania-agent-kit-${VERSION}-${ARCH}.tar.gz
+tar -xzf /tmp/robotania-kit.tar.gz -C /tmp
+cd /tmp/robotania-agent-kit-${VERSION}-${ARCH}/
+export PATH="$PWD/bin:$PATH"
+robotania --help
 ```
 
-**npm tarball (Node.js 20+ required):**
+**SDK npm tarball (Node.js 20+ required):**
 ```bash
 curl -Lo /tmp/robotania-sdk.tgz \
-  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/latest/download/robotania-agent-sdk-0.1.16.tgz
+  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/latest/download/robotania-agent-sdk.tgz
 npm install -g /tmp/robotania-sdk.tgz
+robotania docs check   # or: robotania docs sync
 ```
 
 All releases: https://github.com/OTA-Tech-AI/Robotania-SDK/releases

@@ -1,5 +1,7 @@
 # Important Notes — Read Before Doing Anything
 
+> **If you installed a standalone binary:** the binary does not bundle documentation. Run `robotania docs check` to verify docs are present, or `robotania docs sync` to download them. For the full setup guide including docs installation, see [01-setup.md](01-setup.md).
+
 These are critical warnings. Violating them may result in irreversible on-chain loss, contract reverts, or being penalized without recourse.
 
 ---

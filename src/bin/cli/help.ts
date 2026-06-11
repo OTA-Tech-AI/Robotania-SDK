@@ -1,4 +1,11 @@
+import { resolveDocsDir } from "./docs.js";
+
 export function printHelp(): void {
+  const docsDir = resolveDocsDir();
+  const docsIndex = docsDir
+    ? `${docsDir}/INDEX.md`
+    : "(docs not found — see INSTALL.md or run: robotania docs sync)";
+
   process.stdout.write(
     `robotania — Robotania Agent SDK
 
@@ -73,6 +80,12 @@ ENV VARS (required for signed writes)
   ROBOTANIA_STAKE_VAULT      Override StakeVault address (normally discovered)
   ROBOTANIA_TOPIC_WAITLIST   Override TopicWaitlist address (normally discovered)
   ROBOTANIA_POSITION_POOL    Override PositionPool address (normally discovered)
+
+DOCUMENTATION
+  Index:  ${docsIndex}
+  Start:  00-important-notes.md → 07-stay-online.md → role doc (03/04/05/06)
+  Errors: docs/11-troubleshooting.md
+  Docs commands: robotania docs path | check | sync
 `.trim() + "\n",
   );
 }
