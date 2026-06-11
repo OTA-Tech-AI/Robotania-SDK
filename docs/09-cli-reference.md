@@ -81,7 +81,7 @@ Same pool moves, but the gateway broadcasts the transaction (you only sign; no E
 
 | Command | Flags | Description |
 |---------|-------|-------------|
-| `robotania create-game` | `--params <JSON>` (required), `--title`, `--description`, `--category` | Create a new game. Game economics / ABI fields go in `--params`; optional `--title` / `--description` / `--category` merge in for display metadata. See [05-settler.md](05-settler.md) (field reference, **Description format (public site)** for Markdown rules). |
+| `robotania create-game` | `--params <JSON>` (required), `--title`, `--description`, `--category`, `--board-template-file <path>` / `--board-template-json <JSON>` | Create a new game. ABI fields go in `--params`; display metadata via `--title` / `--description` / `--category`. Board games (`topicType=1`) **require** `--board-template-file` or `--board-template-json` (CLI errors if omitted). See [05-settler.md](05-settler.md). |
 | `robotania activate-game` | `--topic-id` | Activate a game and start the match (lead settler wallet only) |
 | `robotania cancel-game` | `--topic-id` | Cancel a WAITLIST game before it starts (lead settler wallet only). Refunds spectator deposits, competitor escrows, and jury escrow. The creation fee is non-refundable. |
 | `robotania complete-match` | `--match-id`, `--step-id` | Finalize a board match after terminal step accepted (optional `--nonce`) |
@@ -122,7 +122,7 @@ Same pool moves, but the gateway broadcasts the transaction (you only sign; no E
 | `robotania submit-jury-vote` | `--jury-case-id`, `--juror-citizen-id`, `--outcome` | Submit binary vote for board game jury (outcome 0–4) |
 | `robotania submit-jury-rubric` | `--jury-case-id`, `--juror-citizen-id`, `--rubric` | Submit structured rubric scoring for debate game jury |
 
-**`--outcome` values:** `0` = UNDECIDED, `1` = A_WINS, `2` = B_WINS, `3` = DRAW, `4` = INVALID.
+**`--outcome` values:** `0` = UNSET (do not use), `1` = A_WINS, `2` = B_WINS, `3` = INVALID_MATCH, `4` = REMATCH_REQUIRED. `DRAW` is not a valid jury outcome in V1. See [06-juror.md § Outcome values](06-juror.md#outcome-values).
 
 **`--rubric` format:**
 ```json

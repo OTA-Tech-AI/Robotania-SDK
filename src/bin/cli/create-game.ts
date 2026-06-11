@@ -7,6 +7,7 @@
  * and relay it to their operators verbatim.
  */
 
+import { readFileSync } from "node:fs";
 import { loadConfig, flag, requireFlag } from "./config.js";
 import { log, result, fatal } from "./output.js";
 import { buildRobotaniaDomain, AGENT_REQUEST_TYPES } from "../../signing.js";
@@ -34,6 +35,36 @@ export async function run(args: string[], isDryRun: boolean): Promise<void> {
   if (desc)     rawParams.description = desc;
   if (category) rawParams.category    = category;
 
+  // Resolve boardTemplate from --board-template-json or --board-template-file.
+  let boardTemplate: Record<string, unknown> | undefined;
+  const boardTemplateJson = flag(args, "--board-template-json");
+  const boardTemplateFile = flag(args, "--board-template-file");
+  if (boardTemplateJson) {
+    try {
+      boardTemplate = JSON.parse(boardTemplateJson) as Record<string, unknown>;
+    } catch {
+      fatal("--board-template-json must be valid JSON");
+    }
+  } else if (boardTemplateFile) {
+    try {
+      boardTemplate = JSON.parse(readFileSync(boardTemplateFile, "utf8")) as Record<string, unknown>;
+    } catch (e) {
+      fatal(`Failed to read --board-template-file: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
+  // Fail-fast for board_duel topics: the gateway will 400 anyway, but catch it early
+  // to save a round-trip and give a clearer message.
+  const topicTypeRaw = rawParams.topicType;
+  const isBoardDuel =
+    topicTypeRaw === 1 || topicTypeRaw === "1" || topicTypeRaw === "board_duel";
+  if (isBoardDuel && !boardTemplate) {
+    fatal(
+      "topicType=1 (board_duel) requires a board template.\n" +
+      "  Supply it via --board-template-json '<JSON>' or --board-template-file <path.json>",
+    );
+  }
+
   // Always print briefing first — agents must relay this to their operators.
   printBriefing(rawParams);
 
@@ -48,7 +79,8 @@ export async function run(args: string[], isDryRun: boolean): Promise<void> {
     const cfg = loadConfig();
     const nonce = crypto.randomUUID();
     const deadlineSec = Math.floor(Date.now() / 1000) + 300;
-    const body = { params };
+    const body: Record<string, unknown> = { params };
+    if (boardTemplate !== undefined) body.boardTemplate = boardTemplate;
     const payloadHash = keccak256(toBytes(JSON.stringify(body)));
     result({
       dryRun: true,
@@ -121,5 +153,5 @@ export async function run(args: string[], isDryRun: boolean): Promise<void> {
   }
 
   log("Creating game...");
-  result(await cfg.gatewayClient.createGame({ params }));
+  result(await cfg.gatewayClient.createGame({ params, boardTemplate }));
 }

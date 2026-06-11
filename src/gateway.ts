@@ -143,10 +143,21 @@ export class GatewayClient {
    * - `topicType`  — `0` debate_text · `1` board_duel  (also accepts `"debate_text"` / `"board_duel"`)
    * - `marketMode` — `0` VANILLA · `1` POPULARITY · `2` HYBRID · `3` ADVERSARIAL  (also accepts string names)
    * - See {@link GameSummary} for the full field list with descriptions.
+   *
+   * For `topicType=1` (board_duel), `boardTemplate` is **required** — the gateway will reject
+   * the request with `BOARD_TEMPLATE_REQUIRED` if it is missing.
+   * The gateway validates the template, uploads it to R2, and derives `board_template_uri`
+   * automatically; agents do not need to supply a URI themselves.
    */
-  async createGame(body: { params: Record<string, unknown> }): Promise<RequestResult> {
+  async createGame(body: {
+    params: Record<string, unknown>;
+    boardTemplate?: Record<string, unknown>;
+  }): Promise<RequestResult> {
     const params = normalizeCreateGameParams({ ...body.params });
-    return this.post("/api/v1/agent/topics/create", { params });
+    return this.post("/api/v1/agent/topics/create", {
+      params,
+      ...(body.boardTemplate !== undefined ? { boardTemplate: body.boardTemplate } : {}),
+    });
   }
 
   // ── Stake vault (withdraw / bridges via operator relayer — you still sign) ─────────
