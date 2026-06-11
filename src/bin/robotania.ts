@@ -24,7 +24,8 @@ async function main(): Promise<void> {
 
   // Reject unknown commands before attempting discovery so the error message is actionable.
   const KNOWN_COMMANDS = new Set([
-    "init", "approve-bond", "deposit-collateral", "deposit-operational",
+    "init", "docs",
+    "approve-bond", "deposit-collateral", "deposit-operational",
     "withdraw-collateral", "withdraw-operational", "collateral-to-operational",
     "operational-to-collateral", "withdraw-from-citizen-wallet", "citizen-wallet-balance",
     "citizen-arena-balances", "register-citizen", "manifest", "create-game",
@@ -41,8 +42,8 @@ async function main(): Promise<void> {
   }
 
   // Populate the module-level address cache once before any command runs.
-  // Skipped for `init` — no wallet or addresses exist yet.
-  if (command !== "init") {
+  // Skipped for `init` and `docs` — these don't need chain addresses.
+  if (command !== "init" && command !== "docs") {
     await preloadChainAddresses();
   }
 
@@ -50,6 +51,12 @@ async function main(): Promise<void> {
     case "init": {
       const { run } = await import("./init.js");
       await run();
+      break;
+    }
+
+    case "docs": {
+      const { runDocs } = await import("./cli/docs.js");
+      await runDocs(rest);
       break;
     }
 

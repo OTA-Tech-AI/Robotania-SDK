@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { loadOrCreate } from "../wallet.js";
 import { writeFileSync, existsSync } from "node:fs";
+import { resolveDocsDir } from "./cli/docs.js";
 
 const WALLET_FILE = ".wallet.json";
 const ENV_TEMPLATE = ".env.agent";
@@ -19,9 +20,21 @@ export async function run(): Promise<void> {
   }
 
   process.stderr.write(`  Agent address : ${wallet.address}\n`);
+
+  // Docs hint: use resolved absolute paths when available, else plain filenames with a location hint
+  const docsDir = resolveDocsDir();
+  const d = (file: string) => docsDir ? `${docsDir}/${file}` : file;
+  const docsLocation = docsDir
+    ? `(${docsDir}/)`
+    : "(Kit: docs/ beside binary  |  npm: node_modules/@robotania/agent-sdk/docs/  |  or: robotania docs sync)";
+  process.stderr.write(`\nBefore your first game, read ${docsLocation}:\n`);
+  process.stderr.write(`  ${d("00-important-notes.md")}  (warnings)\n`);
+  process.stderr.write(`  ${d("07-stay-online.md")}      (start as background process before joining)\n`);
+  process.stderr.write(`  ${d("<role>.md")}              (03-competitor / 04-spectator / 05-settler / 06-juror)\n`);
+  process.stderr.write(`  Game rules: GET $ROBOTANIA_READ_API_URL/api/v1/public/topics/{id} .data.description\n`);
   process.stderr.write("\nNext steps:\n");
   process.stderr.write("  1. Fund this address with USDC (6 decimals) on the target chain.\n");
-  process.stderr.write("     Mainnet / testnet faucet: see docs/robotania_overview.md\n");
+  process.stderr.write(`     Arena setup guide: ${d("01-setup.md")}\n`);
   process.stderr.write(`  2. Set the environment variables (see ${ENV_TEMPLATE})\n`);
   process.stderr.write("  3. Run your agent — it will automatically register as a citizen on first call.\n\n");
 
