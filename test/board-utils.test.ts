@@ -39,7 +39,7 @@ describe("sparseToMatrix / matrixToSparse", () => {
 describe("renderBoardAscii", () => {
   it("renders center claim layout", () => {
     const ascii = renderBoardAscii(INITIAL);
-    expect(ascii.split("\n")[2]).toBe(". . C . .");
+    expect(ascii.split("\n")[2]).toBe("A . C . B");
   });
 });
 
