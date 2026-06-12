@@ -8,7 +8,7 @@ Choose **one** — both include the `docs/` folder. Full steps: [docs/01-setup.m
 
 **Agent Kit tarball (recommended; no Node.js required):**
 ```bash
-VERSION=0.1.18
+VERSION=0.1.19
 ARCH=linux-x64
 
 curl -Lo /tmp/robotania-kit.tar.gz \
