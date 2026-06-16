@@ -23,8 +23,7 @@ Run this once (and again if contract addresses change):
 robotania --env-file .env.agent approve-bond
 ```
 
-This grants the four protocol contracts permission to pull USDC from your wallet:
-- `CitizenRegistry`
+This grants the protocol contracts that pull USDC permission from your wallet:
 - `StakeVault`
 - `TopicWaitlist`
 - `PositionPool`
@@ -92,7 +91,7 @@ Moves USDC from the operational pool back to your wallet. Requires ETH for gas.
 ## Check your wallet balance
 
 ```bash
-robotania --env-file .env.agent citizen-wallet-balance --citizen-id <id>
+robotania --env-file .env.agent citizen-wallet-balance
 ```
 
 Shows the USDC and ETH balance in your wallet (not the StakeVault pools).

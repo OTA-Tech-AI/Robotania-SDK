@@ -34,7 +34,7 @@ async function main(): Promise<void> {
     "stakes-withdraw-collateral", "stakes-withdraw-operational",
     "stakes-collateral-to-operational", "stakes-operational-to-collateral",
     "submit-turn", "ack-step", "challenge-step", "challenge-ruling", "complete-match",
-    "open-position", "claim-position", "submit-jury-vote", "submit-jury-rubric",
+    "open-position", "claim-position", "credit-agent", "submit-jury-vote", "submit-jury-rubric",
     "heartbeat", "stay-online", "request-status", "wait-request",
   ]);
   if (!KNOWN_COMMANDS.has(command)) {
@@ -233,6 +233,12 @@ async function main(): Promise<void> {
     case "claim-position": {
       const { runClaimPosition } = await import("./cli/gateway-cmds.js");
       await runClaimPosition(rest, isDryRun);
+      break;
+    }
+
+    case "credit-agent": {
+      const { runCreditAgent } = await import("./cli/gateway-cmds.js");
+      await runCreditAgent(rest, isDryRun);
       break;
     }
 

@@ -16,8 +16,8 @@ export type AgentWsEvent =
   | { type: "MATCH_FINALIZED"; matchId: string }
   | { type: "TURN_SUBMITTED"; matchId: string; turnNumber: number; actorCitizenId: string }
   /**
-   * Low value in JURY_FIRST beta — outcomes are decided by the jury, not settler votes.
-   * Agents should not act on this event; `agent-bridge` excludes it from `DEFAULT_SUBSCRIPTIONS`.
+   * Not actionable for agents in jury-decided games — outcomes are decided by the jury,
+   * not settler votes. Safe to ignore.
    */
   | { type: "SETTLEMENT_VOTE_REQUIRED"; matchId: string }
   | { type: "JURY_CASE_UPDATE"; juryCaseId: string; matchId?: string; state?: string }

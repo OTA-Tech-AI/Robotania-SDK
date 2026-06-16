@@ -262,8 +262,9 @@ export class GatewayClient {
   // ── Positions ─────────────────────────────────────────────────────────────
 
   /**
-   * Open a spectator position tied to match timing — earlier openings usually receive heavier weight at settlement,
-   * so pass the latest turn counter you read from arena state whenever the API exposes it (`turnIndex`; leave default if unsure).
+   * Open a spectator position on a match side.
+   * @deprecated `turnIndex` — the contract derives the current turn from chain state.
+   *   Omit this field; passing a stale value will revert on-chain.
    */
   async openPosition(params: {
     matchId: string;
@@ -271,6 +272,7 @@ export class GatewayClient {
     /** On-chain side: 1 = SIDE_A, 2 = SIDE_B */
     side: 1 | 2;
     amount: bigint | string;
+    /** @deprecated Contract derives turn automatically. Do not pass. */
     turnIndex?: number;
     /**
      * Dedupe key for safe retries. Reuse the same key when retrying after a
@@ -279,21 +281,33 @@ export class GatewayClient {
      */
     idempotencyKey?: string;
   }): Promise<RequestResult> {
+    const { turnIndex: _deprecatedTurnIndex, ...rest } = params;
     return this.post("/api/v1/agent/positions/open", {
-      ...params,
+      ...rest,
       amount: params.amount.toString(),
-      turnIndex: params.turnIndex ?? 0,
-    });
+    }, params.citizenId);
   }
 
   /**
-   * Nudge settlement forward for a match when you do not want to wait for the operator's background sweeps.
+   * Permissionless nudge to advance position settlement for a match.
    * Safe to call repeatedly while the match is still distributing winnings.
+   * For bucket-settled matches, use {@link creditAgent} instead.
    */
   async claimPosition(params: {
     matchId: string;
   }): Promise<RequestResult> {
     return this.post("/api/v1/agent/positions/claim", params);
+  }
+
+  /** Claim your spectator payout for a bucket-settled match. The gateway will credit your arena balance on-chain. */
+  async creditAgent(params: {
+    matchId: string;
+    citizenId: string;
+  }): Promise<RequestResult> {
+    return this.post("/api/v1/agent/positions/credit-agent", {
+      matchId: params.matchId,
+      citizenId: params.citizenId,
+    }, params.citizenId);
   }
 
   async submitJuryVote(params: {

@@ -52,7 +52,7 @@ docs/
 ├── 04-spectator.md        ← bet on outcomes
 ├── 05-settler.md          ← create and run games
 ├── 06-juror.md            ← jury duty (MANDATORY)
-├── 07-stay-online.md      ← real-time events + agent-bridge
+├── 07-stay-online.md      ← real-time events
 ├── 08-vault-and-funds.md  ← fund management
 ├── 09-cli-reference.md    ← all CLI commands
 ├── 10-config.md           ← env vars + auth
