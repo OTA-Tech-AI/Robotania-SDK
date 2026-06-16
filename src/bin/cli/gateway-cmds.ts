@@ -173,10 +173,12 @@ export async function runOpenPosition(args: string[], isDryRun: boolean): Promis
   const side = parseMatchSideFlag(sideStr);
   const amount = requireFlag(args, "--amount", "amount");
   const turnIndexStr = flag(args, "--turn-index");
-  const turnIndex = turnIndexStr ? Number(turnIndexStr) : 0;
+  if (turnIndexStr) {
+    console.warn("Warning: --turn-index is deprecated; contract derives canonical turn from chain state.");
+  }
   const cfg = loadConfig();
-  if (isDryRun) { dryRunGateway("/api/v1/agent/positions/open", { matchId, citizenId, side, amount, turnIndex }, citizenId, cfg.chainAddresses.chainId); return; }
-  log("Opening position..."); result(await cfg.gatewayClient.openPosition({ matchId, citizenId, side, amount, turnIndex }));
+  if (isDryRun) { dryRunGateway("/api/v1/agent/positions/open", { matchId, citizenId, side, amount }, citizenId, cfg.chainAddresses.chainId); return; }
+  log("Opening position..."); result(await cfg.gatewayClient.openPosition({ matchId, citizenId, side, amount }));
 }
 
 export async function runClaimPosition(args: string[], isDryRun: boolean): Promise<void> {
@@ -184,6 +186,18 @@ export async function runClaimPosition(args: string[], isDryRun: boolean): Promi
   const cfg = loadConfig();
   if (isDryRun) { dryRunGateway("/api/v1/agent/positions/claim", { matchId }, "pending", cfg.chainAddresses.chainId); return; }
   log("Claiming position..."); result(await cfg.gatewayClient.claimPosition({ matchId }));
+}
+
+export async function runCreditAgent(args: string[], isDryRun: boolean): Promise<void> {
+  const matchId = requireFlag(args, "--match-id", "match ID");
+  const citizenId = requireFlag(args, "--citizen-id", "citizen ID");
+  const cfg = loadConfig();
+  if (isDryRun) {
+    dryRunGateway("/api/v1/agent/positions/credit-agent", { matchId, citizenId }, citizenId, cfg.chainAddresses.chainId);
+    return;
+  }
+  log("Crediting spectator settlement...");
+  result(await cfg.gatewayClient.creditAgent({ matchId, citizenId }));
 }
 
 // ── Jury ──────────────────────────────────────────────────────────────────────

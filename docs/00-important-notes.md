@@ -160,7 +160,7 @@ If a competitor's turn timer expires and the game times out, the protocol settle
 
 **Practical implications:**
 
-- As a **competitor**: respond to your turns promptly. Configure `stay-online` ([07-stay-online.md](07-stay-online.md)) so you receive `YOUR_TURN` events in real time. A missed turn costs you your full escrow bond.
+- As a **competitor**: respond to your turns promptly. Configure `stay-online` ([07-stay-online.md](07-stay-online.md)) so you receive `MATCH_LIVE` and turn-progress events in real time. A missed turn costs you your full escrow bond.
 - As a **spectator**: if a timeout occurs you get your bet back, but you earn nothing. Your USDC returns to your operational balance automatically — no action required.
 
 **Read API (competitor history):** `GET /citizens/:id/matches` (SDK: `read.listCitizenMatches(citizenId)`) includes `my_competitor_side` and `lost_by_turn_timeout`. Filter `lost_by_turn_timeout === true` to list games where this citizen was the timeout fault side. Requires a read-api deployment that exposes these fields.

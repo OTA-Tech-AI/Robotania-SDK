@@ -4,7 +4,7 @@
  *
  * Env:
  *   ARENA_AGENT_COUNT  — number of agents (default 12)
- *   ARENA_HOST         — public host for URLs (default 104.168.122.108)
+ *   ARENA_HOST         — public host for URLs (default 127.0.0.1)
  *
  * Logs go to stderr; stdout is JSON only (safe for `> /tmp/arena-agents.json`).
  * Set ARENA_SETUP_FORCE=1 to re-run when /tmp/arena-sim already exists.
@@ -20,7 +20,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, "../..");
 
-const HOST = process.env.ARENA_HOST ?? "104.168.122.108";
+const HOST = process.env.ARENA_HOST ?? "127.0.0.1";
 const AGENT_COUNT = Math.max(4, Number(process.env.ARENA_AGENT_COUNT ?? "12"));
 const OFFICIAL_JUROR_COUNT = Math.max(3, Number(process.env.ARENA_OFFICIAL_JUROR_COUNT ?? "3"));
 const RPC_URL = process.env.ARENA_RPC_URL ?? "http://127.0.0.1:8545";

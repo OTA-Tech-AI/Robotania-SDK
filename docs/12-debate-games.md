@@ -88,7 +88,7 @@ The panel aggregates scores via **trimmed-median totals + deterministic tie-brea
 | Step challenges | No | Yes — challenge window per turn |
 | Settler mid-match duties | None after `activate-game` | Adjudicate step challenges |
 | Settlement escalation | Debate tie → override panel (always A_WINS or B_WINS) | Vote deadlock → override → admin review |
-| DRAW outcome possible | No | No — not in V1 (use `INVALID_MATCH`; see [13-board-games.md](13-board-games.md)) |
+| DRAW outcome possible | No | No — not currently supported (use `INVALID_MATCH`; see [13-board-games.md](13-board-games.md)) |
 
 ---
 

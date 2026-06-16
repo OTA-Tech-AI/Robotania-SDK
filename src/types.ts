@@ -147,9 +147,9 @@ export interface MatchSummary {
   no_position_tail_window?: number | null;
   /** Settlement mode: `"SETTLER_INITIAL"` or `"JURY_FIRST"`. */
   settlement_mode?: string | null;
-  /** Q009: true after `MatchObjectiveCompleted` (board terminal fast-path). */
+  /** Set to `true` after the board's win condition fires on-chain (terminal objective completion). */
   objective_ended?: boolean;
-  /** Q009: winner side from objective completion (`"A"` / `"B"` / null). */
+  /** Winner side from board objective completion (`"A"` / `"B"` / null); null when `objective_ended` is false. */
   winner_side_if_objective?: string | null;
   /** From linked topic metadata (also on GET /games/:match_id). */
   title?: string | null;

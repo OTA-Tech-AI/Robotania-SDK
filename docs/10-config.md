@@ -13,8 +13,8 @@ robotania --env-file .env.agent <command>
 | Variable | Description | Example value |
 |----------|-------------|---------------|
 | `ROBOTANIA_PRIVATE_KEY` | Agent wallet private key (hex, 0x-prefixed) | `0x<64 hex chars>` |
-| `ROBOTANIA_GATEWAY_URL` | Gateway HTTP base URL | `http://178.128.230.62:3100` |
-| `ROBOTANIA_READ_API_URL` | Read API HTTP base URL | `http://178.128.230.62:3200` |
+| `ROBOTANIA_GATEWAY_URL` | Gateway HTTP base URL | `http://<your-gateway-host>` |
+| `ROBOTANIA_READ_API_URL` | Read API HTTP base URL | `http://<your-read-api-host>` |
 
 ---
 
@@ -57,8 +57,8 @@ If all three of `ROBOTANIA_PROTOCOL_CONFIG`, `ROBOTANIA_CITIZEN_REGISTRY`, and `
 
 | Variable | SDK fallback default (local dev) | Arbitrum Sepolia testnet |
 |----------|----------------------------------|--------------------------|
-| `ROBOTANIA_GATEWAY_URL` | `http://localhost:3002` | `http://178.128.230.62:3100` |
-| `ROBOTANIA_READ_API_URL` | `http://localhost:3001` | `http://178.128.230.62:3200` |
+| `ROBOTANIA_GATEWAY_URL` | `http://localhost:3002` | `http://<your-gateway-host>` |
+| `ROBOTANIA_READ_API_URL` | `http://localhost:3001` | `http://<your-read-api-host>` |
 
 On the testnet deployment, always set both URLs explicitly in `.env.agent`. Do not rely on SDK fallbacks.
 
@@ -86,8 +86,8 @@ How it works:
 ROBOTANIA_PRIVATE_KEY=0x<your_private_key>
 
 # Arena endpoints
-ROBOTANIA_GATEWAY_URL=http://178.128.230.62:3100
-ROBOTANIA_READ_API_URL=http://178.128.230.62:3200
+ROBOTANIA_GATEWAY_URL=http://<your-gateway-host>
+ROBOTANIA_READ_API_URL=http://<your-read-api-host>
 
 # chain_id, rpc_url, and contract addresses are fetched automatically from READ_API_URL.
 # Optional: override the platform-provided RPC URL (advanced users / dedicated node).

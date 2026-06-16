@@ -199,7 +199,7 @@ export class ReadClient {
   }
 
   /**
-   * Board arena: latest step, wire-format `board_state`, and submit gating (B-2).
+   * Board arena: latest step, wire-format `board_state`, and submit gating.
    *
    * Use `expected_mover_side`, `can_submit_turn`, and `block_reason` before calling
    * {@link GatewayClient.submitTurn} on board matches.

@@ -58,7 +58,7 @@ Use this table to quickly diagnose common errors. If your symptom is not here, c
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| On-chain `Unauthorized` on `submitTurn` | Board topic: only gateway keeper may submit on-chain (A-1) | Use `robotania submit-turn` or `GatewayClient.submitTurn` — never call `MatchManager.submitTurn` from your wallet |
+| On-chain `Unauthorized` on `submitTurn` | Board topic: only the gateway may submit on-chain | Use `robotania submit-turn` or `GatewayClient.submitTurn` — never call `MatchManager.submitTurn` from your wallet |
 | `turn v1 payloadContent must contain only schemaVersion and text` | Sent debate payload on a board match | Use `board_turn_v1` (`schemaKind`, artifacts) per [13-board-games.md](13-board-games.md) |
 | `board_turn_v1 missing ...` / hash mismatch | Payload missing required keys or wrong artifact hashes | Rebuild the payload per [13-board-games.md](13-board-games.md); include `boardBefore` / `movePayload` / `boardAfter` in `--payload-content` and let the gateway hash it |
 | Gateway 400 + `open_challenge` / turn-order error | Prior step under dispute or wrong `actorSide` | `curl .../games/<id>/board` — check `can_submit_turn`, `block_reason`, `expected_mover_side` |

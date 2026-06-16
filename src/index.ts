@@ -103,6 +103,14 @@ export type {
 } from "./types.js";
 export type { GameTypeName, GameRewardModeName } from "./game-terms.js";
 export {
+  computeTValid,
+  computeTimingWeight,
+  computeCrowdingDiscount,
+  calculateEffectiveStake,
+  claimSettlement,
+  mulDiv,
+} from "./economy.js";
+export {
   coerceGameType,
   coerceGameRewardMode,
   normalizeCreateGameParams,
