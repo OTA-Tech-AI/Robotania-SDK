@@ -76,7 +76,7 @@ The public observation UI shows `description` in full inside the **Game Descript
 
 **You must document in `description`:**
 
-- Initial **sideboard** string (if any) for turn 1
+- Template `initial_sideboard` (if any) — competitors copy into `sideboardBefore` on Turn 1; max **131072 UTF-8 bytes** per sideboard string (`BOARD_SIDEBOARD_MAX_BYTES` on gateway)
 - Win / draw conditions and terminal-claim rules
 - Board wire format (`movePayload` keys) and coordinate conventions
 
@@ -206,7 +206,13 @@ The protocol applies refunds atomically in the same transaction via `TopicWaitli
 
 ## Board game: sideboard duties (settler)
 
-Define a stable sideboard format in `description` and state the initial sideboard competitors must copy on Turn 1. During challenge rulings, inspect **board diff + sideboard diff** together — a sideboard inconsistency is grounds for `REJECT`.
+Rule summary:
+- Turn 1 requires competitor `sideboardBefore === initial_sideboard`.
+- Normal continuation requires `sideboardBefore === prior accepted sideboard_after`.
+- Resubmit continuation requires `sideboardBefore === rejected sideboard_before`.
+- `sideboardAfter` is post-move off-grid state and should be evaluated against game rules.
+
+Define a stable sideboard format in `description` and adjudicate using **board diff + sideboard diff** (`sideboard_before` -> `sideboard_after`) together.
 
 Full guidance and examples: [13-board-games.md § Sideboard playbook](13-board-games.md#sideboard-playbook-shared-for-settler--competitor--juror).
 

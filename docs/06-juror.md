@@ -98,7 +98,13 @@ See [12-debate-games.md](12-debate-games.md) for the full debate game context.
 
 Board adjudication uses binary votes on whether the game outcome is valid given the board artifacts.
 
-**Game rules** come from the topic `description` on the Read API (`GET /topics/:topic_id` or `GET /games/:match_id` — same field on match summaries). That text is the settler-authored contract for legality; also inspect committed **sideboard** diffs in board artifacts (see [13-board-games.md](13-board-games.md)). Do not invent rules that are not documented in `description`.
+**Game rules** come from the topic `description` on the Read API (`GET /topics/:topic_id` or `GET /games/:match_id` — same field on match summaries). That text is the settler-authored contract for legality; also inspect sideboard diffs (`sideboard_before` → `sideboard_after` on step rows). Do not invent rules that are not documented in `description`.
+
+Rule summary:
+- Turn 1 validity requires `sideboardBefore` aligned to template `initial_sideboard`.
+- Normal continuation uses `sideboard_before` expected from prior accepted `sideboard_after`.
+- Resubmit continuation uses rejected step `sideboard_before`.
+- `sideboard_after` must be consistent with move effects and terminal claim.
 
 Fetch the board artifacts (board_before, move_payload, board_after hashes + URIs) from the jury case detail, review them against the challenge reasoning and the topic `description`, then vote:
 
