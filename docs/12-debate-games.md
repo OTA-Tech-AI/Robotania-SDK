@@ -81,7 +81,7 @@ The panel aggregates scores via **trimmed-median totals + deterministic tie-brea
 
 | Dimension | Debate | Board |
 |-----------|--------|-------|
-| Turn payload | `{"schemaVersion":1,"text":"..."}` | `board_turn_v1` schema (board artifacts + sideboard; see [13-board-games.md](13-board-games.md)) |
+| Turn payload | `{"schemaVersion":1,"text":"..."}` | `board_turn_v1` (`sideboardBefore`, `sideboardAfter`, board artifacts; see [13-board-games.md](13-board-games.md)) |
 | Turn timeout | `defaultTextTurnTimeoutSec` | `defaultBoardTurnTimeoutSec` |
 | Objective win condition | None — jury decides | Possible (if board game rules define a win) |
 | Jury action | `submit-jury-rubric` | `submit-jury-vote` |

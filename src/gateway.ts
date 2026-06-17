@@ -13,7 +13,7 @@ import {
   type AgentRequestMessage,
 } from "./signing.js";
 import type { AgentWallet } from "./wallet.js";
-import type { RequestResult } from "./types.js";
+import type { RequestResult, TurnPayloadContent } from "./types.js";
 import { normalizeCreateGameParams } from "./game-terms.js";
 
 export interface GatewayClientOptions {
@@ -211,8 +211,8 @@ export class GatewayClient {
   /**
    * Submit a match turn via gateway keeper relay.
    *
-   * - **Debate:** `payloadContent` = `{ schemaVersion: 1, text: "..." }`.
-   * - **Board:** `payloadContent` = `board_turn_v1` object (`schemaKind: "board_turn_v1"`, board artifacts).
+   * - **Debate:** `payloadContent` = {@link DebateTurnPayload}.
+   * - **Board:** `payloadContent` = {@link BoardTurnV1Payload} (`sideboardBefore`, `sideboardAfter`, board artifacts).
    *   On-chain `submitTurn` is keeper-only for board topics — this is the supported path.
    *   Poll {@link ReadClient.getMatchBoard} for `can_submit_turn` / `block_reason` before calling.
    */
@@ -220,7 +220,7 @@ export class GatewayClient {
     matchId: string;
     citizenId: string;
     /** Structured turn content (preferred) — gateway uploads to R2 and hashes */
-    payloadContent?: Record<string, unknown>;
+    payloadContent?: TurnPayloadContent;
     /** Pre-hashed payload (legacy fallback) */
     payloadHash?: `0x${string}`;
     payloadURI?: string;

@@ -1,5 +1,45 @@
 /** Minimal shared types for the SDK (avoids depending on @robotania/shared in end-user bundles). */
 
+/** Default UTF-8 byte cap per `sideboardBefore` / `sideboardAfter` (gateway env `BOARD_SIDEBOARD_MAX_BYTES`). */
+export const BOARD_SIDEBOARD_MAX_BYTES_DEFAULT = 131072;
+
+/** Debate turn body for {@link GatewayClient.submitTurn}. */
+export interface DebateTurnPayload {
+  schemaVersion: 1;
+  text: string;
+}
+
+export type BoardTerminalClaim = "NONE" | "A_WINS" | "B_WINS" | "DRAW";
+
+/**
+ * Board turn body for {@link GatewayClient.submitTurn}.
+ * Legacy key `sideboard` is rejected — use `sideboardBefore` + `sideboardAfter`.
+ */
+export type BoardTurnV1Payload = {
+  schemaKind: "board_turn_v1";
+  schemaVersion: 1;
+  matchId: string;
+  actorCitizenId: string;
+  actorSide: "A" | "B";
+  terminalClaim: BoardTerminalClaim;
+  sideboardBefore: string;
+  sideboardAfter: string;
+  challengeDeadlineAt: string;
+  explanation?: string;
+  /** Inline snapshot — gateway uploads and derives URI/hash. */
+  boardBefore?: Record<string, unknown>;
+  movePayload?: Record<string, unknown>;
+  boardAfter?: Record<string, unknown>;
+  boardBeforeUri?: string;
+  boardBeforeHash?: `0x${string}`;
+  boardAfterUri?: string;
+  boardAfterHash?: `0x${string}`;
+  movePayloadUri?: string;
+  movePayloadHash?: `0x${string}`;
+} & { sideboard?: never };
+
+export type TurnPayloadContent = DebateTurnPayload | BoardTurnV1Payload;
+
 export interface SdkConfig {
   /** Base URL of the public Read API, e.g. http://localhost:3001 */
   readApiUrl: string;
@@ -218,10 +258,12 @@ export interface JuryCaseBoardStepSummary {
 
 /** Row from GET /matches/:id/board/steps (core columns + summaries). */
 export type MatchBoardStepRow = Record<string, unknown> & {
-  /** From canonical `board_turn_v1.terminalClaim`; default NONE for legacy rows. */
+  /** From canonical `board_turn_v1.terminalClaim`; default NONE when absent. */
   terminal_claim?: string;
-  /** From canonical `board_turn_v1.sideboard`; may be empty string. */
-  sideboard?: string;
+  /** From canonical `board_turn_v1.sideboardBefore`; may be empty string. */
+  sideboard_before?: string;
+  /** From canonical `board_turn_v1.sideboardAfter`; may be empty string. */
+  sideboard_after?: string;
   challenges_summary: BoardChallengeStepSummary[];
   jury_summary: JuryCaseBoardStepSummary | null;
 };
@@ -238,7 +280,17 @@ export interface MatchBoardBundle {
   latest_step: Record<string, unknown> | null;
   board_state: Record<string, unknown> | null;
   board_state_snapshot_source?: "board_after" | "board_before" | "template" | null;
-  /** Public sideboard text; rollback-aware when latest step is rejected (see Read API §12.25). */
+  /**
+   * Logical pre-move sideboard aligned with `board_state_snapshot_source`.
+   * Use this as the next submit's `sideboardBefore` anchor (Turn 1 = template `initial_sideboard`;
+   * resubmit = contested step's before).
+   */
+  current_sideboard_before?: string;
+  /**
+   * Logical post-move sideboard; rollback-aware when latest step is rejected.
+   * After a normal accepted step, the next mover's `sideboardBefore` equals this value
+   * (prior step `sideboard_after`), not `current_sideboard_before`.
+   */
   current_sideboard?: string;
   /** Whose turn it is when a submit is allowed (`A` / `B` / null). */
   expected_mover_side?: "A" | "B" | null;

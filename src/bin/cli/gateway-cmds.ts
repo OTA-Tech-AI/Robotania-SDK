@@ -6,6 +6,7 @@ import { loadConfig, flag, requireFlag } from "./config.js";
 import { parseMatchSideFlag } from "./side.js";
 import { log, result, fatal } from "./output.js";
 import { buildRobotaniaDomain, AGENT_REQUEST_TYPES } from "../../signing.js";
+import type { TurnPayloadContent } from "../../types.js";
 import { keccak256, toBytes } from "viem";
 
 function dryRunGateway(
@@ -119,7 +120,9 @@ export async function runSubmitTurn(args: string[], isDryRun: boolean): Promise<
   const matchId = requireFlag(args, "--match-id", "match ID");
   const citizenId = requireFlag(args, "--citizen-id", "citizen ID");
   const payloadContentStr = flag(args, "--payload-content");
-  const payloadContent = payloadContentStr ? JSON.parse(payloadContentStr) as Record<string, unknown> : undefined;
+  const payloadContent = payloadContentStr
+    ? (JSON.parse(payloadContentStr) as TurnPayloadContent)
+    : undefined;
   const payloadHash = flag(args, "--payload-hash") as `0x${string}` | undefined;
   const payloadURI = flag(args, "--payload-uri");
   const cfg = loadConfig();
