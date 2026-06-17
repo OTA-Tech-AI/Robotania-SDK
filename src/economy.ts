@@ -1,33 +1,47 @@
 import type { GatewayClient } from "./gateway.js";
 
-export {
-  WAD,
-  BPS,
-  DEFAULT_SPECTATOR_TIMING_ALPHA_BPS,
-  DEFAULT_SPECTATOR_TIMING_ALPHA_BOARD_BPS,
-  DEFAULT_SPECTATOR_TIMING_ALPHA_DEBATE_BPS,
-  TOPIC_TYPE_TEXT_DEBATE,
-  TOPIC_TYPE_BOARD_GAME,
-  spectatorTimingAlphaBpsForTopicType,
-  DEFAULT_LAMBDA_CROWDING_BPS,
-  DEFAULT_CROWDING_K_MIN,
-  computeTValid,
-  computeTimingWeight,
-  mulDiv,
-  computeCrowdingDiscount,
-  calculateEffectiveStake,
-  computeBucketPayoutRate,
-  crowdHeatFromDiscount,
-  timeDragFromWeight,
-  timingWeightToFloat,
-  accumulateSideBuckets,
-  computeSideEffectiveTotal,
-  estimateSpectatorWinnerProfit,
-  estimatePayoutMultiplierForTurn,
-  timingWeightRange,
-  type TurnBucket,
-  type TopicBudgetBps,
-} from "@robotania/shared";
+/** Mirrors on-chain SettlementMath (1e18 fixed-point). Self-contained — no monorepo deps. */
+const WAD = 1_000_000_000_000_000_000n;
+const BPS = 10_000n;
+
+export function mulDiv(x: bigint, y: bigint, denom: bigint): bigint {
+  if (denom === 0n) return 0n;
+  return (x * y) / denom;
+}
+
+/** T_valid = N - m (timing weight horizon); see market mechanism §10.6. */
+export function computeTValid(n: number, m: number): number {
+  if (n <= m) return 2;
+  const t = n - m;
+  return t < 2 ? 2 : t;
+}
+
+export function computeTimingWeight(t: number, tValid: number, alphaBps: number): bigint {
+  if (tValid <= 1 || t <= 1) return WAD;
+  const decay = (BigInt(alphaBps) * WAD * BigInt(t - 1)) / (BPS * BigInt(tValid - 1));
+  return decay >= WAD ? 0n : WAD - decay;
+}
+
+export function computeCrowdingDiscount(
+  bucketTimeWeightedStake: bigint,
+  previousEffectiveStake: bigint,
+  kMin: bigint,
+  lambdaBps: bigint,
+): bigint {
+  const k = previousEffectiveStake > kMin ? previousEffectiveStake : kMin;
+  if (k === 0n) return WAD;
+  const scaled = (lambdaBps * bucketTimeWeightedStake * WAD) / (BPS * k);
+  const onePlus = WAD + scaled;
+  return mulDiv(WAD, WAD, onePlus);
+}
+
+export function calculateEffectiveStake(
+  feeAdjustedStake: bigint,
+  timingWeight: bigint,
+  crowdingDiscount: bigint,
+): bigint {
+  return mulDiv(mulDiv(feeAdjustedStake, timingWeight, WAD), crowdingDiscount, WAD);
+}
 
 export async function claimSettlement(
   gateway: GatewayClient,
