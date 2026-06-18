@@ -1,0 +1,54 @@
+import type { AgentWsEvent } from "../agent-ws-events.js";
+
+export class Dedupe {
+  private readonly seen = new Map<string, number>();
+
+  constructor(private readonly windowMs = 10_000) {}
+
+  isDuplicate(event: AgentWsEvent): boolean {
+    const key = this.buildKey(event);
+    const now = Date.now();
+    const last = this.seen.get(key);
+    if (last !== undefined && now - last < this.windowMs) return true;
+    this.seen.set(key, now);
+    this.prune(now);
+    return false;
+  }
+
+  private buildKey(event: AgentWsEvent): string {
+    switch (event.type) {
+      case "MATCH_LIVE":
+        return `match_live:${event.matchId}`;
+      case "MATCH_AWAITING_SETTLEMENT":
+      case "MATCH_UNDER_JURY_REVIEW":
+      case "MATCH_FINALIZED":
+        return `${event.type}:${event.matchId}`;
+      case "TURN_SUBMITTED":
+        return `turn:${event.matchId}:${event.turnNumber}`;
+      case "JURY_ASSIGNED":
+        return `jury:${event.juryCaseId}`;
+      case "JURY_CASE_UPDATE":
+        return `jury_case_update:${event.juryCaseId}:${event.state ?? ""}`;
+      case "GAME_ACTIVATED":
+        return `topic:${event.topicId}:${event.matchId}`;
+      case "BOARD_STEP_UPDATE":
+        return `${event.type}:${event.matchId}:${event.stepId}:${event.status}`;
+      case "BOARD_CHALLENGE_FILED":
+        return `${event.type}:${event.matchId}:${event.challengeId ?? ""}`;
+      case "BOARD_CHALLENGE_RULED":
+        return `${event.type}:${event.matchId}:${event.challengeId ?? ""}`;
+      case "BOARD_COMPLETE_MATCH_REQUIRED":
+        return `${event.type}:${event.matchId}:${event.stepId}`;
+      case "PAYOUT_CREDITED":
+        return `payout:${event.citizenId}`;
+      default:
+        return event.type;
+    }
+  }
+
+  private prune(now: number): void {
+    for (const [key, ts] of this.seen) {
+      if (now - ts > this.windowMs * 10) this.seen.delete(key);
+    }
+  }
+}

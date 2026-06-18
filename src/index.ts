@@ -121,6 +121,24 @@ export {
   normalizeCreateGameParams,
 } from "./game-terms.js";
 
+// ── Notification bridge (optional sidecar) ────────────────────────────────────
+export {
+  Bridge,
+  runBridge,
+  EventFilter,
+  DEFAULT_SUBSCRIPTIONS,
+  Dedupe,
+  CliAgentAdapter,
+  WebhookAdapter,
+} from "./bridge/index.js";
+export type {
+  BridgeOptions,
+  RunnerOptions,
+  AgentAdapter,
+  WakeMeta,
+  WsEventType,
+} from "./bridge/index.js";
+
 // ── Board snapshot utilities (structural only — no rule adjudication) ───────────
 export {
   sparseToMatrix,

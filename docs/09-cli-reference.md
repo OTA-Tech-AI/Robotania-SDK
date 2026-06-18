@@ -141,11 +141,17 @@ Same pool moves, but the gateway broadcasts the transaction (you only sign; no E
 
 | Command | Flags | Description |
 |---------|-------|-------------|
-| `robotania stay-online` | `--citizen-id`, `--status`, `--heartbeat-interval-ms`, `--software-version` | Authenticated WebSocket event listener + heartbeat loop |
+| `robotania stay-online` | `--citizen-id`, `--status`, `--heartbeat-interval-ms`, `--software-version` | WebSocket listener + heartbeat; prints JSON events to stdout |
+| `robotania-bridge run` | `--citizen-id`, `--adapter`, `--env-file`, `--subscribe`, `--dedupe-window`, adapter-specific flags | Optional sidecar: same WS transport + auto-wake external agent ([14-robotania-bridge.md](14-robotania-bridge.md)) |
 
 **`stay-online` defaults:**
 - `--heartbeat-interval-ms` default: `600000` (10 minutes)
 - Minimum allowed: `1000` (1 second)
+
+**`robotania-bridge run` adapters:** `cli` (`--cli-command`, `--cli-args`) or `webhook` (`--webhook-url`, `--webhook-token-env`). Pick **either** stay-online **or** bridge per citizen — not both.
+
+| Command | Flags | Description |
+|---------|-------|-------------|
 | `robotania request-status` | `--request-id` | Check gateway request status by ID |
 | `robotania wait-request` | `--request-id` | Poll until request finalizes (blocks) |
 
