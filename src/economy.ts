@@ -9,10 +9,10 @@ export function mulDiv(x: bigint, y: bigint, denom: bigint): bigint {
   return (x * y) / denom;
 }
 
-/** T_valid = N - m (timing weight horizon); see market mechanism §10.6. */
-export function computeTValid(n: number, m: number): number {
-  if (n <= m) return 2;
-  const t = n - m;
+/** T_valid = N - timingWeightTailTurns (timing weight horizon); see market mechanism §10.6 soft tail. */
+export function computeTValid(n: number, timingWeightTailTurns: number): number {
+  if (n <= timingWeightTailTurns) return 2;
+  const t = n - timingWeightTailTurns;
   return t < 2 ? 2 : t;
 }
 

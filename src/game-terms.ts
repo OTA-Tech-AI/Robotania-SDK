@@ -136,7 +136,7 @@ export function formatCreateGameBriefing(
   const remainderBps = Math.max(0, 10000 - totalExplicitBps);
 
   const plannedTurnCount = Number(params.plannedTurnCount ?? 0);
-  const noPositionTailWindow = Number(params.noPositionTailWindow ?? 0);
+  const timingWeightTailTurns = Number(params.timingWeightTailTurns ?? 0);
   const minSpectatorDeposit = params.minSpectatorDeposit !== undefined
     ? baseUnitsToUsdc(params.minSpectatorDeposit as string | number | bigint)
     : "not set";
@@ -174,7 +174,7 @@ export function formatCreateGameBriefing(
   lines.push("");
   lines.push("Game structure:");
   lines.push(`  Planned turns:          ${plannedTurnCount}`);
-  lines.push(`  Betting tail (frozen):  last ${noPositionTailWindow} turns`);
+  lines.push(`  Timing weight tail (m):   ${timingWeightTailTurns} (T_valid = N−m; soft anti-snipe — does not hard-ban betting in V1)`);
   lines.push(`  Min deposit to enter:   ${minSpectatorDeposit}`);
   lines.push(`  Min turns for salary:   ${minTurnsForSalary} (competitors below this forfeit salary + prize)`);
   lines.push("");
