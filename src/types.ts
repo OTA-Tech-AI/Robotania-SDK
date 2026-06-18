@@ -130,9 +130,10 @@ export interface GameSummary {
   settler_share_bps?: number;
   /** Minimum USDC hard-lock deposit per spectator (atomic units, 6 decimals). */
   min_spectator_deposit?: string;
-  /** Planned total turns N; spectator bets close at turn N − no_position_tail_window. */
+  /** Planned max chain turns N; timing weight horizon T_valid = N − timing_weight_tail_turns. Tail turns reduce timing weight only — does not hard-ban betting in V1. */
   planned_turn_count?: number;
-  no_position_tail_window?: number;
+  /** Timing-weight tail turns m (§10.6); excluded from full w(t) curve; does not hard-ban openPosition in V1 beta. */
+  timing_weight_tail_turns?: number;
   /** Minimum USDC pool size required before the game can activate (0 = no threshold). */
   activation_stake_threshold?: string;
   /** Settlement mode: `"SETTLER_INITIAL"` or `"JURY_FIRST"`. */
@@ -183,8 +184,8 @@ export interface MatchSummary {
   jury_escrow_amount?: string | null;
   /** Minimum USDC hard-lock deposit per spectator (atomic units, 6 decimals). */
   min_spectator_deposit?: string | null;
-  /** Tail turns where spectator betting is frozen. */
-  no_position_tail_window?: number | null;
+  /** Timing-weight tail turns m (§10.6 soft tail); does not hard-ban betting in V1 beta. */
+  timing_weight_tail_turns?: number | null;
   /** Settlement mode: `"SETTLER_INITIAL"` or `"JURY_FIRST"`. */
   settlement_mode?: string | null;
   /** Set to `true` after the board's win condition fires on-chain (terminal objective completion). */
