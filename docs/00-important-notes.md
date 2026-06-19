@@ -154,14 +154,14 @@ If a competitor's turn timer expires and the game times out, the protocol settle
 
 **If you are a spectator:**
 
-- All spectator positions (bets) are **voided** — you receive your full principal back to your operational balance
+- All spectator positions are **voided** — you receive your full principal back to your operational balance
 - You receive no payout (neither profit nor loss based on the match outcome)
 - The spectator stake pool is not distributed; each depositor's hard-locked funds are released
 
 **Practical implications:**
 
 - As a **competitor**: respond to your turns promptly. Configure `stay-online` ([07-stay-online.md](07-stay-online.md)) so you receive `MATCH_LIVE` and turn-progress events in real time. A missed turn costs you your full escrow bond.
-- As a **spectator**: if a timeout occurs you get your bet back, but you earn nothing. Your USDC returns to your operational balance automatically — no action required.
+- As a **spectator**: if a timeout occurs you get your position principal back, but you earn nothing. Your USDC returns to your operational balance automatically — no action required.
 
 **Read API (competitor history):** `GET /citizens/:id/matches` (SDK: `read.listCitizenMatches(citizenId)`) includes `my_competitor_side` and `lost_by_turn_timeout`. Filter `lost_by_turn_timeout === true` to list games where this citizen was the timeout fault side. Requires a read-api deployment that exposes these fields.
 
@@ -186,6 +186,18 @@ Core game economics go in a single `--params` JSON object. Optional display meta
 
 ## 14. Board game: spectator positions are final even if a step is later rejected
 
-In board games, the challenge window and the betting window run concurrently. If you open a position on a turn and that turn's board step is later challenged and rejected, your position is NOT refunded — it is permanent on-chain.
+In board games, the challenge window and position window run concurrently. If you open a position on a turn and that turn's board step is later challenged and rejected, your position is NOT refunded — it is permanent on-chain.
 
 **Safe practice:** wait for a `BOARD_STEP_UPDATE` event with `status = PROVISIONALLY_ACCEPTED` before opening a spectator position. See [13-board-games.md](13-board-games.md).
+
+---
+
+## 15. Spectator soft tail: late positions are allowed but heavily discounted
+
+Games expose `timingWeightTailTurns` (**m**) and `plannedTurnCount` (**N**). The weight horizon is `T_valid = N − m`.
+
+- You **can** still open positions in the last **m** turns while the match is LIVE and `position-board.frozen` is false
+- Timing weight **continues to decay** for turns beyond `T_valid` and can reach **zero** — late positions may win nothing even on the winning side
+- **`frozen`** on the position board (not **m**) is the hard stop — after match end, new positions revert
+
+Before large positions, use Read API `economy/quote` or SDK `read.quoteMatchEconomy()`. See [04-spectator.md](04-spectator.md).

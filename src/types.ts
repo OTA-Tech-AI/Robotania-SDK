@@ -130,7 +130,7 @@ export interface GameSummary {
   settler_share_bps?: number;
   /** Minimum USDC hard-lock deposit per spectator (atomic units, 6 decimals). */
   min_spectator_deposit?: string;
-  /** Planned max chain turns N; timing weight horizon T_valid = N − timing_weight_tail_turns. Tail turns reduce timing weight only — does not hard-ban betting in V1. */
+  /** Planned max chain turns N; timing weight horizon T_valid = N − timing_weight_tail_turns. Tail turns reduce timing weight only — does not hard-ban openPosition in V1. */
   planned_turn_count?: number;
   /** Timing-weight tail turns m (§10.6); excluded from full w(t) curve; does not hard-ban openPosition in V1 beta. */
   timing_weight_tail_turns?: number;
@@ -157,9 +157,9 @@ export interface MatchSummary {
   ended_at?: string | null;
   closure_reason?: string | null;
   timeout_at_turn?: number | null;
-  betting_window_sec?: number | null;
+  position_window_sec?: number | null;
   /** ISO timestamp from read model; null when no active window */
-  betting_window_ends_at?: string | null;
+  position_window_ends_at?: string | null;
   /** Present on GET /citizens/:id/matches — this citizen's competitor side. */
   my_competitor_side?: string | null;
   /** Present on GET /citizens/:id/matches — true when this citizen was the timeout fault side. */
@@ -184,7 +184,7 @@ export interface MatchSummary {
   jury_escrow_amount?: string | null;
   /** Minimum USDC hard-lock deposit per spectator (atomic units, 6 decimals). */
   min_spectator_deposit?: string | null;
-  /** Timing-weight tail turns m (§10.6 soft tail); does not hard-ban betting in V1 beta. */
+  /** Timing-weight tail turns m (§10.6 soft tail); does not hard-ban openPosition in V1 beta. */
   timing_weight_tail_turns?: number | null;
   /** Settlement mode: `"SETTLER_INITIAL"` or `"JURY_FIRST"`. */
   settlement_mode?: string | null;
@@ -197,16 +197,44 @@ export interface MatchSummary {
   /** Game rules / motion text (Markdown on public UI). */
   description?: string | null;
   category?: string | null;
+  /** Current chain turn (read-api alias of `current_turn_number`). */
+  current_turn_index?: number | null;
+  /** Planned max turns N from linked topic. */
+  planned_turn_count?: number | null;
+  /** Settlement lifecycle (`AWAITING_SETTLEMENT`, `FINALIZED`, …) when present. */
+  settlement_state?: string | null;
+  /** Final winner side (`"A"` / `"B"`) from settlement projection; null until decided. */
+  settlement_winner?: string | null;
 }
 
 export interface PositionSummary {
   position_id: string;
   match_id: string;
   citizen_id: string;
-  side: number;
+  /** Side label (`"A"` / `"B"`) or numeric code from read-api. */
+  side: number | string;
   raw_amount: string;
   net_raw_amount: string;
+  /** Chain turn index when the position opened (Plan A canonical turn). */
+  turn_index: number;
+  fee_amount?: string;
+  effective_stake?: string;
+  fee_classification?: number;
+  fee_free_credit?: string;
+  claimed_at?: string | null;
   opened_at: string;
+}
+
+/** GET /games/{matchId}/position-board — pari-mutuel pool snapshot. */
+export interface PositionBoardSnapshot {
+  match_id: string;
+  raw_pool_a: string;
+  raw_pool_b: string;
+  total_raw_pool: string;
+  participant_count: number;
+  /** True after `closePositions` — new `openPosition` calls revert. Not the timing tail **m**. */
+  frozen: boolean;
+  freeze_at: string | null;
 }
 
 /** One `board_challenges` row as embedded on GET /matches/:id/board/steps. */
@@ -299,4 +327,84 @@ export interface MatchBoardBundle {
   can_submit_turn?: boolean;
   /** Why submit is blocked; null when `can_submit_turn` is true. */
   block_reason?: BoardSubmitBlockReason | null;
+}
+
+/** Side payout estimate from `GET /games/{matchId}/economy/snapshot`. */
+export interface EconomySideSnapshot {
+  prizeRange: { minMultiplier: number; maxMultiplier: number };
+  crowdHeat: number;
+  timeDragPct: number;
+  isEstimated: boolean;
+}
+
+/** Per-side detail on `GET /games/{matchId}/economy/params`. */
+export interface EconomySideParams {
+  currentTurnRawStake: number;
+  currentTurnTimeWeightedStake: number;
+  previousEffectiveStake: number;
+  crowdingDiscountEstimate: number;
+  crowdHeat: number;
+  timeWeightRange: { conservative: number; typical: number; cap: number };
+  estimatedPrizeRange: { minMultiplier: number; maxMultiplier: number };
+}
+
+/** Live side-battle economics for a match. */
+export interface MatchEconomySnapshot {
+  matchId: string;
+  topicType: "BOARD" | "DEBATE";
+  currentTurn: number;
+  plannedTurnCount: number;
+  finalized: boolean;
+  sides: { A: EconomySideSnapshot; B: EconomySideSnapshot };
+}
+
+/** Timing-weight and crowding parameters for a match. */
+export interface MatchEconomyParams {
+  matchId: string;
+  topicType: "BOARD" | "DEBATE";
+  currentTurn: number;
+  plannedTurnCount: number;
+  /** Scenario range for final turn count used in prize multiplier estimates. */
+  estimatedFinalTurnRange: { conservative: number; typical: number; cap: number };
+  params: {
+    timingWeightTailTurns: number;
+    alpha: number;
+    lambdaCrowding: number;
+    kMin: number;
+  };
+  /** Weight-curve horizon N − m (not an open-position cutoff). */
+  tValid: number;
+  sides: { A: EconomySideParams; B: EconomySideParams };
+}
+
+/** Body for `POST /games/{matchId}/economy/quote`. */
+export interface MatchEconomyQuoteInput {
+  side: "A" | "B" | "1" | "2";
+  stake: string | number;
+}
+
+/** Pre-trade estimate from `POST /games/{matchId}/economy/quote`. */
+export interface MatchEconomyQuote {
+  matchId: string;
+  topicType: "BOARD" | "DEBATE";
+  side: "A" | "B";
+  stake: string;
+  currentTurn: number;
+  estimated: boolean;
+  timeWeightRange: { conservative: number; typical: number; cap: number };
+  crowdingDiscountAfterOrder: number;
+  crowdHeatAfterOrder: number;
+  estimatedEffectiveStakeRange: { min: number; typical: number; max: number };
+  estimatedPrizeRange: { minMultiplier: number; maxMultiplier: number };
+}
+
+/** Response from `GET /games/{matchId}/economy/preview-credit`. */
+export interface MatchEconomyPreviewCredit {
+  matchId: string;
+  citizenId: string;
+  status: string;
+  payout: string;
+  indexedPayout?: string;
+  reason?: string;
+  source: "indexer" | "chain";
 }

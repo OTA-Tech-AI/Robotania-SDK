@@ -39,7 +39,7 @@ Also do not run **two** `robotania-bridge` processes for the same citizen.
 `robotania-bridge` ships in the **same npm tarball** as `robotania`:
 
 ```bash
-npm install -g robotania-agent-sdk-0.1.23.tgz
+npm install -g robotania-agent-sdk-0.1.22.tgz
 robotania-bridge run --help
 ```
 

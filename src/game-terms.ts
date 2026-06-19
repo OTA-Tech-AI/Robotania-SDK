@@ -80,13 +80,13 @@ const MARKET_MODE_NAMES: Record<number, string> = {
 const MARKET_MODE_EXPLANATIONS: Record<number, string> = {
   0: "Both competitors earn an equal fixed salary spread across turns, funded from the spectator pool.\n" +
      "  The winning side also shares a final prize from the spectator pool.\n" +
-     "  Salary is the same regardless of which side attracted more spectator bets.",
+     "  Salary is the same regardless of which side attracted more spectator positions.",
   1: "Competitors earn a fixed salary + a bonus from their OWN side's spectator pool.\n" +
-     "  No final prize. Competitors benefit more when their own supporters bet bigger.",
+     "  No final prize. Competitors benefit more when their own supporters open larger positions.",
   2: "Salary + own-side spectator bonus + final prize for the winning side.\n" +
      "  Combines Vanilla's outcome prize with Popularity's supporter bonus.",
   3: "(EXPERIMENTAL) Salary comes from the OPPOSITE side's spectator pool + a final prize.\n" +
-     "  Each competitor earns more when the opposing side bets bigger. High-risk/reward.",
+     "  Each competitor earns more when the opposing side opens larger positions. High-risk/reward.",
 };
 
 const TOPIC_TYPE_EXPLANATIONS: Record<number, string> = {
@@ -174,7 +174,7 @@ export function formatCreateGameBriefing(
   lines.push("");
   lines.push("Game structure:");
   lines.push(`  Planned turns:          ${plannedTurnCount}`);
-  lines.push(`  Timing weight tail (m):   ${timingWeightTailTurns} (T_valid = N−m; soft anti-snipe — does not hard-ban betting in V1)`);
+  lines.push(`  Timing weight tail (m):   ${timingWeightTailTurns} (T_valid = N−m; soft anti-snipe — does not hard-ban openPosition in V1)`);
   lines.push(`  Min deposit to enter:   ${minSpectatorDeposit}`);
   lines.push(`  Min turns for salary:   ${minTurnsForSalary} (competitors below this forfeit salary + prize)`);
   lines.push("");
@@ -225,6 +225,30 @@ export function normalizeCreateGameParams(params: Record<string, unknown>): Reco
       );
     }
     out.marketMode = coerced;
+  }
+
+  if (out.plannedTurnCount !== undefined || out.timingWeightTailTurns !== undefined) {
+    const n = Number(out.plannedTurnCount);
+    const m = Number(out.timingWeightTailTurns ?? 0);
+    if (out.plannedTurnCount !== undefined) {
+      if (!Number.isFinite(n) || !Number.isInteger(n) || n <= 0) {
+        throw new Error(
+          `Invalid plannedTurnCount: ${String(out.plannedTurnCount)} (must be a positive integer)`,
+        );
+      }
+    }
+    if (out.timingWeightTailTurns !== undefined) {
+      if (!Number.isFinite(m) || !Number.isInteger(m) || m < 0) {
+        throw new Error(
+          `Invalid timingWeightTailTurns: ${String(out.timingWeightTailTurns)} (must be a non-negative integer)`,
+        );
+      }
+    }
+    if (out.plannedTurnCount !== undefined && n <= m) {
+      throw new Error(
+        `plannedTurnCount (${n}) must be greater than timingWeightTailTurns (${m}).`,
+      );
+    }
   }
 
   // ── On-chain minimum checks ───────────────────────────────────────────────

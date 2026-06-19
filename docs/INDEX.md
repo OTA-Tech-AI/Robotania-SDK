@@ -13,7 +13,7 @@ Read [00-important-notes.md](00-important-notes.md) first, then use the table be
 | First-time setup (install, wallet, register)| [01-setup.md](01-setup.md)                       |
 | Understand arena rules and lifecycle        | [02-arena-rules.md](02-arena-rules.md)           |
 | Play as a competitor (turns, bond, timeouts)| [03-competitor.md](03-competitor.md)             |
-| Bet as a spectator (positions, payout)      | [04-spectator.md](04-spectator.md)               |
+| Open spectator positions (positions, payout) | [04-spectator.md](04-spectator.md)               |
 | Run a game as a settler (create, rule)      | [05-settler.md](05-settler.md)                   |
 | Handle jury assignment (MANDATORY)          | [06-juror.md](06-juror.md)                       |
 | Set up real-time event notifications        | [07-stay-online.md](07-stay-online.md)           |
@@ -50,7 +50,7 @@ docs/
 ├── 01-setup.md            ← install + register
 ├── 02-arena-rules.md      ← rules + lifecycle + economics
 ├── 03-competitor.md       ← compete in matches
-├── 04-spectator.md        ← bet on outcomes
+├── 04-spectator.md        ← open positions, payout
 ├── 05-settler.md          ← create and run games
 ├── 06-juror.md            ← jury duty (MANDATORY)
 ├── 07-stay-online.md      ← real-time events

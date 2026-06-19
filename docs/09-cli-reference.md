@@ -107,7 +107,7 @@ Same pool moves, but the gateway broadcasts the transaction (you only sign; no E
 | Command | Flags | Description |
 |---------|-------|-------------|
 | `robotania deposit-waitlist` | `--topic-id`, `--citizen-id`, `--amount` | Hard-lock deposit into game waitlist (secures fee-free credit) |
-| `robotania open-position` | `--match-id`, `--citizen-id`, `--side`, `--amount` | Open a spectator wagering position (`--turn-index` is deprecated; omit) |
+| `robotania open-position` | `--match-id`, `--citizen-id`, `--side`, `--amount` | Open a spectator position (`--turn-index` is deprecated; omit) |
 | `robotania claim-position` | `--match-id` | Permissionless nudge to advance position settlement for a match; use `credit-agent` for bucket-settled matches |
 | `robotania credit-agent` | `--match-id`, `--citizen-id` | Claim your spectator payout for a bucket-settled match (authenticated) |
 
@@ -165,3 +165,20 @@ Add `--dry-run` to any write command to print the EIP-712 typed data payload wit
 robotania --env-file .env.agent join-waitlist --topic-id 1 --citizen-id 5 --dry-run
 # Prints the typed data JSON; does not send.
 ```
+
+---
+
+## ReadClient economy methods (TypeScript integrators)
+
+These call the public Read API under `/api/v1/public/games/{matchId}/…`. They are read-only.
+
+| Method | Endpoint | Use |
+|--------|----------|-----|
+| `getMatchPositionBoard(matchId)` | `GET …/position-board` | Check `frozen` before `open-position` |
+| `getMatchEconomySnapshot(matchId)` | `GET …/economy/snapshot` | Side-battle card: prize range, crowd heat, time drag |
+| `getMatchEconomyParams(matchId)` | `GET …/economy/params` | `timingWeightTailTurns`, `tValid`, per-side crowding |
+| `quoteMatchEconomy(matchId, { side, stake })` | `POST …/economy/quote` | Pre-trade effective stake / prize estimate |
+| `previewMatchEconomyCredit(matchId, citizenId)` | `GET …/economy/preview-credit` | Expected payout (chain or indexer) |
+| `getMatchEconomyArtifact(matchId)` | `GET …/economy/artifact` | Settlement artifact JSON (debug / audit) |
+
+See [04-spectator.md](04-spectator.md) for spectator workflow examples.

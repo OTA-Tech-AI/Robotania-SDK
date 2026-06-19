@@ -9,11 +9,17 @@
 import type {
   ApiEnvelope,
   PositionSummary,
+  PositionBoardSnapshot,
   CitizenSummary,
   MatchBoardBundle,
   MatchBoardStepRow,
   MatchSummary,
   GameSummary,
+  MatchEconomySnapshot,
+  MatchEconomyParams,
+  MatchEconomyQuote,
+  MatchEconomyQuoteInput,
+  MatchEconomyPreviewCredit,
 } from "./types.js";
 
 export interface ReadClientOptions {
@@ -198,6 +204,40 @@ export class ReadClient {
     return this.get<MatchSummary>(this.pub(`/games/${matchId}`));
   }
 
+  /** Live side-battle card data (prize range, crowd heat, time drag). */
+  async getMatchEconomySnapshot(matchId: string): Promise<MatchEconomySnapshot> {
+    return this.get<MatchEconomySnapshot>(this.pub(`/games/${matchId}/economy/snapshot`));
+  }
+
+  /**
+   * Timing-weight parameters for a match (`timingWeightTailTurns`, `tValid`, alpha, crowding).
+   * Use before `open-position` to inspect live side stats.
+   */
+  async getMatchEconomyParams(matchId: string): Promise<MatchEconomyParams> {
+    return this.get<MatchEconomyParams>(this.pub(`/games/${matchId}/economy/params`));
+  }
+
+  /**
+   * Pre-trade quote: estimated effective stake and prize range for a hypothetical position.
+   * Prefer this over hand-calculating when deciding stake size.
+   */
+  async quoteMatchEconomy(matchId: string, input: MatchEconomyQuoteInput): Promise<MatchEconomyQuote> {
+    return this.post<MatchEconomyQuote>(this.pub(`/games/${matchId}/economy/quote`), input);
+  }
+
+  /**
+   * Preview spectator payout for a citizen (chain eth_call or indexer when already processed).
+   */
+  async previewMatchEconomyCredit(matchId: string, citizenId: string): Promise<MatchEconomyPreviewCredit> {
+    const qs = `?citizenId=${encodeURIComponent(citizenId)}`;
+    return this.get<MatchEconomyPreviewCredit>(this.pub(`/games/${matchId}/economy/preview-credit${qs}`));
+  }
+
+  /** Settlement artifact JSON (V1.5 bucket rates / stakes) when available. */
+  async getMatchEconomyArtifact(matchId: string): Promise<Record<string, unknown>> {
+    return this.get<Record<string, unknown>>(this.pub(`/games/${matchId}/economy/artifact`));
+  }
+
   /**
    * Board arena: latest step, wire-format `board_state`, and submit gating.
    *
@@ -249,8 +289,8 @@ export class ReadClient {
     return res.data;
   }
 
-  async getMatchPositionBoard(matchId: string): Promise<Record<string, unknown> | null> {
-    return this.get<Record<string, unknown> | null>(this.pub(`/games/${matchId}/position-board`));
+  async getMatchPositionBoard(matchId: string): Promise<PositionBoardSnapshot | null> {
+    return this.get<PositionBoardSnapshot | null>(this.pub(`/games/${matchId}/position-board`));
   }
 
   // ── Settlement (public views; settlement `challenges` table is not exposed) ─
@@ -328,11 +368,29 @@ export class ReadClient {
     return envelope.data;
   }
 
+  private async post<T>(url: string, body: unknown): Promise<T> {
+    const envelope = await this.postEnvelope<T>(url, body);
+    return envelope.data;
+  }
+
   private async getEnvelope<T>(url: string): Promise<ApiEnvelope<T>> {
     const res = await fetch(url, { headers: this.headers });
     if (!res.ok) {
       const body = await res.text().catch(() => "");
       throw new ApiError(res.status, url, body);
+    }
+    return res.json() as Promise<ApiEnvelope<T>>;
+  }
+
+  private async postEnvelope<T>(url: string, body: unknown): Promise<ApiEnvelope<T>> {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: this.headers,
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new ApiError(res.status, url, text);
     }
     return res.json() as Promise<ApiEnvelope<T>>;
   }

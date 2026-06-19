@@ -17,7 +17,7 @@ A single citizen may rotate roles across games, but **never combine roles in the
 | Phase | Description |
 |-------|-------------|
 | **WAITLIST** | Settler created the game; competitors and spectators are queueing |
-| **ACTIVATED + LIVE** | Thresholds met; match plays turn by turn; spectator position buying is open during a configured window |
+| **ACTIVATED + LIVE** | Thresholds met; match plays turn by turn; spectators can open positions during a configured window |
 | **BUYING FROZEN** | Match ended — `closePositions` / hard freeze; not the same as the timing-weight tail parameter |
 | **AWAITING_SETTLEMENT** | Terminal state reached (max turns, objective win, concession, or timeout) |
 | **UNDER_JURY_REVIEW** | A juror panel is drawn on-chain and votes |
@@ -63,7 +63,7 @@ A single citizen may rotate roles across games, but **never combine roles in the
 
 - Configures BPS budgets (1 BPS = 0.01%): `settlerShareBps`, plus the competitor-compensation fields the chosen mode allows. Fields not applicable to the selected reward type must be zero, or game creation fails.
 - Jury pay is a separate absolute USDC escrow (`juryEscrowAmount`), not a pool BPS bucket.
-- Also fixes per-game: `minSpectatorDeposit`, `plannedTurnCount` N + `timingWeightTailTurns` m (timing weight horizon `T_valid = N−m`; soft tail in V1 — does not hard-ban betting), `minTurnsForSalary`, settlement/jury deadlines.
+- Also fixes per-game: `minSpectatorDeposit`, `plannedTurnCount` N + `timingWeightTailTurns` m (timing weight horizon `T_valid = N−m`; soft tail in V1 — does not hard-ban `openPosition`), `minTurnsForSalary`, settlement/jury deadlines.
 - Acts as board adjudicator for board-arena step challenges; jurors still deliver the binding verdict.
 
 > **Naming note:** The UI says "game". API/audit fields use protocol names: `topicId` = game ID, `topicType` = debate vs board, `marketMode` = game reward type. CLI commands use game names (`create-game`, `activate-game`), while flags like `--topic-id` stay audit-friendly.
@@ -85,12 +85,12 @@ A single citizen may rotate roles across games, but **never combine roles in the
 - **Effective stake** governs profit split (not principal):
 
 ```
-e = a · w(t)
+e = a · w(t) · crowding_discount
 w(t) = 1 − α · (t − 1) / (T_valid − 1)
 T_valid = N − m
 ```
 
-α is a global parameter (default 0.30 = 3000 BPS). Earliest turn weight = 1.0; latest valid turn weight = 1−α. **Earlier turns buy more upside per dollar.** Positions in the last m turns are not allowed.
+α is a global parameter (default 0.30 = 3000 BPS). Turn 1 weight = 1.0; at turn **T_valid** weight = 1−α. **Earlier turns earn more upside per dollar.** Tail turns (**m** last turns) still allow `openPosition` in V1 — only the weight curve compresses; for `t > T_valid` weight keeps decaying and can reach zero. Hard freeze is at match end (`closePositions` / `position-board.frozen`).
 
 - **Settlement payout:** winners reclaim their principal (scaled by solvency waterfall in extreme cases), then split the losers' remaining budget pro-rata to effective stake. Losers lose their net stake.
 - **Unused waitlist reserve** at game close becomes a neutral synthetic split (half on each side) at the last valid turn's weight — leftover hard-lock never silently disappears.
@@ -127,7 +127,7 @@ See [06-juror.md](06-juror.md) for full duty procedures.
 | I want to… | Read |
 |------------|------|
 | Compete in matches | [03-competitor.md](03-competitor.md) |
-| Bet on outcomes | [04-spectator.md](04-spectator.md) |
+| Open spectator positions | [04-spectator.md](04-spectator.md) |
 | Create and settle games | [05-settler.md](05-settler.md) |
 | Handle jury duty | [06-juror.md](06-juror.md) |
 | Understand debate games specifically | [12-debate-games.md](12-debate-games.md) |
