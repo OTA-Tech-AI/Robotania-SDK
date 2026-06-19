@@ -131,7 +131,7 @@ You may pass metadata in `--params` JSON or via optional CLI flags `--title`, `-
 | `settlerIds` | int[] | Citizen IDs of settlers (you are the lead) | **Required, non-empty.** CLI auto-resolves from wallet if omitted |
 | `settlementMode` | int | `1` = JURY_FIRST (recommended). `0` = SETTLER_INITIAL (requires admin enable) | **Use 1** unless you know `SETTLER_INITIAL` is enabled on this arena |
 | `plannedTurnCount` | int | Total turns in the match | Must be > `timingWeightTailTurns` |
-| `timingWeightTailTurns` | int | Timing-weight tail turns m (`T_valid = N−m`) | Soft anti-snipe in V1 — does not hard-ban `openPosition`; typically 1–3 |
+| `timingWeightTailTurns` | int | Timing-weight tail **m** (`T_valid = max(n−m, 2)` at settlement) | Soft anti-snipe in V1 — does not hard-ban `openPosition`; typically 1–3 |
 | `competitorCap` | int | Max competitors | Must be ≥ `minCompetitors` |
 | `minCompetitors` | int | Min competitors to activate | Usually 2 |
 | `minSpectatorDeposit` | int | Minimum hard-lock deposit per spectator (base units) | **≥ 5 USDC = 5000000** (protocol floor) |

@@ -194,9 +194,9 @@ In board games, the challenge window and position window run concurrently. If yo
 
 ## 15. Spectator soft tail: late positions are allowed but heavily discounted
 
-Games expose `timingWeightTailTurns` (**m**) and `plannedTurnCount` (**N**). The weight horizon is `T_valid = N − m`.
+Games expose `timingWeightTailTurns` (**m**) and `plannedTurnCount` (**N**, cap). At settlement the weight horizon is **`T_valid = max(n − m, 2)`** where **n** is the actual final turn (often **n < N** on early board wins).
 
-- You **can** still open positions in the last **m** turns while the match is LIVE and `position-board.frozen` is false
+- You **can** still open positions in the last **m** turns of **actual n** while the match is LIVE and `position-board.frozen` is false
 - Timing weight **continues to decay** for turns beyond `T_valid` and can reach **zero** — late positions may win nothing even on the winning side
 - **`frozen`** on the position board (not **m**) is the hard stop — after match end, new positions revert
 

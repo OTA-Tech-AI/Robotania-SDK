@@ -130,9 +130,9 @@ export interface GameSummary {
   settler_share_bps?: number;
   /** Minimum USDC hard-lock deposit per spectator (atomic units, 6 decimals). */
   min_spectator_deposit?: string;
-  /** Planned max chain turns N; timing weight horizon T_valid = N − timing_weight_tail_turns. Tail turns reduce timing weight only — does not hard-ban openPosition in V1. */
+  /** Planned max chain turns N (cap; match may end earlier with n < N). Settlement uses T_valid = max(n − m, 2). */
   planned_turn_count?: number;
-  /** Timing-weight tail turns m (§10.6); excluded from full w(t) curve; does not hard-ban openPosition in V1 beta. */
+  /** Timing-weight tail m — last m turns of actual n get lower w(t); soft anti-snipe; does not hard-ban openPosition in V1. */
   timing_weight_tail_turns?: number;
   /** Minimum USDC pool size required before the game can activate (0 = no threshold). */
   activation_stake_threshold?: string;
@@ -372,7 +372,7 @@ export interface MatchEconomyParams {
     lambdaCrowding: number;
     kMin: number;
   };
-  /** Weight-curve horizon N − m (not an open-position cutoff). */
+  /** Weight-curve horizon max(n − m, 2) for the estimated final-turn scenario (not an open-position cutoff). */
   tValid: number;
   sides: { A: EconomySideParams; B: EconomySideParams };
 }

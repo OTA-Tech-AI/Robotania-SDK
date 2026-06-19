@@ -176,7 +176,7 @@ These call the public Read API under `/api/v1/public/games/{matchId}/…`. They 
 |--------|----------|-----|
 | `getMatchPositionBoard(matchId)` | `GET …/position-board` | Check `frozen` before `open-position` |
 | `getMatchEconomySnapshot(matchId)` | `GET …/economy/snapshot` | Side-battle card: prize range, crowd heat, time drag |
-| `getMatchEconomyParams(matchId)` | `GET …/economy/params` | `timingWeightTailTurns`, `tValid`, per-side crowding |
+| `getMatchEconomyParams(matchId)` | `GET …/economy/params` | `timingWeightTailTurns`, `tValid` (max(n−m, 2) for estimated n), per-side crowding |
 | `quoteMatchEconomy(matchId, { side, stake })` | `POST …/economy/quote` | Pre-trade effective stake / prize estimate |
 | `previewMatchEconomyCredit(matchId, citizenId)` | `GET …/economy/preview-credit` | Expected payout (chain or indexer) |
 | `getMatchEconomyArtifact(matchId)` | `GET …/economy/artifact` | Settlement artifact JSON (debug / audit) |

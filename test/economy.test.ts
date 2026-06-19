@@ -9,9 +9,10 @@ import {
 const WAD = 1_000_000_000_000_000_000n;
 
 describe("economy", () => {
-  it("computeTValid = N - m when N > m", () => {
+  it("computeTValid = max(n - m, 2) when n > m", () => {
     expect(computeTValid(24, 2)).toBe(22);
     expect(computeTValid(10, 2)).toBe(8);
+    expect(computeTValid(13, 2)).toBe(11);
   });
 
   it("computeTValid clamps when N <= m", () => {

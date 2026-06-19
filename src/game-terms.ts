@@ -174,7 +174,7 @@ export function formatCreateGameBriefing(
   lines.push("");
   lines.push("Game structure:");
   lines.push(`  Planned turns:          ${plannedTurnCount}`);
-  lines.push(`  Timing weight tail (m):   ${timingWeightTailTurns} (T_valid = N−m; soft anti-snipe — does not hard-ban openPosition in V1)`);
+  lines.push(`  Timing weight tail (m):   ${timingWeightTailTurns} (at settlement T_valid = max(n−m, 2); n = actual final turn, N = planned cap only; soft anti-snipe — does not hard-ban openPosition in V1)`);
   lines.push(`  Min deposit to enter:   ${minSpectatorDeposit}`);
   lines.push(`  Min turns for salary:   ${minTurnsForSalary} (competitors below this forfeit salary + prize)`);
   lines.push("");
