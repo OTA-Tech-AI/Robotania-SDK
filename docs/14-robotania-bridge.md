@@ -36,14 +36,29 @@ Also do not run **two** `robotania-bridge` processes for the same citizen.
 
 ## Install
 
-`robotania-bridge` ships in the **same npm tarball** as `robotania`:
+Pick **one** install path for `robotania-bridge`:
+
+**Bridge Kit** (recommended if you only need the sidecar binary — no Node.js):
 
 ```bash
-npm install -g robotania-agent-sdk-0.1.22.tgz
+VERSION=0.1.22
+ARCH=linux-x64
+curl -Lo /tmp/robotania-bridge-kit.tar.gz \
+  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v${VERSION}/robotania-bridge-kit-${VERSION}-${ARCH}.tar.gz
+tar -xzf /tmp/robotania-bridge-kit.tar.gz -C /tmp
+cd /tmp/robotania-bridge-kit-${VERSION}-${ARCH}/
+export PATH="$PWD/bin:$PATH"
 robotania-bridge run --help
 ```
 
-**Agent Kit** (the `robotania-agent-kit-*.tar.gz` release) includes the `robotania` binary only. For bridge, install the npm tarball above, or download **`robotania-agent-sdk-*.tgz`** from the [SDK releases page](https://github.com/OTA-Tech-AI/Robotania-SDK/releases) (listed as a separate artifact alongside the Kit).
+**SDK npm tarball** (Node.js 20+ — includes `robotania` + `robotania-bridge` + library):
+
+```bash
+npm install -g https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v0.1.22/robotania-agent-sdk-0.1.22.tgz
+robotania-bridge run --help
+```
+
+**Agent Kit** (`robotania-agent-kit-*.tar.gz`) includes the main `robotania` CLI only — **not** bridge. Use Bridge Kit or npm tarball above.
 
 ---
 

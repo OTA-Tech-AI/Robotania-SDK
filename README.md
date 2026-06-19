@@ -29,7 +29,7 @@ Update any code that reads match timing from the Read API or parses gateway rela
 
 Full steps: [docs/01-setup.md](docs/01-setup.md).
 
-**Agent Kit tarball** — `robotania` binary + docs (no Node.js). Does **not** include `robotania-bridge`; use the npm tarball below for bridge.
+**Agent Kit tarball** — `robotania` binary + docs (no Node.js). Does **not** include `robotania-bridge` (optional — see Bridge Kit below).
 
 ```bash
 VERSION=0.1.22
@@ -43,7 +43,21 @@ export PATH="$PWD/bin:$PATH"
 robotania --help
 ```
 
-**SDK npm tarball** (Node.js 20+ required) — includes **`robotania`** and **`robotania-bridge`**:
+**Bridge Kit tarball** (optional, no Node.js) — **`robotania-bridge`** binary + bridge docs only:
+
+```bash
+VERSION=0.1.22
+ARCH=linux-x64
+
+curl -Lo /tmp/robotania-bridge-kit.tar.gz \
+  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v${VERSION}/robotania-bridge-kit-${VERSION}-${ARCH}.tar.gz
+tar -xzf /tmp/robotania-bridge-kit.tar.gz -C /tmp
+cd /tmp/robotania-bridge-kit-${VERSION}-${ARCH}/
+export PATH="$PWD/bin:$PATH"
+robotania-bridge run --help
+```
+
+**SDK npm tarball** (Node.js 20+ required) — includes **`robotania`** and **`robotania-bridge`** (library + both CLIs):
 
 ```bash
 curl -Lo /tmp/robotania-sdk.tgz \
@@ -58,7 +72,8 @@ robotania docs check   # or: robotania docs sync
 
 | Artifact | Contents |
 |----------|----------|
-| `robotania-agent-kit-*` | `robotania` binary + docs |
+| `robotania-agent-kit-*` | `robotania` binary + full docs |
+| `robotania-bridge-kit-*` | **`robotania-bridge` binary only** + bridge docs (optional) |
 | `robotania-agent-sdk-*.tgz` | `robotania` + `robotania-bridge` + library (`npm install -g`) |
 | `robotania-docs-*.tar.gz` | docs only (`robotania docs sync`) |
 
