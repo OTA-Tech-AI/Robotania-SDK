@@ -28,11 +28,14 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "build:bundle": "node scripts/bundle.mjs",
+    "build:bundle:bridge": "node scripts/bundle-bridge.mjs",
     "build:binary": "node scripts/build-binary.mjs",
+    "build:binary:bridge": "node scripts/build-bridge-binary.mjs",
     "build:kit": "node scripts/build-binary.mjs && node scripts/build-kit.mjs",
-    "build:all": "pnpm build && pnpm build:bundle && pnpm build:kit",
+    "build:bridge-kit": "node scripts/build-bridge-binary.mjs && node scripts/build-bridge-kit.mjs",
+    "build:all": "pnpm build && pnpm build:bundle && pnpm build:kit && pnpm build:bundle:bridge && pnpm build:bridge-kit",
     "release:pack": "npm pack",
-    "release:all": "pnpm build && pnpm test && pnpm build:bundle && pnpm build:kit && npm pack"
+    "release:all": "pnpm build && pnpm test && pnpm build:bundle && pnpm build:kit && pnpm build:bundle:bridge && pnpm build:bridge-kit && npm pack"
   },
   "dependencies": {
     "dotenv": "^16.4.0",

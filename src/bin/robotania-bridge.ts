@@ -41,9 +41,6 @@ function requireFlag(args: string[], name: string): string {
   return val;
 }
 
-const argv = process.argv.slice(2);
-const subcmd = argv[0];
-
 function printUsage(): void {
   process.stderr.write(
     [
@@ -58,54 +55,64 @@ function printUsage(): void {
   );
 }
 
-if (subcmd !== "run") {
-  printUsage();
-  process.exit(subcmd === "--help" || subcmd === "-h" || subcmd === "help" ? 0 : 1);
-}
+async function main(): Promise<void> {
+  const argv = process.argv.slice(2);
+  const subcmd = argv[0];
 
-const args = argv.slice(1);
-const citizenId = requireFlag(args, "--citizen-id");
-const adapter = requireFlag(args, "--adapter");
-const envFile = flag(args, "--env-file");
+  if (subcmd !== "run") {
+    printUsage();
+    process.exit(subcmd === "--help" || subcmd === "-h" || subcmd === "help" ? 0 : 1);
+  }
 
-if (envFile) {
-  loadDotenv({ path: envFile });
-} else {
-  loadDotenv();
-}
+  const args = argv.slice(1);
+  const citizenId = requireFlag(args, "--citizen-id");
+  const adapter = requireFlag(args, "--adapter");
+  const envFile = flag(args, "--env-file");
 
-const dedupeWindowRaw = flag(args, "--dedupe-window");
-const dedupeWindowMs = dedupeWindowRaw != null ? Number(dedupeWindowRaw) : undefined;
-const subscribeRaw = flag(args, "--subscribe");
-const subscriptions = subscribeRaw
-  ? (subscribeRaw.split(",").map((s) => s.trim()) as WsEventType[])
-  : undefined;
+  if (envFile) {
+    loadDotenv({ path: envFile });
+  } else {
+    loadDotenv();
+  }
 
-let agentAdapter: InstanceType<typeof CliAgentAdapter> | InstanceType<typeof WebhookAdapter>;
+  const dedupeWindowRaw = flag(args, "--dedupe-window");
+  const dedupeWindowMs = dedupeWindowRaw != null ? Number(dedupeWindowRaw) : undefined;
+  const subscribeRaw = flag(args, "--subscribe");
+  const subscriptions = subscribeRaw
+    ? (subscribeRaw.split(",").map((s) => s.trim()) as WsEventType[])
+    : undefined;
 
-if (adapter === "cli") {
-  const command = requireFlag(args, "--cli-command");
-  const extraArgsRaw = flag(args, "--cli-args");
-  const extraArgs = extraArgsRaw ? extraArgsRaw.split(" ").filter(Boolean) : [];
-  agentAdapter = new CliAgentAdapter(command, extraArgs);
-} else if (adapter === "webhook") {
-  const webhookUrl = requireFlag(args, "--webhook-url");
-  const tokenEnv = requireFlag(args, "--webhook-token-env");
-  const token = process.env[tokenEnv];
-  if (!token) {
-    process.stderr.write(`Error: env var ${tokenEnv} is not set\n`);
+  let agentAdapter: InstanceType<typeof CliAgentAdapter> | InstanceType<typeof WebhookAdapter>;
+
+  if (adapter === "cli") {
+    const command = requireFlag(args, "--cli-command");
+    const extraArgsRaw = flag(args, "--cli-args");
+    const extraArgs = extraArgsRaw ? extraArgsRaw.split(" ").filter(Boolean) : [];
+    agentAdapter = new CliAgentAdapter(command, extraArgs);
+  } else if (adapter === "webhook") {
+    const webhookUrl = requireFlag(args, "--webhook-url");
+    const tokenEnv = requireFlag(args, "--webhook-token-env");
+    const token = process.env[tokenEnv];
+    if (!token) {
+      process.stderr.write(`Error: env var ${tokenEnv} is not set\n`);
+      process.exit(1);
+    }
+    agentAdapter = new WebhookAdapter(webhookUrl, token);
+  } else {
+    process.stderr.write(`Error: unknown adapter "${adapter}" — use cli or webhook\n`);
     process.exit(1);
   }
-  agentAdapter = new WebhookAdapter(webhookUrl, token);
-} else {
-  process.stderr.write(`Error: unknown adapter "${adapter}" — use cli or webhook\n`);
-  process.exit(1);
+
+  await runBridge({
+    citizenId,
+    adapter: agentAdapter,
+    envFile,
+    dedupeWindowMs,
+    subscriptions,
+  });
 }
 
-await runBridge({
-  citizenId,
-  adapter: agentAdapter,
-  envFile,
-  dedupeWindowMs,
-  subscriptions,
+main().catch((err) => {
+  process.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
+  process.exit(1);
 });
