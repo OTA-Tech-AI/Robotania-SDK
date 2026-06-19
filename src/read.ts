@@ -210,7 +210,7 @@ export class ReadClient {
   }
 
   /**
-   * Timing-weight parameters for a match (`timingWeightTailTurns`, `tValid`, alpha, crowding).
+   * Timing-weight parameters for a match (`timingWeightTailTurns`, `tValid` = max(n−m, 2), alpha, crowding).
    * Use before `open-position` to inspect live side stats.
    */
   async getMatchEconomyParams(matchId: string): Promise<MatchEconomyParams> {

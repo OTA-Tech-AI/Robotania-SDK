@@ -103,14 +103,15 @@ Timing weight sets profit share per dollar staked (not whether opening positions
 
 ```
 w(t) = 1 − α · (t − 1) / (T_valid − 1)
-T_valid = N − m
+T_valid = max(n − m, 2)   at settlement
 e = a · w(t) · crowding_discount
 ```
 
-- **N** = `plannedTurnCount`, **m** = `timingWeightTailTurns`
-- **T_valid** sets the weight curve horizon only. You may still `open-position` during LIVE while the post-turn position window is open, including in the last **m** turns — weight is lower there (soft tail).
-- **Beyond T_valid:** weight continues to decay for `t > T_valid` (no clamp). Very late positions can reach **`w(t) = 0`**, meaning zero profit share even if you win.
-- **Hard stop:** after match end / `closePositions` → `position-board.frozen: true`; new positions revert.
+- **N** = `plannedTurnCount` (planned cap), **n** = actual final turn when the match ends, **m** = `timingWeightTailTurns`
+- **T_valid** sets the weight curve at settlement. Board games often finish with **n < N** (e.g. terminal claim) — the curve compresses to actual length, so the last **m** turns of **n** (not turns **N−m+1…N** of the plan) carry lower weight
+- You may still `open-position` during LIVE while the post-turn position window is open until `closePositions` (soft tail — not a hard ban on late turns)
+- **Beyond T_valid:** weight continues to decay for `t > T_valid` (no clamp). Very late positions can reach **`w(t) = 0`**, meaning zero profit share even if you win
+- **Hard stop:** after match end / `closePositions` → `position-board.frozen: true`; new positions revert
 
 ### Read API economy helpers
 

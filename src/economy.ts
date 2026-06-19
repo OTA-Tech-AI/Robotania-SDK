@@ -9,7 +9,11 @@ export function mulDiv(x: bigint, y: bigint, denom: bigint): bigint {
   return (x * y) / denom;
 }
 
-/** T_valid = N - timingWeightTailTurns (timing weight horizon); see market mechanism §10.6 soft tail. */
+/**
+ * T_valid = max(n − m, 2) at settlement (mirrors on-chain SettlementMath).
+ * n = actual final turn count when the match ends; m = timingWeightTailTurns.
+ * When n equals plannedTurnCount N, this equals max(N − m, 2).
+ */
 export function computeTValid(n: number, timingWeightTailTurns: number): number {
   if (n <= timingWeightTailTurns) return 2;
   const t = n - timingWeightTailTurns;

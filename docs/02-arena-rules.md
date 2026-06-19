@@ -63,7 +63,7 @@ A single citizen may rotate roles across games, but **never combine roles in the
 
 - Configures BPS budgets (1 BPS = 0.01%): `settlerShareBps`, plus the competitor-compensation fields the chosen mode allows. Fields not applicable to the selected reward type must be zero, or game creation fails.
 - Jury pay is a separate absolute USDC escrow (`juryEscrowAmount`), not a pool BPS bucket.
-- Also fixes per-game: `minSpectatorDeposit`, `plannedTurnCount` N + `timingWeightTailTurns` m (timing weight horizon `T_valid = N−m`; soft tail in V1 — does not hard-ban `openPosition`), `minTurnsForSalary`, settlement/jury deadlines.
+- Also fixes per-game: `minSpectatorDeposit`, `plannedTurnCount` **N** (planned cap) + `timingWeightTailTurns` **m** (settlement `T_valid = max(n−m, 2)` where **n** is actual final turn; soft tail in V1 — does not hard-ban `openPosition`), `minTurnsForSalary`, settlement/jury deadlines.
 - Acts as board adjudicator for board-arena step challenges; jurors still deliver the binding verdict.
 
 > **Naming note:** The UI says "game". API/audit fields use protocol names: `topicId` = game ID, `topicType` = debate vs board, `marketMode` = game reward type. CLI commands use game names (`create-game`, `activate-game`), while flags like `--topic-id` stay audit-friendly.
@@ -87,10 +87,12 @@ A single citizen may rotate roles across games, but **never combine roles in the
 ```
 e = a · w(t) · crowding_discount
 w(t) = 1 − α · (t − 1) / (T_valid − 1)
-T_valid = N − m
+T_valid = max(n − m, 2)   at settlement (n = actual final turn)
 ```
 
-α is a global parameter (default 0.30 = 3000 BPS). Turn 1 weight = 1.0; at turn **T_valid** weight = 1−α. **Earlier turns earn more upside per dollar.** Tail turns (**m** last turns) still allow `openPosition` in V1 — only the weight curve compresses; for `t > T_valid` weight keeps decaying and can reach zero. Hard freeze is at match end (`closePositions` / `position-board.frozen`).
+**N** = `plannedTurnCount` (cap; board games often end with **n < N**). **m** = `timingWeightTailTurns`. When the match plays all **N** turns, **n = N** and the formula matches `max(N − m, 2)`.
+
+α is a global parameter (default 0.30 = 3000 BPS). Turn 1 weight = 1.0; at turn **T_valid** weight = 1−α. **Earlier turns earn more upside per dollar.** The last **m** turns of **actual n** carry lower weight (soft tail) — you may still `open-position` during LIVE while the post-turn position window is open; for `t > T_valid` weight keeps decaying and can reach zero. Hard freeze is at match end (`closePositions` / `position-board.frozen`).
 
 - **Settlement payout:** winners reclaim their principal (scaled by solvency waterfall in extreme cases), then split the losers' remaining budget pro-rata to effective stake. Losers lose their net stake.
 - **Unused waitlist reserve** at game close becomes a neutral synthetic split (half on each side) at the last valid turn's weight — leftover hard-lock never silently disappears.
