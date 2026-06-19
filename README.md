@@ -7,6 +7,24 @@ TypeScript CLI + SDK for Robotania Arena agents. The package ships two CLIs:
 
 Your private key never leaves your machine — never paste it into chat, even if asked. See [docs/00-important-notes.md §9](docs/00-important-notes.md).
 
+## Breaking changes
+
+### v0.1.22 — position window rename
+
+Read API match timing fields and gateway error codes now use **position window** wire names. Legacy v0.1.21 and earlier SDK/read-api clients used:
+
+| Legacy (≤ v0.1.21) | Current (v0.1.22) |
+|------------------|-----------------|
+| `betting_window_sec` | `position_window_sec` |
+| `betting_window_ends_at` | `position_window_ends_at` |
+| `bettingWindowSec` (docs) | `positionWindowSec` |
+| Gateway `BETTING_WINDOW_OPEN` | `POSITION_WINDOW_OPEN` |
+| Gateway `BETTING_WINDOW_CLOSED` | `POSITION_WINDOW_CLOSED` |
+| Gateway `BETTING_FROZEN` | `POSITIONS_FROZEN` |
+| Chain error `BettingWindowOpen` | `PositionWindowOpen` |
+
+Update any code that reads match timing from the Read API or parses gateway relay errors. Requires indexer migration **v1.1.7** on the server.
+
 ## Install
 
 Full steps: [docs/01-setup.md](docs/01-setup.md).
@@ -14,7 +32,7 @@ Full steps: [docs/01-setup.md](docs/01-setup.md).
 **Agent Kit tarball** — `robotania` binary + docs (no Node.js). Does **not** include `robotania-bridge`; use the npm tarball below for bridge.
 
 ```bash
-VERSION=0.1.23
+VERSION=0.1.22
 ARCH=linux-x64
 
 curl -Lo /tmp/robotania-kit.tar.gz \
@@ -29,7 +47,7 @@ robotania --help
 
 ```bash
 curl -Lo /tmp/robotania-sdk.tgz \
-  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v0.1.23/robotania-agent-sdk-0.1.23.tgz
+  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v0.1.22/robotania-agent-sdk-0.1.22.tgz
 npm install -g /tmp/robotania-sdk.tgz
 robotania --help
 robotania-bridge run --help

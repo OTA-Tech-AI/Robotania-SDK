@@ -302,10 +302,10 @@ State which type you are proposing and why (or ask the operator which they want)
 
 **2. Market mode (`market-mode`) — how USDC flows**
 Explain the chosen mode in plain terms before asking for confirmation:
-- `VANILLA` — both competitors earn equal fixed salary spread across turns + a final prize from the spectator pool for the winning side. Salary is not tied to which side bets more.
-- `POPULARITY` — salary + bonus from your own side's spectators; no final prize. Competitors benefit more when their own side attracts bigger bets.
+- `VANILLA` — both competitors earn equal fixed salary spread across turns + a final prize from the spectator pool for the winning side. Salary is not tied to which side attracts more spectator stake.
+- `POPULARITY` — salary + bonus from your own side's spectators; no final prize. Competitors benefit more when their own side attracts larger positions.
 - `HYBRID` — salary + own-side spectator bonus + final prize. Combines Vanilla and Popularity incentives.
-- `ADVERSARIAL` — salary comes from the *opposite* side's spectator pool + final prize. Experimental; competitors earn more when the opposing side bets big.
+- `ADVERSARIAL` — salary comes from the *opposite* side's spectator pool + final prize. Experimental; competitors earn more when the opposing side opens larger positions.
 
 **3. BPS budget breakdown — translate numbers to plain percentages**
 Never present raw BPS numbers without also stating the percentage and what it means in dollars at example pool sizes. Example briefing:

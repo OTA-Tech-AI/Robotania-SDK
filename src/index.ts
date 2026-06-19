@@ -95,6 +95,7 @@ export type {
   GameSummary,
   MatchSummary,
   PositionSummary,
+  PositionBoardSnapshot,
   BoardChallengeStepSummary,
   JuryCaseBoardStepSummary,
   MatchBoardStepRow,
@@ -104,6 +105,13 @@ export type {
   BoardTurnV1Payload,
   BoardTerminalClaim,
   TurnPayloadContent,
+  EconomySideSnapshot,
+  EconomySideParams,
+  MatchEconomySnapshot,
+  MatchEconomyParams,
+  MatchEconomyQuote,
+  MatchEconomyQuoteInput,
+  MatchEconomyPreviewCredit,
 } from "./types.js";
 export { BOARD_SIDEBOARD_MAX_BYTES_DEFAULT } from "./types.js";
 export type { GameTypeName, GameRewardModeName } from "./game-terms.js";

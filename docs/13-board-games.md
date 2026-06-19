@@ -184,6 +184,8 @@ If game logic depends on state that cannot be represented by a single cell integ
 
 **Turn 2+:** `sideboardBefore` **MUST** match the prior accepted step's `sideboard_after` (or the rejected step's `sideboard_before` on resubmit). The gateway enforces continuity on `sideboardBefore` only — not on `sideboardAfter`.
 
+> **Legacy `sideboard` key rejected:** `board_turn_v1` payloads must use **`sideboardBefore`** and **`sideboardAfter`**. A single `sideboard` field is rejected at the gateway. TypeScript SDK types enforce this via `BoardTurnV1Payload`.
+
 ### What sideboard is for
 
 | Use case | Example |
@@ -369,12 +371,12 @@ Use `can_submit_turn` and `block_reason` to determine whether to submit a turn n
 
 > **CRITICAL:** Spectator positions in board games are final and NOT refunded even if the step they were placed on is later challenged and rejected.
 
-The **challenge window** and **betting window** run concurrently. Example timeline:
+The **challenge window** and **position window** run concurrently. Example timeline:
 
 ```
 Turn submitted
 ├── Challenge window: 60s  (defaultChallengeWindowSec)
-└── Betting window:  300s  (bettingWindowSec)
+└── Position window:  300s  (positionWindowSec)
 
 If you open a position at t=30s and the move is challenged and rejected at t=45s,
 your position is NOT refunded.
@@ -384,7 +386,7 @@ your position is NOT refunded.
 1. Wait for `BOARD_STEP_UPDATE` with `status = PROVISIONALLY_ACCEPTED`
 2. Then open your position
 
-The challenge window is shorter than the betting window by design, so a brief wait does not cost you the full betting window.
+The challenge window is shorter than the position window by design, so a brief wait does not cost you the full position window.
 
 ---
 

@@ -53,4 +53,13 @@ describe("game-terms", () => {
     const out = normalizeCreateGameParams({ plannedTurnCount: 5, salaryBudgetBps: 500 });
     expect(out).toEqual({ plannedTurnCount: 5, salaryBudgetBps: 500 });
   });
+
+  it("normalizeCreateGameParams rejects plannedTurnCount <= timingWeightTailTurns", () => {
+    expect(() =>
+      normalizeCreateGameParams({ plannedTurnCount: 2, timingWeightTailTurns: 2 }),
+    ).toThrow(/must be greater than timingWeightTailTurns/);
+    expect(() =>
+      normalizeCreateGameParams({ plannedTurnCount: 10, timingWeightTailTurns: 2 }),
+    ).not.toThrow();
+  });
 });

@@ -38,6 +38,17 @@ Use this table to quickly diagnose common errors. If your symptom is not here, c
 
 ---
 
+## Position window — open vs closed
+
+After each turn is submitted, a post-turn position window runs for `position_window_sec` seconds (`position_window_ends_at` on match detail). Competitors and spectators see opposite constraints:
+
+| Role | Window **open** | Window **closed** |
+|------|-----------------|-------------------|
+| **Competitor** (next turn) | `submit-turn` blocked → gateway `POSITION_WINDOW_OPEN` | `submit-turn` allowed (when it is their turn) |
+| **Spectator** | `open-position` allowed | `open-position` blocked → gateway `POSITION_WINDOW_CLOSED` |
+
+---
+
 ## Game action errors
 
 | Symptom | Cause | Fix |
@@ -47,7 +58,8 @@ Use this table to quickly diagnose common errors. If your symptom is not here, c
 | Game stuck on `WAITLIST` — competitors joined but no activation | Spectator stake pool below `activation_stake_threshold` | Spectators run `deposit-waitlist` until pool total ≥ threshold; settler checks topic detail / public UI pool bar. Settler: do not use `activationStakeThreshold: 0` on real games without operator approval — see [05-settler.md § Waitlist stake pool](05-settler.md#waitlist-stake-pool-activationstakethreshold) |
 | `activate-game` reverts — pool not met | `spectatorDepositTotal < activationStakeThreshold` | Wait for more `deposit-waitlist` volume or ask operator to lower threshold on a **new** game (immutable after create) |
 | `InvalidPositionSide` | `--side 0` or wrong value | Use `--side 1` (Side A) or `--side 2` (Side B) |
-| `BETTING_WINDOW_OPEN on submit-turn` | Spectators are still in the betting window | Wait for the betting window to close, then submit your turn |
+| `POSITION_WINDOW_OPEN on submit-turn` | Position window still open | Wait for the position window to close (`position_window_ends_at`), then submit your turn |
+| `POSITION_WINDOW_CLOSED on open-position` | Position window has closed for this turn | Open positions during the window after a turn is submitted; check `position_window_ends_at` on match detail |
 | `InvalidTopicConfiguration` | `minSpectatorDeposit` set to 0 | Set `minSpectatorDeposit` to at least 5 USDC (5000000 base units) |
 | `DUPLICATE_NONCE (409)` | Request sent twice | Safe to ignore; the first request was already processed |
 | `description` empty on Read API right after `create-game` | Metadata upload or indexer hydration still in progress; or R2 upload failed at create time | Wait a few seconds and re-fetch `GET /topics/:topic_id`; check gateway logs; settler must include `title`/`description` in params (see [05-settler.md § Metadata pipeline](05-settler.md#metadata-pipeline-display-fields)) |

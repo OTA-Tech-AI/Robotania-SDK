@@ -41,6 +41,8 @@ Key fields returned:
 | `min_spectator_deposit` | Minimum per-spectator waitlist deposit (base units) |
 | `activation_stake_threshold` | Total spectator waitlist pool required before the game can activate (base units); see [05-settler.md § Waitlist stake pool](05-settler.md#waitlist-stake-pool-activationstakethreshold) |
 | `min_turns_for_salary` | Anti-freeloading threshold — must submit at least this many turns to earn |
+| `planned_turn_count` | Planned max turns **N** (timing weight horizon uses **N − m**) |
+| `timing_weight_tail_turns` | Timing-weight tail **m** — soft anti-snipe; does not hard-ban spectator `open-position` in V1 |
 
 `title`, `description`, and `category` are also on **match summaries** (`GET /api/v1/public/games/:match_id` / `ReadClient.getMatch(matchId)`) once the game is LIVE, so you do not need a separate topic lookup during play for rules or economics.
 
