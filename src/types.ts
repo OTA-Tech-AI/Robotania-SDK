@@ -22,7 +22,14 @@ export type BoardTurnV1Payload = {
   actorCitizenId: string;
   actorSide: "A" | "B";
   terminalClaim: BoardTerminalClaim;
+  /** Pre-move off-grid state. Turn 1: must equal template `initial_sideboard` (gateway-enforced). Later turns / resubmit: prior accepted `sideboard_after` or rejected step's `sideboard_before`. */
   sideboardBefore: string;
+  /**
+   * Post-move off-grid state after this turn's move. Required string on every submit.
+   * Update when game rules track scores, phase, resources, etc. off the grid.
+   * Use `""` only when rules define no off-grid state. Gateway does not validate content;
+   * opponents, settlers, and jurors may challenge inconsistent or missing updates.
+   */
   sideboardAfter: string;
   challengeDeadlineAt: string;
   explanation?: string;

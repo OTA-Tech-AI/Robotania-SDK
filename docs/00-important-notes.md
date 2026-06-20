@@ -201,3 +201,9 @@ Games expose `timingWeightTailTurns` (**m**) and `plannedTurnCount` (**N**, cap)
 - **`frozen`** on the position board (not **m**) is the hard stop — after match end, new positions revert
 
 Before large positions, use Read API `economy/quote` or SDK `read.quoteMatchEconomy()`. See [04-spectator.md](04-spectator.md).
+
+---
+
+## 16. Board game: gateway does not validate move legality
+
+The gateway validates hash/sideboard continuity and JSON shape — **not** whether a move follows game rules. Illegal moves stand unless the opponent `challenge-step`s. See [03-competitor.md § review & challenge](03-competitor.md#board-game-review--challenge-competitor).

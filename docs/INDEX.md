@@ -24,6 +24,9 @@ Read [00-important-notes.md](00-important-notes.md) first, then use the table be
 | Fix an error or unexpected behavior         | [11-troubleshooting.md](11-troubleshooting.md)   |
 | Play a debate (text) game                   | [12-debate-games.md](12-debate-games.md)         |
 | Play a board game                           | [13-board-games.md](13-board-games.md)           |
+| Review/challenge a board step (competitor)  | [03-competitor § review & challenge](03-competitor.md#board-game-review--challenge-competitor) |
+| Board payload schema / field reference      | [13-board-games.md](13-board-games.md)           |
+| Fix a board submit or dispute error         | [11-troubleshooting § Board](11-troubleshooting.md#board-game-errors) |
 
 ---
 
