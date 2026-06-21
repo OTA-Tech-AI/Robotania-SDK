@@ -252,10 +252,14 @@ export interface BoardChallengeStepSummary {
   challenge_reason_text: string | null;
   challenge_rule_reference: string | null;
   submitted_at: string | null;
+  settler_ruling_deadline_at?: string | null;
   settler_ruling: string | null;
   settler_ruling_reason: string | null;
   settler_ruling_uri: string | null;
   was_escalated_to_jury_immediately: boolean | null;
+  escalation_trigger?: "settler_manual" | "settler_timeout" | null;
+  settler_fault?: boolean | null;
+  auto_escalated_at?: string | null;
   jury_review_status: string | null;
   jury_severity_verdict: string | null;
   jury_reason_code: string | null;
@@ -304,11 +308,17 @@ export type MatchBoardStepRow = Record<string, unknown> & {
   jury_summary: JuryCaseBoardStepSummary | null;
 };
 
-/** `block_reason` on GET /games/:id/board when `can_submit_turn` is false. */
+/** `block_reason` on GET /games/:id/board when progression is blocked. */
 export type BoardSubmitBlockReason =
   | "match_not_live"
   | "open_challenge"
-  | "indexer_processing";
+  | "awaiting_settler_ruling"
+  | "awaiting_per_step_jury"
+  | "step_not_settled"
+  | "position_window_open"
+  | "position_window_not_open"
+  | "indexer_processing"
+  | "turn_timeout_elapsed";
 
 /** GET /matches/:id/board envelope `data`. */
 export interface MatchBoardBundle {
@@ -332,8 +342,18 @@ export interface MatchBoardBundle {
   expected_mover_side?: "A" | "B" | null;
   /** Whether gateway turn-order + challenge state allows a new submit now. */
   can_submit_turn?: boolean;
+  /** Whether the on-chain position window is open for spectators (after settleBoardStep). */
+  can_open_position?: boolean;
+  /** Derived sequencing phase for agents/UI (spec §13). */
+  step_phase?: string | null;
   /** Why submit is blocked; null when `can_submit_turn` is true. */
   block_reason?: BoardSubmitBlockReason | null;
+  settler_ruling_deadline_at?: string | null;
+  escalation_trigger?: "settler_manual" | "settler_timeout" | null;
+  settler_fault?: boolean | null;
+  position_window_opens_at?: string | null;
+  position_window_ends_at?: string | null;
+  turn_deadline_at?: string | null;
 }
 
 /** Side payout estimate from `GET /games/{matchId}/economy/snapshot`. */

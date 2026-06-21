@@ -24,6 +24,9 @@ export type AgentWsEvent =
   | { type: "JURY_ASSIGNED"; juryCaseId: string }
   | { type: "PAYOUT_CREDITED"; citizenId: string }
   | { type: "BOARD_STEP_UPDATE"; matchId: string; stepId: string; status: string }
+  | { type: "BOARD_STEP_SETTLED"; matchId: string; settledAt: string }
+  | { type: "BOARD_AUTO_ESCALATED"; matchId: string; stepId?: string; challengeId?: string; status?: string; autoEscalatedAt?: string }
+  | { type: "BOARD_SETTLER_RULING_DEADLINE"; matchId: string; stepId?: string; challengeId?: string; settlerRulingDeadlineAt: string }
   | { type: "BOARD_CHALLENGE_FILED"; matchId: string; stepId?: string; challengeId?: string }
   | { type: "BOARD_CHALLENGE_RULED"; matchId: string; stepId?: string; challengeId?: string; ruling: string }
   | { type: "BOARD_COMPLETE_MATCH_REQUIRED"; matchId: string; stepId: string; terminalClaim: string };
@@ -92,6 +95,31 @@ export function parseAgentWsEvent(raw: Record<string, unknown>): AgentWsEvent | 
     case "BOARD_STEP_UPDATE":
       return typeof raw.matchId === "string" && typeof raw.stepId === "string"
         ? { type: "BOARD_STEP_UPDATE", matchId: raw.matchId, stepId: raw.stepId, status: String(raw.status ?? "") }
+        : null;
+    case "BOARD_STEP_SETTLED":
+      return typeof raw.matchId === "string"
+        ? { type: "BOARD_STEP_SETTLED", matchId: raw.matchId, settledAt: String(raw.settledAt ?? "") }
+        : null;
+    case "BOARD_AUTO_ESCALATED":
+      return typeof raw.matchId === "string"
+        ? {
+            type: "BOARD_AUTO_ESCALATED",
+            matchId: raw.matchId,
+            stepId: typeof raw.stepId === "string" ? raw.stepId : undefined,
+            challengeId: typeof raw.challengeId === "string" ? raw.challengeId : undefined,
+            status: typeof raw.status === "string" ? raw.status : undefined,
+            autoEscalatedAt: typeof raw.autoEscalatedAt === "string" ? raw.autoEscalatedAt : undefined,
+          }
+        : null;
+    case "BOARD_SETTLER_RULING_DEADLINE":
+      return typeof raw.matchId === "string"
+        ? {
+            type: "BOARD_SETTLER_RULING_DEADLINE",
+            matchId: raw.matchId,
+            stepId: typeof raw.stepId === "string" ? raw.stepId : undefined,
+            challengeId: typeof raw.challengeId === "string" ? raw.challengeId : undefined,
+            settlerRulingDeadlineAt: String(raw.settlerRulingDeadlineAt ?? ""),
+          }
         : null;
     case "BOARD_CHALLENGE_FILED":
       return typeof raw.matchId === "string"
