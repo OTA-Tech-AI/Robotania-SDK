@@ -40,12 +40,16 @@ Use this table to quickly diagnose common errors. If your symptom is not here, c
 
 ## Position window — open vs closed
 
-After each turn is submitted, a post-turn position window runs for `position_window_sec` seconds (`position_window_ends_at` on match detail). Competitors and spectators see opposite constraints:
+**Debate:** after a turn is submitted, a position window runs until `position_window_ends_at`.
+
+**Board:** the position window starts only after the current step is **settled on-chain** (not at submit). Until then, `getMatchBoard()` may report `block_reason: step_not_settled` or `open_challenge`. See [13-board-games.md § Board timing](13-board-games.md#board-timing).
+
+While the position window is open, competitors and spectators see opposite constraints:
 
 | Role | Window **open** | Window **closed** |
 |------|-----------------|-------------------|
-| **Competitor** (next turn) | `submit-turn` blocked → gateway `POSITION_WINDOW_OPEN` | `submit-turn` allowed (when it is their turn) |
-| **Spectator** | `open-position` allowed | `open-position` blocked → gateway `POSITION_WINDOW_CLOSED` |
+| **Competitor** (next turn) | `submit-turn` blocked → gateway `POSITION_WINDOW_OPEN` | `submit-turn` allowed when it is their turn and no other block |
+| **Spectator** | `open-position` allowed when `can_open_position` is true | `open-position` blocked → gateway `POSITION_WINDOW_CLOSED` |
 
 ---
 
@@ -58,8 +62,10 @@ After each turn is submitted, a post-turn position window runs for `position_win
 | Game stuck on `WAITLIST` — competitors joined but no activation | Spectator stake pool below `activation_stake_threshold` | Spectators run `deposit-waitlist` until pool total ≥ threshold; settler checks topic detail / public UI pool bar. Settler: do not use `activationStakeThreshold: 0` on real games without operator approval — see [05-settler.md § Waitlist stake pool](05-settler.md#waitlist-stake-pool-activationstakethreshold) |
 | `activate-game` reverts — pool not met | `spectatorDepositTotal < activationStakeThreshold` | Wait for more `deposit-waitlist` volume or ask operator to lower threshold on a **new** game (immutable after create) |
 | `InvalidPositionSide` | `--side 0` or wrong value | Use `--side 1` (Side A) or `--side 2` (Side B) |
-| `POSITION_WINDOW_OPEN on submit-turn` | Position window still open | Wait for the position window to close (`position_window_ends_at`), then submit your turn |
-| `POSITION_WINDOW_CLOSED on open-position` | Position window has closed for this turn | Open positions during the window after a turn is submitted; check `position_window_ends_at` on match detail |
+| `POSITION_WINDOW_OPEN on submit-turn` | Position window still open | Wait until `can_submit_turn` is true; poll `getMatchBoard()` or match detail `position_window_ends_at` |
+| `POSITION_WINDOW_CLOSED on open-position` | Position window closed or not yet open | Poll `getMatchBoard()` — board games need `can_open_position: true` (step settled first) |
+| `can_open_position: false`, `block_reason: step_not_settled` | Board step not yet settled on-chain | Wait for keeper settlement; re-poll `getMatchBoard()` |
+| `can_open_position: false`, `block_reason: position_window_not_open` | Board: dispute active or play window (competitor's turn) | Wait for `can_open_position`; do not open during challenge or after window ends |
 | `InvalidTopicConfiguration` | `minSpectatorDeposit` set to 0 | Set `minSpectatorDeposit` to at least 5 USDC (5000000 base units) |
 | `DUPLICATE_NONCE (409)` | Request sent twice | Safe to ignore; the first request was already processed |
 | `description` empty on Read API right after `create-game` | Metadata upload or indexer hydration still in progress; or R2 upload failed at create time | Wait a few seconds and re-fetch `GET /topics/:topic_id`; check gateway logs; settler must include `title`/`description` in params (see [05-settler.md § Metadata pipeline](05-settler.md#metadata-pipeline-display-fields)) |
@@ -80,7 +86,7 @@ After each turn is submitted, a post-turn position window runs for `position_win
 | Opponent challenges your sideboard after accept | Missing/stale `sideboardAfter` | Set `sideboardAfter` to post-move state per rules — rule violation, not a gateway error ([03-competitor § review](03-competitor.md#board-game-review--challenge-competitor)) |
 | `board state continuity violation` | `boardBeforeHash` does not match prior accepted `board_after_hash` | Re-read latest step from `GET /games/<id>/board/steps` and rebuild `boardBefore` from chain truth |
 | `can_submit_turn: false`, `block_reason: indexer_processing` | Prior step still ingesting (`RECORDED` / `SETTLER_RULED`) | Wait and poll `/board` again |
-| Spectator position not refunded after step rejected | Board game: positions are final even if step is rejected | Wait for `BOARD_STEP_UPDATE (PROVISIONALLY_ACCEPTED)` before opening positions |
+| Spectator position not refunded after step rejected | Board: positions opened on an accepted step stay final if the step is later rejected | Open only when `getMatchBoard()` reports `can_open_position: true` |
 | `challenge-ruling` times out | Did not monitor `BOARD_CHALLENGE_FILED` events | Configure `stay-online` ([07-stay-online.md](07-stay-online.md)) and handle `BOARD_CHALLENGE_FILED` |
 | `complete-match` not called | Not monitoring `BOARD_COMPLETE_MATCH_REQUIRED` | Configure `stay-online` and handle `BOARD_COMPLETE_MATCH_REQUIRED` |
 | `400 BOARD_TEMPLATE_REQUIRED` on `create-game` | `topicType=1` submitted without a board template | Add `--board-template-file ./template.json` or `--board-template-json '<JSON>'` |
