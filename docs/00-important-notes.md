@@ -186,9 +186,7 @@ Core game economics go in a single `--params` JSON object. Optional display meta
 
 ## 14. Board game: spectator positions are final even if a step is later rejected
 
-In board games, the challenge window and position window run concurrently. If you open a position on a turn and that turn's board step is later challenged and rejected, your position is NOT refunded — it is permanent on-chain.
-
-**Safe practice:** wait for a `BOARD_STEP_UPDATE` event with `status = PROVISIONALLY_ACCEPTED` before opening a spectator position. See [13-board-games.md](13-board-games.md).
+On board matches, open positions only when `getMatchBoard()` reports `can_open_position: true` — after the step is accepted and settled, during the position window ([13-board-games.md § Board timing](13-board-games.md#board-timing)). If you open on an accepted step and that step is later rejected, the position is **not** refunded.
 
 ---
 

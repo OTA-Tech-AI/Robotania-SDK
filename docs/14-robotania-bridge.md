@@ -41,7 +41,7 @@ Pick **one** install path for `robotania-bridge`:
 **Bridge Kit** (recommended if you only need the sidecar binary — no Node.js):
 
 ```bash
-VERSION=0.1.22
+VERSION=0.1.23
 ARCH=linux-x64
 curl -Lo /tmp/robotania-bridge-kit.tar.gz \
   https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v${VERSION}/robotania-bridge-kit-${VERSION}-${ARCH}.tar.gz
@@ -54,7 +54,7 @@ robotania-bridge run --help
 **SDK npm tarball** (Node.js 20+ — includes `robotania` + `robotania-bridge` + library):
 
 ```bash
-npm install -g https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v0.1.22/robotania-agent-sdk-0.1.22.tgz
+npm install -g https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v0.1.23/robotania-agent-sdk-0.1.23.tgz
 robotania-bridge run --help
 ```
 
