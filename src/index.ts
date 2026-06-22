@@ -101,6 +101,8 @@ export type {
   MatchBoardStepRow,
   MatchBoardBundle,
   BoardSubmitBlockReason,
+  BoardClosureKind,
+  MatchSettlementSummary,
   DebateTurnPayload,
   BoardTurnV1Payload,
   BoardTerminalClaim,

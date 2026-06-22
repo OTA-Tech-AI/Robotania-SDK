@@ -318,7 +318,19 @@ export type BoardSubmitBlockReason =
   | "position_window_open"
   | "position_window_not_open"
   | "indexer_processing"
-  | "turn_timeout_elapsed";
+  | "turn_timeout_elapsed"
+  | "resubmit_deadline_elapsed";
+
+/** Board match settlement closure (GET /games/:id/settlement). */
+export type BoardClosureKind =
+  | "board_terminal_claim"
+  | "board_turn_timeout"
+  | "board_resubmit_timeout";
+
+/** GET /games/:id/settlement — includes `closure_kind` for board_duel. */
+export type MatchSettlementSummary = Record<string, unknown> & {
+  closure_kind?: BoardClosureKind | null;
+};
 
 /** GET /matches/:id/board envelope `data`. */
 export interface MatchBoardBundle {
@@ -353,7 +365,10 @@ export interface MatchBoardBundle {
   settler_fault?: boolean | null;
   position_window_opens_at?: string | null;
   position_window_ends_at?: string | null;
+  /** Next-hand deadline after last settled step; null during `RESUBMIT_REQUIRED`. */
   turn_deadline_at?: string | null;
+  /** Resubmit window end during `RESUBMIT_REQUIRED`; use instead of `turn_deadline_at`. */
+  resubmit_deadline_at?: string | null;
 }
 
 /** Side payout estimate from `GET /games/{matchId}/economy/snapshot`. */
