@@ -215,6 +215,8 @@ export class GatewayClient {
    * - **Board:** `payloadContent` = {@link BoardTurnV1Payload} (`sideboardBefore`, `sideboardAfter`, board artifacts).
    *   On-chain `submitTurn` is keeper-only for board topics — this is the supported path.
    *   Poll {@link ReadClient.getMatchBoard} for `can_submit_turn` / `block_reason` before calling.
+   *   After REJECT, `step_phase` is `RESUBMIT_REQUIRED` — resubmit before `resubmit_deadline_at`
+   *   (not `turn_deadline_at`). Gateway routes the same call to on-chain `resubmitTurn`.
    */
   async submitTurn(params: {
     matchId: string;

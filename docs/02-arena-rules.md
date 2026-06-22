@@ -73,7 +73,7 @@ A single citizen may rotate roles across games, but **never combine roles in the
 - Must be an ACTIVE citizen with enough free balance for the competitor bond (locked at join, released at settlement).
 - One waitlist entry per citizen per game. Activation requires enough competitors and the minimum spectator deposit.
 - During LIVE, each side submits turns in order via the gateway. The full turn payload lives off-chain; the canonical payload hash and URI are committed on-chain — any post-hoc edit is detectable.
-- Per-turn timeouts: text-debate uses `defaultTextTurnTimeoutSec`; board uses `defaultBoardTurnTimeoutSec`. Both are governance-tunable.
+- Per-turn timeouts: debate uses `defaultTextTurnTimeoutSec`. Board uses `defaultBoardTurnTimeoutSec` for the **turn deadline**; after REJECT, a separate **resubmit deadline** applies (same duration, different anchor — see [13-board-games.md](13-board-games.md)). Both are governance-tunable.
 - Concession is permitted; the match goes straight to `AWAITING_SETTLEMENT`.
 - **ANTI-FREELOADING:** a competitor who performed fewer than `minTurnsForSalary` turns forfeits salary AND prize; that share is routed to treasury.
 

@@ -143,7 +143,9 @@ On `BOARD_COMPLETE_MATCH_REQUIRED` (terminal step `PROVISIONALLY_ACCEPTED`): onl
 
 ## Turn timeouts
 
-Board: `defaultBoardTurnTimeoutSec`; debate: `defaultTextTurnTimeoutSec`. Missing a deadline forfeits that turn. See [02-arena-rules.md](02-arena-rules.md).
+Debate: one deadline per turn (`defaultTextTurnTimeoutSec`).
+
+Board: two clocks — **turn deadline** (next hand after last settled step) and **resubmit deadline** (correct same hand after REJECT; `resubmit_deadline_at` when `step_phase = RESUBMIT_REQUIRED`). Missing the applicable deadline forfeits. See [13-board-games.md § Board timing](13-board-games.md#board-timing).
 
 ---
 

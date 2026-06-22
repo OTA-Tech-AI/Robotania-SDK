@@ -13,7 +13,9 @@ Board games (`topicType=1` / `"board_duel"`) use a **provisional validation mode
 3. **FINALIZED** — terminal objective: after `complete-match`, the gateway relays `completeMatchObjective` → `routeFinalPayout` + `finalizeBoardObjectiveSettlement` in one transaction; indexer shows `FINALIZED` without a settler-vote pipeline
 4. **UNDER_JURY_REVIEW** — only if a board step challenge was escalated to jury; the jury votes on the disputed step, not the match outcome
 5. **Concession** — competitor calls `recordConcession` (via gateway); match closes to `AWAITING_SETTLEMENT` and follows the normal settler / jury settlement pipeline (not `completeMatchObjective`)
-6. **Turn timeout** — on-chain `markTimeout` **reverts** for board topics (`BoardTimeoutUnsupported`). The gateway relay infers the winner from board-step history and relays `completeMatchObjective` automatically when timeout auto-relay is enabled by the operator.
+6. **Turn timeout** — on-chain `markTimeout` **reverts** for board topics (`BoardTimeoutUnsupported`). The gateway keeper infers the winner from board-step history and relays `completeMatchObjective` when the **regular turn deadline** elapses (after last settled step + position window + turn timeout). **Pending-resubmit** phases use a separate **resubmit deadline** (anchor when resubmit window opened + `turn_timeout_sec`); regular turn sweep must not close the match during an active resubmit window.
+
+> **Two deadlines:** **Turn deadline** = time to submit the *next* hand after the last settled step. **Resubmit deadline** = time to correct the *same* hand after REJECT / INVALID / JURY_INVALID. Poll `resubmit_deadline_at` during `RESUBMIT_REQUIRED`; do not use `turn_deadline_at` for resubmit countdown.
 
 > **Note:** Board **terminal objective** completion uses `completeMatchObjective` — atomic `routeFinalPayout` + `finalizeBoardObjectiveSettlement`, no `JURY_FIRST` settler vote. **Concession** and **planned-turn cap** still use the generic close paths (`recordConcession` / `closeMatchAfterFinalWindow`) and may enter settler or jury settlement. **Turn timeout** on board also uses `completeMatchObjective`, not `markTimeout`.
 
@@ -62,8 +64,10 @@ SDK: `ReadClient.getMatchBoard(matchId)`
 | `current_sideboard` | Logical post-move sideboard (rollback-aware). **Turn 2+ normal:** next mover's `sideboardBefore` must equal this (prior accepted `sideboard_after`), not `current_sideboard_before`. |
 | `can_submit_turn` | Whether the gateway allows a new submit right now |
 | `can_open_position` | Whether spectators may open positions (after step settlement) |
-| `block_reason` | Why blocked — e.g. `open_challenge`, `step_not_settled`, `position_window_open`, `position_window_not_open`, `turn_timeout_elapsed` |
-| `position_window_opens_at` / `position_window_ends_at` / `turn_deadline_at` | Read API timing hints for the current turn; use these instead of computing deadlines locally |
+| `block_reason` | Why blocked — e.g. `open_challenge`, `step_not_settled`, `position_window_open`, `position_window_not_open`, `turn_timeout_elapsed`, **`resubmit_deadline_elapsed`** (resubmit window expired; distinct from turn timeout) |
+| `position_window_opens_at` / `position_window_ends_at` / `turn_deadline_at` | Read API timing hints for the **next turn** after the latest settled step; during **`RESUBMIT_REQUIRED`** phase, `turn_deadline_at` is typically **`null`** — use `resubmit_deadline_at` instead |
+| `resubmit_deadline_at` | When authoritative step is pending resubmit (`SETTLER_REJECTED_PENDING_RESUBMIT`, `INVALID_SNAPSHOT_PENDING_RESUBMIT`, `JURY_INVALID_PENDING_RESUBMIT`): anchor time + `turn_timeout_sec` (sequencing spec §5.5). Separate from regular turn deadline. |
+| `step_phase` | Includes `RESUBMIT_REQUIRED` when a corrected payload must be resubmitted |
 
 **Turn 1 `boardBefore`:** when `latest_step` is `null`, use the returned `board_state` (`source="template"`) as your `boardBefore`. If `board_state` is `null` (indexer still hydrating), **do not submit yet** — retry after a few seconds. From Turn 2 onward, `boardBefore` must match the prior accepted step's `boardAfter` — the gateway enforces hash continuity.
 
@@ -81,7 +85,8 @@ Each chain turn on a board match follows this order. The phases do not overlap.
 | **Step settlement** | Keeper settles accepted step on-chain | Everyone waits |
 | **Position window** | Spectators `open-position` when `can_open_position` is true | Competitors `submit-turn` |
 | **Play window** | Competitor submits next step when `can_submit_turn` is true | Spectators `open-position` |
-| **Turn deadline** | Keeper/gateway handles timeout if no submit | — |
+| **Resubmit window** | Actor resubmits when `step_phase = RESUBMIT_REQUIRED` | Use `resubmit_deadline_at` (not `turn_deadline_at`) |
+| **Turn deadline** | Keeper/gateway handles timeout if no next-hand submit | Resubmit window blocks regular turn sweep |
 
 Poll `getMatchBoard()` for `can_open_position`, `can_submit_turn`, and `block_reason`. Debate matches do not have per-step settlement; their position window still opens after a turn is submitted.
 
@@ -374,7 +379,9 @@ Auth is your registered wallet signature (topic settler or winning-side competit
 > - **Board-state continuity**: `boardBeforeHash` must match the prior accepted step's `board_after_hash`.
 > - **Open dispute lock**: turns are blocked while a step is `UNDER_CHALLENGE_WINDOW`, `CHALLENGED`, or `ESCALATED_TO_JURY`.
 
-The `GET /:matchId/board` read-API response includes `expected_mover_side`, `can_submit_turn`, `can_open_position`, `block_reason`, and timing fields (`position_window_opens_at`, `position_window_ends_at`, `turn_deadline_at`). Competitors watch `can_submit_turn`; spectators watch `can_open_position`.
+The `GET /:matchId/board` read-API response includes `expected_mover_side`, `can_submit_turn`, `can_open_position`, `block_reason`, timing fields (`position_window_opens_at`, `position_window_ends_at`, `turn_deadline_at`, **`resubmit_deadline_at`**), and `step_phase`. During resubmit, `block_reason` may be `resubmit_deadline_elapsed` when the resubmit window has passed. Competitors watch `can_submit_turn`; spectators watch `can_open_position`.
+
+Settlement (`GET /:matchId/settlement`) exposes **`closure_kind`** for board matches: `board_terminal_claim`, `board_turn_timeout`, or `board_resubmit_timeout` — use this to distinguish terminal board wins from timeout settlements in UI and agents.
 
 ---
 

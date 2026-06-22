@@ -12,6 +12,7 @@ import type {
   PositionBoardSnapshot,
   CitizenSummary,
   MatchBoardBundle,
+  MatchSettlementSummary,
   MatchBoardStepRow,
   MatchSummary,
   GameSummary,
@@ -242,7 +243,8 @@ export class ReadClient {
    * Board arena: latest step, wire-format `board_state`, and submit gating.
    *
    * Use `expected_mover_side`, `can_submit_turn`, and `block_reason` before calling
-   * {@link GatewayClient.submitTurn} on board matches.
+   * {@link GatewayClient.submitTurn} on board matches. During `RESUBMIT_REQUIRED`, watch
+   * `resubmit_deadline_at` (regular `turn_deadline_at` is usually null).
    */
   async getMatchBoard(matchId: string): Promise<MatchBoardBundle> {
     return this.get<MatchBoardBundle>(this.pub(`/games/${matchId}/board`));
@@ -295,8 +297,9 @@ export class ReadClient {
 
   // ── Settlement (public views; settlement `challenges` table is not exposed) ─
 
-  async getMatchSettlement(matchId: string): Promise<Record<string, unknown>> {
-    return this.get<Record<string, unknown>>(this.pub(`/games/${matchId}/settlement`));
+  /** Board matches expose `closure_kind` (`board_terminal_claim` | `board_turn_timeout` | `board_resubmit_timeout`). */
+  async getMatchSettlement(matchId: string): Promise<MatchSettlementSummary> {
+    return this.get<MatchSettlementSummary>(this.pub(`/games/${matchId}/settlement`));
   }
 
   async getMatchSettlementBuckets(matchId: string): Promise<Record<string, unknown>> {

@@ -82,7 +82,9 @@ While the position window is open, competitors and spectators see opposite const
 | Gateway 400 + `open_challenge` / turn-order error | Prior step under dispute or wrong `actorSide` | `curl .../games/<id>/board` — check `can_submit_turn`, `block_reason`, `expected_mover_side` |
 | `open_challenge` / `can_submit_turn=false` | Step under dispute or in challenge window | Wait until ruled or auto-accepted; do **not** retry `submit-turn` in a loop — re-poll `getMatchBoard()` |
 | You filed `challenge-step` | Dispute pending | Wait for `BOARD_CHALLENGE_RULED`; only settler calls `challenge-ruling` |
-| `BOARD_CHALLENGE_RULED` = REJECT (you are step actor) | Step invalidated | Resubmit corrected `board_turn_v1`; `sideboardBefore` ← bundle `current_sideboard_before` |
+| `BOARD_CHALLENGE_RULED` = REJECT (you are step actor) | Step invalidated | Resubmit before `resubmit_deadline_at` (`submit-turn`; `sideboardBefore` ← `current_sideboard_before`) |
+| `block_reason: resubmit_deadline_elapsed` / `board turn blocked: resubmit_deadline_elapsed` | Resubmit window expired after REJECT | No fix — opponent wins by resubmit timeout |
+| Resubmit countdown uses `turn_deadline_at` (null) | Wrong field during `RESUBMIT_REQUIRED` | Poll `resubmit_deadline_at` on `getMatchBoard()` |
 | Opponent challenges your sideboard after accept | Missing/stale `sideboardAfter` | Set `sideboardAfter` to post-move state per rules — rule violation, not a gateway error ([03-competitor § review](03-competitor.md#board-game-review--challenge-competitor)) |
 | `board state continuity violation` | `boardBeforeHash` does not match prior accepted `board_after_hash` | Re-read latest step from `GET /games/<id>/board/steps` and rebuild `boardBefore` from chain truth |
 | `can_submit_turn: false`, `block_reason: indexer_processing` | Prior step still ingesting (`RECORDED` / `SETTLER_RULED`) | Wait and poll `/board` again |
