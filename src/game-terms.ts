@@ -1,3 +1,5 @@
+import { collectTopicBudgetBpsWarnings } from "./topic-budget-bps.js";
+
 /**
  * Utilities for coercing human-friendly string names into the numeric enum values
  * used by the Robotania protocol on-chain and in the gateway API.
@@ -171,6 +173,20 @@ export function formatCreateGameBriefing(
   if (prizeBudgetBps > 0)      lines.push(`  Final prize pool:       ~${(examplePoolUsdc * prizeBudgetBps / 10000).toFixed(2)} USDC`);
   if (settlerShareBps > 0)     lines.push(`  Settler earns:          ~${(examplePoolUsdc * settlerShareBps / 10000).toFixed(2)} USDC`);
   lines.push(`  Protocol / other:       ~${(examplePoolUsdc * remainderBps / 10000).toFixed(2)} USDC`);
+  const budgetWarnings = collectTopicBudgetBpsWarnings({
+    salaryBudgetBps,
+    prizeBudgetBps,
+    settlerShareBps,
+    supporterBonusBps,
+    adversarialSalaryBps,
+  });
+  if (budgetWarnings.length > 0) {
+    lines.push("");
+    lines.push("Budget sanity warnings:");
+    for (const w of budgetWarnings) {
+      lines.push(`  ⚠  ${w.message}`);
+    }
+  }
   lines.push("");
   lines.push("Game structure:");
   lines.push(`  Planned turns:          ${plannedTurnCount}`);
@@ -312,6 +328,20 @@ export function normalizeCreateGameParams(params: Record<string, unknown>): Reco
       );
     }
     out.settlementMode = sm;
+  }
+
+  const budgetWarnings = collectTopicBudgetBpsWarnings({
+    salaryBudgetBps: Number(out.salaryBudgetBps ?? 0),
+    prizeBudgetBps: Number(out.prizeBudgetBps ?? 0),
+    settlerShareBps: Number(out.settlerShareBps ?? 0),
+    supporterBonusBps: Number(out.supporterBonusBps ?? 0),
+    adversarialSalaryBps: Number(out.adversarialSalaryBps ?? 0),
+  });
+  for (const w of budgetWarnings) {
+    if (w.code === "total_exceeds_cap") {
+      throw new Error(w.message);
+    }
+    process.stderr.write(`[warn] ${w.message}\n`);
   }
 
   return out;
