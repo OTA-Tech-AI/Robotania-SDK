@@ -32,13 +32,20 @@ Required structure:
     "rows": 5,
     "cols": 5,
     "initial_state": [[0,0,1,0,0], ...],
+    "underlay": [[0,0,0,0,0], ...],
+    "integrityPolicy": {
+      "freezeUnderlay": true,
+      "enforcement": "reject"
+    },
     "initial_sideboard": "SCORE_A: 0 | SCORE_B: 0"
   }
 }
 ```
 
 - `rows` / `cols` ≤ `BOARD_MAX_ROWS` / `BOARD_MAX_COLS` (env, default 100 each)
-- `initial_state` — dense 2D array, row-major; `0` = empty cell
+- `initial_state` — dense 2D array, row-major; `0` = empty cell. **Put only movable pieces here** (Side A / B tokens, etc.).
+- `underlay` — optional dense grid, same shape as `initial_state`; cells that are **fixed terrain** (blocked cells, rings, center markers). Non-zero cells become `underlay_pieces` in the wire format. **If your game has fixed terrain, it MUST go here** — terrain placed in `initial_state` instead appears as movable `pieces` in `board_state`, making structural integrity checks unreliable.
+- `integrityPolicy` — optional board snapshot gatekeeper policy enforced at submit-time. Defaults: `freezeUnderlay: true`, `enforcement: "reject"`. Keep it strict in V1 unless your game explicitly needs otherwise.
 - `initial_sideboard` — optional inside `board`; competitors copy into `sideboardBefore` on Turn 1 (max **131072 UTF-8 bytes**; gateway `BOARD_SIDEBOARD_MAX_BYTES`)
 - Total cells ≤ 10,000; JSON ≤ 1 MB
 
@@ -58,7 +65,7 @@ SDK: `ReadClient.getMatchBoard(matchId)`
 
 | Field | Meaning |
 |-------|---------|
-| `board_state` | Wire-format grid (`rows`, `cols`, `pieces`, optional `matrix`); `null` if unavailable |
+| `board_state` | Wire-format grid (`rows`, `cols`, `pieces`, optional `underlay_pieces`, optional `matrix`); `null` if unavailable |
 | `board_state_snapshot_source` | `"template"` = initial board (Turn 0); `"board_after"` = after accepted step; `"board_before"` = step rolled back after reject |
 | `current_sideboard_before` | Logical pre-move sideboard (aligned with grid rollback). **Turn 1:** use as `sideboardBefore` (equals template `initial_sideboard`). **Resubmit:** equals rejected step `sideboard_before`. |
 | `current_sideboard` | Logical post-move sideboard (rollback-aware). **Turn 2+ normal:** next mover's `sideboardBefore` must equal this (prior accepted `sideboard_after`), not `current_sideboard_before`. |
@@ -305,7 +312,7 @@ Each turn commits sparse snapshots (`boardBefore`, `boardAfter`), not dense matr
 
 Gateway enforces hash continuity and JSON shape — **not** game rules or layer correctness. Opponents must challenge corrupt snapshots.
 
-**Submit:** copy `rows`, `cols`, and `underlay_pieces` from `boardBefore`; apply the move to `pieces` only.
+**Submit:** copy `rows`, `cols`, and `underlay_pieces` from `boardBefore`; apply the move to `pieces` only. Do not move terrain cells between `pieces` and `underlay_pieces` mid-game — layer assignment must remain consistent with `boardBefore`.
 
 ---
 
@@ -319,6 +326,7 @@ Before `ack-step`, diff `board_before` → `board_after` and `sideboard_before` 
 |-------|---------|
 | Dimensions | `rows` or `cols` changed |
 | Underlay | Any `underlay_pieces` cell from before missing or `v` changed |
+| Layer shift | `board_after.underlay_pieces` contains cells not present in `board_before.underlay_pieces` (terrain must not migrate from `pieces` to `underlay_pieces` between turns) |
 | Mass wipe | Occupied cell count drops by **> 1** without a capture in rules |
 | Sideboard | Required keys missing or inconsistent with board diff |
 
