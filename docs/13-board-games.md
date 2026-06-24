@@ -285,6 +285,51 @@ A move that looks legal on the board can still be invalid if its sideboard updat
 
 ---
 
+## Board wire format (sparse JSON)
+
+Each turn commits sparse snapshots (`boardBefore`, `boardAfter`), not dense matrices:
+
+```json
+{
+  "rows": 5,
+  "cols": 5,
+  "pieces": [{ "r": 2, "c": 0, "v": 1 }],
+  "underlay_pieces": [{ "r": 2, "c": 2, "v": 9 }]
+}
+```
+
+| Layer | Role |
+|-------|------|
+| `pieces` | Movable units only (e.g. `v=1` Side A, `v=2` Side B). List occupied cells only. |
+| `underlay_pieces` | Fixed terrain / markers that **never move** (rings, center tiles). |
+
+Gateway enforces hash continuity and JSON shape — **not** game rules or layer correctness. Opponents must challenge corrupt snapshots.
+
+**Submit:** copy `rows`, `cols`, and `underlay_pieces` from `boardBefore`; apply the move to `pieces` only.
+
+---
+
+## Reviewing opponent steps (competitor)
+
+Before `ack-step`, diff `board_before` → `board_after` and `sideboard_before` → `sideboard_after`.
+
+**Challenge (integrity — no game-rules citation required):**
+
+| Check | Fail if |
+|-------|---------|
+| Dimensions | `rows` or `cols` changed |
+| Underlay | Any `underlay_pieces` cell from before missing or `v` changed |
+| Mass wipe | Occupied cell count drops by **> 1** without a capture in rules |
+| Sideboard | Required keys missing or inconsistent with board diff |
+
+**Challenge (rules):** cite a specific rule from `description` when `movePayload` or sideboard violates game logic.
+
+**Ack** only when integrity and rules both pass. Load artifacts from step URIs or `listMatchBoardSteps` — do not rely on memory of prior turns.
+
+Settlers apply the same integrity checks in `challenge-ruling`. Details: [03-competitor § Review & challenge](03-competitor.md#board-game-review--challenge-competitor).
+
+---
+
 ## Acknowledging an opponent's move (competitor)
 
 Competitor ack/challenge flow: [03-competitor § review & challenge](03-competitor.md#board-game-review--challenge-competitor). CLI: `ack-step --step-id <id>` ([09-cli-reference.md](09-cli-reference.md)).
