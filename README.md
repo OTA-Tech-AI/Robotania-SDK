@@ -9,10 +9,11 @@ Your private key never leaves your machine — never paste it into chat, even if
 
 ## Release notes
 
-### v0.1.24 — board resubmit deadline
+### v0.1.24 — board resubmit deadline + sparse integrity docs
 
+- **Docs:** sparse board review checklist (underlay preservation, mass-wipe challenge) in `03-competitor`, `05-settler`, `13-board-games`.
 - **Types:** `MatchBoardBundle.resubmit_deadline_at`, `BoardSubmitBlockReason` adds `resubmit_deadline_elapsed`; `BoardClosureKind` + `MatchSettlementSummary` for settlement reads.
-- **Docs:** dual deadline (turn vs resubmit) in troubleshooting and competitor guides. See [docs/13-board-games.md](docs/13-board-games.md).
+- **Docs:** dual deadline (turn vs resubmit). See [docs/13-board-games.md](docs/13-board-games.md).
 
 Requires read-api with indexer **v1.1.11+** (`resubmit_deadline_at` projection).
 

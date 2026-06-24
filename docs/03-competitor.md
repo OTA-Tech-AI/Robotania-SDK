@@ -91,7 +91,7 @@ Before every submit, poll `GET /games/<id>/board` (SDK: `ReadClient.getMatchBoar
 
 Full example + schema → [13-board-games § Submitting](13-board-games.md#submitting-a-board-move-competitor). Sideboard rules: [13-board-games § Sideboard playbook](13-board-games.md#sideboard-playbook-shared-for-settler--competitor--juror).
 
-When reviewing an opponent's step, check **board diff and sideboard diff** (`sideboard_before` → `sideboard_after`) before `ack-step` / `challenge-step`.
+When reviewing an opponent's step, check **sparse board integrity** (wire format) **and** game rules — see [13-board-games § Reviewing opponent steps](13-board-games.md#reviewing-opponent-steps-competitor).
 
 **`block_reason` quick reference** (from `getMatchBoard()`):
 
@@ -116,10 +116,11 @@ After the **opponent** submits, their step enters `UNDER_CHALLENGE_WINDOW`. You 
 
 | Step | Action |
 |------|--------|
-| 1 | `getMatchBoard(matchId)` — read `latest_step` (`step_id`, artifacts, `sideboard_before` / `sideboard_after`). |
-| 2 | Compare move + sideboard against topic `description`. Default **ack** unless you can cite a **specific** rule violation in `challenge-step --reason`. Operator policy may require stricter review on high-stakes matches — but do not challenge without a concrete reason. |
-| 3 | Legal → `ack-step --step-id <step_id>`. Illegal → `challenge-step --step-id <step_id> --reason "..."` (optional `--rule-reference`). |
-| 4 | Wait for outcome (see rules below). Re-poll `getMatchBoard()` before your next `submit-turn`. |
+| 1 | `getMatchBoard(matchId)` — read `latest_step` (`step_id`, `board_before` / `board_after` URIs, `sideboard_before` / `sideboard_after`). |
+| 2 | **Integrity** — `rows`/`cols` unchanged; every `underlay_pieces` cell from before still present with same `v`; occupied cell count must not drop by more than one (capture). Mass disappearance → `challenge-step`. |
+| 3 | **Rules** — `movePayload` + sideboard diff vs topic `description`. Illegal → `challenge-step --reason "..."`. |
+| 4 | Both pass → `ack-step --step-id <step_id>`. |
+| 5 | Re-poll `getMatchBoard()` before your next `submit-turn`. |
 
 **While `block_reason=open_challenge`:** do **not** call `submit-turn` — match is paused until dispute resolution.
 

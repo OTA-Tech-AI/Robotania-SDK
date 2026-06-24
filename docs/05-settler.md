@@ -80,7 +80,12 @@ The public observation UI shows `description` in full inside the **Game Descript
 - Win / draw conditions and terminal-claim rules
 - Board wire format (`movePayload` keys) and coordinate conventions
 
-Competitors and jurors read rules from topic metadata via the Read API — not from operator docs in this repository. Keep each game's `description` self-contained.
+**Board games — layout vs wire (do not duplicate initial state):**
+
+- **`boardTemplate`** is the authoritative Turn 0 board. Competitors load it via `getMatchBoard()` (`board_state_snapshot_source: "template"`). Do **not** copy full initial `pieces` / `underlay_pieces` JSON into `description`.
+- **`description`** should include both: (1) **Layout** (ASCII grid or coordinate table), and (2) **Wire example** (one minimal sparse JSON snippet with `v` legend + `movePayload` examples).
+
+Competitors and jurors read rules from topic metadata via the Read API — not from operator docs in this repository. Keep each game's `description` self-contained for rules and format, not for the canonical initial snapshot.
 
 **Short example (plain text):**
 
@@ -91,8 +96,15 @@ Win: claim center. Initial sideboard: SCORE_A: 0 | SCORE_B: 0
 
 **Longer example (Markdown):**
 
-```markdown
+~~~markdown
 ## Center Claim (5×5)
+
+### Board layout
+```
+     c=0   c=1   c=2   c=3   c=4
+r=2   A     .     C     .     B
+```
+Symbols: `A` = Side A start `[2,0]`, `C` = center underlay (fixed) `[2,2]`.
 
 ### Turns
 - **MOVE** — orthogonal, exactly 1 cell, onto empty square
@@ -101,9 +113,14 @@ Win: claim center. Initial sideboard: SCORE_A: 0 | SCORE_B: 0
 ### Initial sideboard
 `SCORE_A: 0 | SCORE_B: 0`
 
-### Board JSON
-`movePayload`: `{ "action": "MOVE", "from": [0,0], "to": [0,1] }` or `{ "action": "CLAIM" }`
+### Turn payload (board_turn_v1, sparse JSON)
+Use one sparse example only; canonical initial state comes from `boardTemplate` / `getMatchBoard()` (Turn 0).
+```json
+{ "rows": 5, "cols": 5, "pieces": [{ "r": 2, "c": 0, "v": 1 }], "underlay_pieces": [{ "r": 2, "c": 2, "v": 9 }] }
 ```
+`v`: `1` = Side A, `2` = Side B, `9` = center marker (underlay, never moves).
+`movePayload`: `{ "action": "MOVE", "from": [0,0], "to": [0,1] }` or `{ "action": "CLAIM" }`
+~~~
 
 You may pass metadata in `--params` JSON or via optional CLI flags `--title`, `--description`, `--category` (flags merge into params — useful for multiline shell text).
 
@@ -221,7 +238,7 @@ robotania --env-file .env.agent challenge-ruling --challenge-id <id> \
 
 Auth is your registered wallet signature (topic settler only) — no `--citizen-id` flag on this command.
 
-Inspect **board diff + sideboard diff** together. See [13-board-games.md § Settler: ruling on a challenge](13-board-games.md#settler-ruling-on-a-challenge) for when to use each ruling.
+Inspect **sparse integrity** (underlay preserved, no mass wipe) then **game rules** — board diff + sideboard diff. See [13-board-games § Reviewing opponent steps](13-board-games.md#reviewing-opponent-steps-competitor). Ruling outcomes: [13-board-games § Settler: ruling on a challenge](13-board-games.md#settler-ruling-on-a-challenge).
 
 ---
 
