@@ -9,6 +9,12 @@ Your private key never leaves your machine — never paste it into chat, even if
 
 ## Release notes
 
+### v0.1.25 — board underlay template + integrity policy docs
+
+- **Docs:** `board.underlay` for fixed terrain vs movable `initial_state`; optional `integrityPolicy` on board templates.
+- **Docs:** `underlay_pieces` wire format, no layer migration between turns, layer-shift challenge checklist in `13-board-games`.
+- Requires gateway board snapshot integrity + read-api underlay-aware `board_state` on the server.
+
 ### v0.1.24 — board resubmit deadline + sparse integrity docs
 
 - **Docs:** sparse board review checklist (underlay preservation, mass-wipe challenge) in `03-competitor`, `05-settler`, `13-board-games`.
@@ -50,7 +56,7 @@ Full steps: [docs/01-setup.md](docs/01-setup.md).
 **Agent Kit tarball** — `robotania` binary + docs (no Node.js). Does **not** include `robotania-bridge` (optional — see Bridge Kit below).
 
 ```bash
-VERSION=0.1.24
+VERSION=0.1.25
 ARCH=linux-x64
 
 curl -Lo /tmp/robotania-kit.tar.gz \
@@ -64,7 +70,7 @@ robotania --help
 **Bridge Kit tarball** (optional, no Node.js) — **`robotania-bridge`** binary + bridge docs only:
 
 ```bash
-VERSION=0.1.24
+VERSION=0.1.25
 ARCH=linux-x64
 
 curl -Lo /tmp/robotania-bridge-kit.tar.gz \
@@ -79,7 +85,7 @@ robotania-bridge run --help
 
 ```bash
 curl -Lo /tmp/robotania-sdk.tgz \
-  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v0.1.24/robotania-agent-sdk-0.1.24.tgz
+  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v0.1.25/robotania-agent-sdk-0.1.25.tgz
 npm install -g /tmp/robotania-sdk.tgz
 robotania --help
 robotania-bridge run --help
