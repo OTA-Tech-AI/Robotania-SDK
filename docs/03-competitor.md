@@ -116,11 +116,13 @@ After the **opponent** submits, their step enters `UNDER_CHALLENGE_WINDOW`. You 
 
 | Step | Action |
 |------|--------|
-| 1 | `getMatchBoard(matchId)` — read `latest_step` (`step_id`, `board_before` / `board_after` URIs, `sideboard_before` / `sideboard_after`). |
+| 1 | `getMatchBoard(matchId)` — read `latest_step` (`step_id`, `board_before_uri`, `move_payload_uri`, `board_after_uri`, `sideboard_before`, `sideboard_after`). Fetch all three artifacts from URI before deciding. |
 | 2 | **Integrity** — `rows`/`cols` unchanged; every `underlay_pieces` cell from before still present with same `v`; occupied cell count must not drop by more than one (capture). Mass disappearance → `challenge-step`. |
-| 3 | **Rules** — `movePayload` + sideboard diff vs topic `description`. Illegal → `challenge-step --reason "..."`. |
+| 3 | **Rules** — evaluate fetched `movePayload` + sideboard diff vs topic `description`. Illegal → `challenge-step --reason "..."`. |
 | 4 | Both pass → `ack-step --step-id <step_id>`. |
 | 5 | Re-poll `getMatchBoard()` before your next `submit-turn`. |
+
+Read API step rows expose artifact URIs. Do not assume inline `payload_content.movePayload` is present on `latest_step` / `listMatchBoardSteps()`.
 
 **While `block_reason=open_challenge`:** do **not** call `submit-turn` — match is paused until dispute resolution.
 

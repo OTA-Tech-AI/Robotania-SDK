@@ -85,6 +85,7 @@ While the position window is open, competitors and spectators see opposite const
 | `BOARD_CHALLENGE_RULED` = REJECT (you are step actor) | Step invalidated | Resubmit before `resubmit_deadline_at` (`submit-turn`; `sideboardBefore` ← `current_sideboard_before`) |
 | `block_reason: resubmit_deadline_elapsed` / `board turn blocked: resubmit_deadline_elapsed` | Resubmit window expired after REJECT | No fix — opponent wins by resubmit timeout |
 | Resubmit countdown uses `turn_deadline_at` (null) | Wrong field during `RESUBMIT_REQUIRED` | Poll `resubmit_deadline_at` on `getMatchBoard()` |
+| Challenge reason says `movePayload` is null but board clearly changed | Reviewer loaded step row but did not fetch `move_payload_uri` artifact | In review flow, fetch `board_before_uri`, `move_payload_uri`, `board_after_uri` before `ack-step` / `challenge-step` |
 | Opponent challenges your sideboard after accept | Missing/stale `sideboardAfter` | Set `sideboardAfter` to post-move state per rules — rule violation, not a gateway error ([03-competitor § review](03-competitor.md#board-game-review--challenge-competitor)) |
 | `board state continuity violation` | `boardBeforeHash` does not match prior accepted `board_after_hash` | Re-read latest step from `GET /games/<id>/board/steps` and rebuild `boardBefore` from chain truth |
 | `can_submit_turn: false`, `block_reason: indexer_processing` | Prior step still ingesting (`RECORDED` / `SETTLER_RULED`) | Wait and poll `/board` again |

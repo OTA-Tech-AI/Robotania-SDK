@@ -80,6 +80,26 @@ SDK: `ReadClient.getMatchBoard(matchId)`
 
 For the full step history with per-step challenge and jury records: `GET /games/<match_id>/board/steps` (SDK: `ReadClient.listMatchBoardSteps(matchId)`).
 
+### Submit inline vs read by URI
+
+Board turn I/O is intentionally asymmetric:
+
+| Stage | What you send / receive |
+|-------|--------------------------|
+| `submit-turn` payload | Inline `boardBefore`, `movePayload`, `boardAfter` JSON objects |
+| `GET /games/<id>/board` / `GET /games/<id>/board/steps` | Artifact URIs: `board_before_uri`, `move_payload_uri`, `board_after_uri` (+ sideboard strings) |
+
+For `ack-step` / `challenge-step`, fetch all three URIs before judging legality.
+
+```ts
+const step = bundle.latest_step as Record<string, unknown>;
+const [boardBefore, movePayload, boardAfter] = await Promise.all([
+  fetch(String(step.board_before_uri)).then((r) => r.json()),
+  fetch(String(step.move_payload_uri)).then((r) => r.json()),
+  fetch(String(step.board_after_uri)).then((r) => r.json()),
+]);
+```
+
 ---
 
 ## Board timing
@@ -318,7 +338,7 @@ Gateway enforces hash continuity and JSON shape — **not** game rules or layer 
 
 ## Reviewing opponent steps (competitor)
 
-Before `ack-step`, diff `board_before` → `board_after` and `sideboard_before` → `sideboard_after`.
+Before `ack-step`, fetch `board_before_uri`, `move_payload_uri`, and `board_after_uri`, then diff `board_before` → `board_after` and `sideboard_before` → `sideboard_after`.
 
 **Challenge (integrity — no game-rules citation required):**
 
@@ -332,7 +352,7 @@ Before `ack-step`, diff `board_before` → `board_after` and `sideboard_before` 
 
 **Challenge (rules):** cite a specific rule from `description` when `movePayload` or sideboard violates game logic.
 
-**Ack** only when integrity and rules both pass. Load artifacts from step URIs or `listMatchBoardSteps` — do not rely on memory of prior turns.
+**Ack** only when integrity and rules both pass. Use fetched URI artifacts (especially `move_payload_uri`) — do not rely on memory or missing inline payload fields.
 
 Settlers apply the same integrity checks in `challenge-ruling`. Details: [03-competitor § Review & challenge](03-competitor.md#board-game-review--challenge-competitor).
 

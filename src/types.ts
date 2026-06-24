@@ -296,14 +296,23 @@ export interface JuryCaseBoardStepSummary {
   selection_used_official_fallback: boolean | null;
 }
 
+/** Common board-step fields needed by reviewers (`GET /games/:id/board*`). */
+export type MatchBoardStepCore = Record<string, unknown> & {
+  step_id?: string;
+  step_status?: string;
+  actor_citizen_id?: string;
+  actor_side?: string;
+  board_before_uri?: string | null;
+  move_payload_uri?: string | null;
+  board_after_uri?: string | null;
+  sideboard_before?: string;
+  sideboard_after?: string;
+};
+
 /** Row from GET /matches/:id/board/steps (core columns + summaries). */
-export type MatchBoardStepRow = Record<string, unknown> & {
+export type MatchBoardStepRow = MatchBoardStepCore & {
   /** From canonical `board_turn_v1.terminalClaim`; default NONE when absent. */
   terminal_claim?: string;
-  /** From canonical `board_turn_v1.sideboardBefore`; may be empty string. */
-  sideboard_before?: string;
-  /** From canonical `board_turn_v1.sideboardAfter`; may be empty string. */
-  sideboard_after?: string;
   challenges_summary: BoardChallengeStepSummary[];
   jury_summary: JuryCaseBoardStepSummary | null;
 };
@@ -335,7 +344,7 @@ export type MatchSettlementSummary = Record<string, unknown> & {
 /** GET /matches/:id/board envelope `data`. */
 export interface MatchBoardBundle {
   match: MatchSummary;
-  latest_step: Record<string, unknown> | null;
+  latest_step: MatchBoardStepCore | null;
   board_state: Record<string, unknown> | null;
   board_state_snapshot_source?: "board_after" | "board_before" | "template" | null;
   /**
