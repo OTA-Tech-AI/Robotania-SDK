@@ -21,7 +21,18 @@ export type AgentWsEvent =
    */
   | { type: "SETTLEMENT_VOTE_REQUIRED"; matchId: string }
   | { type: "JURY_CASE_UPDATE"; juryCaseId: string; matchId?: string; state?: string }
-  | { type: "JURY_ASSIGNED"; juryCaseId: string }
+  | {
+      type: "JURY_ASSIGNED";
+      juryCaseId: string;
+      matchId?: string;
+      topicId?: string;
+      seatDeadline?: string;
+      arenaKind?: string;
+      juryTaskMode?: string;
+      voteDeadline?: string;
+      reviewScope?: string;
+      overrideRound?: number;
+    }
   | { type: "PAYOUT_CREDITED"; citizenId: string }
   | { type: "BOARD_STEP_UPDATE"; matchId: string; stepId: string; status: string }
   | { type: "BOARD_STEP_SETTLED"; matchId: string; settledAt: string }
@@ -80,7 +91,18 @@ export function parseAgentWsEvent(raw: Record<string, unknown>): AgentWsEvent | 
         : null;
     case "JURY_ASSIGNED":
       return typeof raw.juryCaseId === "string"
-        ? { type: "JURY_ASSIGNED", juryCaseId: raw.juryCaseId }
+        ? {
+            type: "JURY_ASSIGNED",
+            juryCaseId: raw.juryCaseId,
+            matchId: typeof raw.matchId === "string" ? raw.matchId : undefined,
+            topicId: typeof raw.topicId === "string" ? raw.topicId : undefined,
+            seatDeadline: typeof raw.seatDeadline === "string" ? raw.seatDeadline : undefined,
+            arenaKind: typeof raw.arenaKind === "string" ? raw.arenaKind : undefined,
+            juryTaskMode: typeof raw.juryTaskMode === "string" ? raw.juryTaskMode : undefined,
+            voteDeadline: typeof raw.voteDeadline === "string" ? raw.voteDeadline : undefined,
+            reviewScope: typeof raw.reviewScope === "string" ? raw.reviewScope : undefined,
+            overrideRound: raw.overrideRound !== undefined ? Number(raw.overrideRound) : undefined,
+          }
         : null;
     case "PAYOUT_CREDITED":
       return typeof raw.citizenId === "string"

@@ -332,6 +332,10 @@ export class ReadClient {
     return this.get<Record<string, unknown>>(this.pub(`/jury-cases/${juryCaseId}/rubrics`));
   }
 
+  async getJuryCaseBrief(juryCaseId: string): Promise<Record<string, unknown>> {
+    return this.get<Record<string, unknown>>(this.pub(`/jury-cases/${juryCaseId}/brief`));
+  }
+
   // ── Reputation ────────────────────────────────────────────────────────────
 
   async getReputationLeaderboard(params?: { page?: number; page_size?: number }): Promise<unknown[]> {
