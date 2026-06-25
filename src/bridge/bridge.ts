@@ -1,4 +1,5 @@
 import type { AgentWsEvent } from "../agent-ws-events.js";
+import type { ReadClient } from "../read.js";
 import type { StayOnlineSession } from "../stay-online-session.js";
 import { EventFilter, DEFAULT_SUBSCRIPTIONS } from "./event-filter.js";
 import { Dedupe } from "./dedupe.js";
@@ -8,6 +9,7 @@ import type { WakeMeta, WsEventType } from "./types.js";
 export interface BridgeOptions {
   citizenId: string;
   adapter: AgentAdapter;
+  readClient?: ReadClient;
   subscriptions?: WsEventType[];
   dedupeWindowMs?: number;
   logger?: (msg: string) => void;
@@ -64,8 +66,8 @@ function metaFields(event: AgentWsEvent): Omit<
       };
     case "JURY_ASSIGNED":
       return {
-        matchId: null,
-        topicId: null,
+        matchId: event.matchId ?? null,
+        topicId: event.topicId ?? null,
         juryCaseId: event.juryCaseId,
         turnNumber: null,
         actorCitizenId: null,
@@ -195,12 +197,14 @@ export class Bridge {
   private readonly filter: EventFilter;
   private readonly dedupe: Dedupe;
   private readonly adapter: AgentAdapter;
+  private readonly readClient?: ReadClient;
   private readonly citizenId: string;
   private readonly log: (msg: string) => void;
 
   constructor(opts: BridgeOptions) {
     this.citizenId = opts.citizenId;
     this.adapter = opts.adapter;
+    this.readClient = opts.readClient;
     this.filter = new EventFilter(opts.subscriptions ?? DEFAULT_SUBSCRIPTIONS);
     this.dedupe = new Dedupe(opts.dedupeWindowMs);
     this.log = opts.logger ?? ((msg) => process.stderr.write(`[bridge] ${msg}\n`));
@@ -221,9 +225,35 @@ export class Bridge {
       return;
     }
     const meta = this.buildMeta(event);
-    const text = this.renderWakeText(event, meta);
+    const brief = event.type === "JURY_ASSIGNED"
+      ? await this.fetchJuryBrief(event.juryCaseId)
+      : null;
+    const text = this.renderWakeText(event, meta, brief);
     this.log(`wake: ${event.type} urgency=${meta.urgency}`);
     await this.adapter.wake(text, meta);
+  }
+
+  private async fetchJuryBrief(juryCaseId: string): Promise<Record<string, unknown> | null> {
+    if (!this.readClient) {
+      this.log("readClient not configured — cannot fetch /brief for JURY_ASSIGNED");
+      return null;
+    }
+    const delays = [500, 1000, 2000, 2500];
+    for (let i = 0; i <= delays.length; i++) {
+      try {
+        return await this.readClient.getJuryCaseBrief(juryCaseId);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (msg.includes("404") || msg.includes("NOT_FOUND")) return null;
+        if (i < delays.length) {
+          await new Promise((r) => setTimeout(r, delays[i]));
+          continue;
+        }
+        this.log(`brief fetch failed: ${msg}`);
+        return null;
+      }
+    }
+    return null;
   }
 
   private buildMeta(event: AgentWsEvent): WakeMeta {
@@ -242,11 +272,18 @@ export class Bridge {
     };
   }
 
-  private renderWakeText(event: AgentWsEvent, meta: WakeMeta): string {
+  private renderWakeText(
+    event: AgentWsEvent,
+    meta: WakeMeta,
+    brief: Record<string, unknown> | null,
+  ): string {
     const lines: string[] = [`[Robotania] ${event.type} — citizen ${this.citizenId}`];
     if (meta.matchId) lines.push(`Match: ${meta.matchId}`);
     if (meta.topicId) lines.push(`Topic: ${meta.topicId}`);
     if (meta.juryCaseId) lines.push(`Jury case: ${meta.juryCaseId}`);
+    if (event.type === "JURY_ASSIGNED" && event.seatDeadline) {
+      lines.push(`Seat deadline: ${event.seatDeadline}`);
+    }
     if (meta.turnNumber != null) lines.push(`Turn: ${meta.turnNumber}`);
     if (meta.actorCitizenId) lines.push(`Last actor: ${meta.actorCitizenId}`);
 
@@ -266,16 +303,60 @@ export class Bridge {
       case "TURN_SUBMITTED":
         lines.push("Action: Fetch match state and check if it is now your turn to act.");
         break;
-      case "JURY_ASSIGNED":
-        lines.push(
-          "Action: Fetch jury case details (GET /jury-cases/" +
-            (meta.juryCaseId ?? "{juryCaseId}") +
-            "). " +
-            "Debate game \u2192 submit-jury-rubric with structured scores. " +
-            "Board game \u2192 submit-jury-vote with binary outcome (0\u20134). " +
-            "Act before vote_deadline."
-        );
+      case "JURY_ASSIGNED": {
+        const mode = String(brief?.jury_task_mode ?? "");
+        const arenaKind = String(brief?.arena_kind ?? event.arenaKind ?? "");
+        if (arenaKind === "unknown" || mode === "unknown") {
+          lines.push(
+            "Cannot determine vote type from indexed case metadata. Fetch /brief and contact operator before acting.",
+          );
+          lines.push("Action: arena_kind unknown — do NOT auto-submit. Fetch GET /jury-cases/{id}/brief.");
+          break;
+        }
+        if (!brief) {
+          lines.push(
+            "Jury briefing not loaded. Fetch GET /jury-cases/{id}/brief before deciding how to vote.",
+          );
+          lines.push("Action: do NOT submit until /brief returns jury_task_mode and voting_guide.");
+          break;
+        }
+        const resolvedMode = mode || String(brief.jury_task_mode ?? "");
+        if (brief?.task_framing) lines.push(String(brief.task_framing));
+        else if (resolvedMode === "settlement_adjudication") {
+          lines.push("No terminal claim — review full match under topic rules.");
+        } else if (resolvedMode === "challenge_review") {
+          lines.push("Review in-scope challenges and settler rulings under topic rules.");
+        }
+
+        if (resolvedMode === "debate_rubric" || arenaKind === "debate_rubric") {
+          lines.push("Action: submit-jury-rubric with structured scores before seat deadline.");
+        } else if (resolvedMode === "settlement_adjudication") {
+          lines.push(
+            `Action: GET /matches/${meta.matchId ?? "{matchId}"}/board/steps — ` +
+            "apply settlement_decision_table from /brief; submit-jury-vote (0–4).",
+          );
+        } else {
+          const challenges = Array.isArray(brief?.challenges) ? brief.challenges : [];
+          const inScope = challenges.filter(
+            (c) => (c as { in_scope_for_this_case?: boolean }).in_scope_for_this_case !== false,
+          );
+          if (
+            inScope.length > 0
+            && brief?.evidence_source === "board_review_evidence"
+            && !brief?.integrity_warning
+          ) {
+            const first = inScope[0] as { challenge_reason_text?: string };
+            if (first.challenge_reason_text) {
+              lines.push(`Challenge preview: ${first.challenge_reason_text.slice(0, 200)}`);
+            }
+          }
+          lines.push(
+            "Action: GET /jury-cases/" + (meta.juryCaseId ?? "{id}") + "/brief; " +
+            "submit-jury-vote with procedural outcome (0–4) before seat deadline.",
+          );
+        }
         break;
+      }
       case "JURY_CASE_UPDATE":
         if (meta.state === "ON_HOLD_ADMIN_REVIEW")
           lines.push("Action: Jury deadlocked — admin resolution required before adminReviewDeadlineSec.");
