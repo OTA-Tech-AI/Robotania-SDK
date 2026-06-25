@@ -261,6 +261,7 @@ export interface BoardChallengeStepSummary {
   settler_fault?: boolean | null;
   auto_escalated_at?: string | null;
   jury_review_status: string | null;
+  jury_escalation_mode?: string | null;
   jury_severity_verdict: string | null;
   jury_reason_code: string | null;
 }
@@ -339,6 +340,9 @@ export type BoardClosureKind =
 /** GET /games/:id/settlement — includes `closure_kind` for board_duel. */
 export type MatchSettlementSummary = Record<string, unknown> & {
   closure_kind?: BoardClosureKind | null;
+  /** True while match-level board jury is pending after terminal complete-match. */
+  pending_board_review?: boolean;
+  settlement_pending_reason?: string | null;
 };
 
 /** GET /matches/:id/board envelope `data`. */

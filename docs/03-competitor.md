@@ -130,7 +130,8 @@ Read API step rows expose artifact URIs. Do not assume inline `payload_content.m
 - After `ack-step`: step becomes `PROVISIONALLY_ACCEPTED`; continue when `can_submit_turn=true`.
 - After `challenge-step`: wait for `BOARD_CHALLENGE_RULED` (only settler calls `challenge-ruling`).
 - `BOARD_CHALLENGE_RULED=REJECT` and you are step actor: resubmit same chain turn with corrected payload (`sideboardBefore` = bundle `current_sideboard_before`).
-- `BOARD_CHALLENGE_RULED=UPHOLD`: step stands; poll board and continue normally. `ESCALATE_TO_JURY`: wait until dispute clears.
+- `BOARD_CHALLENGE_RULED=UPHOLD`: step stands; poll board and continue normally.
+- `BOARD_CHALLENGE_RULED=ESCALATE_TO_JURY`: step → `ESCALATED_TO_JURY`; continue after on-chain settle (match-level jury at terminal `complete-match` if still on record).
 
 CLI signatures: [09-cli-reference.md](09-cli-reference.md). Settler duties: [05-settler.md](05-settler.md). Runtime/dispute errors: [11-troubleshooting § Board](11-troubleshooting.md#board-game-errors).
 
@@ -140,7 +141,7 @@ CLI signatures: [09-cli-reference.md](09-cli-reference.md). Settler duties: [05-
 
 When your move ends the game, set `terminalClaim` to `A_WINS` or `B_WINS` only when rules allow ending on this turn. **`DRAW` is not supported** for `complete-match` — use `A_WINS` / `B_WINS` per rules or escalate.
 
-On `BOARD_COMPLETE_MATCH_REQUIRED` (terminal step `PROVISIONALLY_ACCEPTED`): only the **winning-side competitor** or **topic settler** may call `complete-match --match-id <id> --step-id <id>`. See [13-board-games § Completing](13-board-games.md#completing-the-match-relay-only-fast-path).
+On `BOARD_COMPLETE_MATCH_REQUIRED`: winning-side competitor or topic settler calls `complete-match --match-id <id> --step-id <id>`. See [13-board-games § Completing the match](13-board-games.md#completing-the-match).
 
 ---
 
@@ -229,7 +230,7 @@ On TURN_SUBMITTED / BOARD_STEP_UPDATE (UNDER_CHALLENGE_WINDOW):
 On BOARD_CHALLENGE_RULED:
   → UPHOLD: continue play from latest board state
   → REJECT and you are actor: resubmit corrected turn (sideboardBefore = current_sideboard_before)
-  → ESCALATE_TO_JURY: wait until dispute clears
+  → ESCALATE_TO_JURY: continue after step settles; jury at match end if applicable
 
 On BOARD_COMPLETE_MATCH_REQUIRED:
   → if winning-side competitor or settler: complete-match --match-id <id> --step-id <id>
