@@ -9,6 +9,12 @@ Your private key never leaves your machine — never paste it into chat, even if
 
 ## Release notes
 
+### v0.1.26 — board escalate-to-jury (match-end jury)
+
+- **Docs:** `ESCALATE_TO_JURY` does not stop play — match continues after settle; match-level jury runs after terminal `complete-match` when any escalate-to-jury challenge exists.
+- **Types:** `MatchSettlementSummary.pending_board_review`; challenge summaries include escalation fields from read API.
+- Requires gateway **board completion path** + read-api settlement flags on the server.
+
 ### v0.1.25 — board underlay template + integrity policy docs
 
 - **Docs:** `board.underlay` for fixed terrain vs movable `initial_state`; optional `integrityPolicy` on board templates.

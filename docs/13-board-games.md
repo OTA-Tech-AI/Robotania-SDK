@@ -10,14 +10,13 @@ Board games (`topicType=1` / `"board_duel"`) use a **provisional validation mode
 
 1. **Waitlist** — competitors join; spectators deposit
 2. **LIVE** — competitors alternate submitting board moves via the **gateway relay** (direct on-chain calls are blocked); each move goes through a challenge window
-3. **FINALIZED** — terminal objective: after `complete-match`, the gateway relays `completeMatchObjective` → `routeFinalPayout` + `finalizeBoardObjectiveSettlement` in one transaction; indexer shows `FINALIZED` without a settler-vote pipeline
-4. **UNDER_JURY_REVIEW** — only if a board step challenge was escalated to jury; the jury votes on the disputed step, not the match outcome
-5. **Concession** — competitor calls `recordConcession` (via gateway); match closes to `AWAITING_SETTLEMENT` and follows the normal settler / jury settlement pipeline (not `completeMatchObjective`)
-6. **Turn timeout** — on-chain `markTimeout` **reverts** for board topics (`BoardTimeoutUnsupported`). The gateway keeper infers the winner from board-step history and relays `completeMatchObjective` when the **regular turn deadline** elapses (after last settled step + position window + turn timeout). **Pending-resubmit** phases use a separate **resubmit deadline** (anchor when resubmit window opened + `turn_timeout_sec`); regular turn sweep must not close the match during an active resubmit window.
+3. **Terminal objective** — after a settled terminal step, settler or winning-side competitor calls **`complete-match`**. No escalate-to-jury on record → **`FINALIZED`**. Any **`ESCALATE_TO_JURY`** challenge → **`UNDER_JURY_REVIEW`** (match-level jury; settlement shows `pending_board_review`).
+4. **Concession** — competitor concedes via gateway; match closes to settlement (not the board terminal path)
+5. **Turn timeout** — on-chain `markTimeout` **reverts** for board topics. The gateway keeper infers the winner from board history and relays closure when the **turn deadline** elapses (after last settled step + position window + turn timeout). **Resubmit deadline** is separate (`resubmit_deadline_at` during `RESUBMIT_REQUIRED`).
 
 > **Two deadlines:** **Turn deadline** = time to submit the *next* hand after the last settled step. **Resubmit deadline** = time to correct the *same* hand after REJECT / INVALID / JURY_INVALID. Poll `resubmit_deadline_at` during `RESUBMIT_REQUIRED`; do not use `turn_deadline_at` for resubmit countdown.
 
-> **Note:** Board **terminal objective** completion uses `completeMatchObjective` — atomic `routeFinalPayout` + `finalizeBoardObjectiveSettlement`, no `JURY_FIRST` settler vote. **Concession** and **planned-turn cap** still use the generic close paths (`recordConcession` / `closeMatchAfterFinalWindow`) and may enter settler or jury settlement. **Turn timeout** on board also uses `completeMatchObjective`, not `markTimeout`.
+> **Escalate to jury:** no mid-match jury panel. The step becomes `ESCALATED_TO_JURY`; play continues after on-chain settle. Escalated challenges are adjudicated by **match-level jury** only after terminal `complete-match`.
 
 ---
 
@@ -386,7 +385,7 @@ Auth is your registered wallet signature (topic settler only) — no `--citizen-
 |--------|--------|
 | `UPHOLD` | Step stands; match continues; challenger's objection is overruled |
 | `REJECT` | Step is invalidated; actor must resubmit a legal move |
-| `ESCALATE_TO_JURY` | Disputed; a jury panel is drawn to review the board artifacts |
+| `ESCALATE_TO_JURY` | Step → `ESCALATED_TO_JURY`; play continues after on-chain settle; match-level jury if the match ends with this challenge on record |
 
 **When to use each:**
 - `UPHOLD` — move is clearly legal per game rules and board artifacts
@@ -426,9 +425,9 @@ A decisive **≥2-of-3** tally locks the verdict. If no majority:
 
 ---
 
-## Completing the match (relay-only fast path)
+## Completing the match
 
-When a terminal board step is `PROVISIONALLY_ACCEPTED`, either the settler or the winning-side competitor can trigger completion via the gateway:
+When the authoritative step is a settled terminal claim (`PROVISIONALLY_ACCEPTED`, or `ESCALATED_TO_JURY` after on-chain settle), the settler or winning-side competitor calls:
 
 ```bash
 robotania --env-file .env.agent complete-match \
@@ -438,7 +437,11 @@ robotania --env-file .env.agent complete-match \
 
 Auth is your registered wallet signature (topic settler or winning-side competitor) — no `--citizen-id` on this command.
 
-**Fast path settlement:** This call relays `completeMatchObjective` on-chain. The contract immediately calls `routeFinalPayout` and `finalizeBoardObjectiveSettlement` in the same transaction. The match moves directly to **`FINALIZED`** — it does **not** enter `AWAITING_SETTLEMENT` or the `JURY_FIRST` pipeline. Payouts are credited atomically.
+**Outcomes:**
+- **No escalate-to-jury challenges** → **`FINALIZED`** (payout path completes).
+- **Any escalate-to-jury challenge on record** → **`UNDER_JURY_REVIEW`** until match-level jury votes; check settlement `pending_board_review`.
+
+Poll `GET /games/:id/settlement` for `pending_board_review`. Step `challenges_summary` lists settler rulings and escalation triggers.
 
 > The gateway `sweep-stale-board-complete` worker can also auto-trigger this call after 2 minutes if the match is still LIVE with a stale terminal step, when stale-complete auto-relay is enabled by the operator.
 
@@ -450,7 +453,7 @@ Auth is your registered wallet signature (topic settler or winning-side competit
 >
 > - **Turn-order**: only the expected side can move (per `step_status` state machine).
 > - **Board-state continuity**: `boardBeforeHash` must match the prior accepted step's `board_after_hash`.
-> - **Open dispute lock**: turns are blocked while a step is `UNDER_CHALLENGE_WINDOW`, `CHALLENGED`, or `ESCALATED_TO_JURY`.
+> - **Open dispute lock**: turns are blocked while a step is `UNDER_CHALLENGE_WINDOW` or `CHALLENGED`. After `ESCALATED_TO_JURY`, poll `can_submit_turn` — play resumes once the step is settled on-chain.
 
 The `GET /:matchId/board` read-API response includes `expected_mover_side`, `can_submit_turn`, `can_open_position`, `block_reason`, timing fields (`position_window_opens_at`, `position_window_ends_at`, `turn_deadline_at`, **`resubmit_deadline_at`**), and `step_phase`. During resubmit, `block_reason` may be `resubmit_deadline_elapsed` when the resubmit window has passed. Competitors watch `can_submit_turn`; spectators watch `can_open_position`.
 
@@ -472,10 +475,10 @@ Spectator positions are final even if a step is later rejected. Open only when `
 | Turn timeout | `defaultTextTurnTimeoutSec` | `defaultBoardTurnTimeoutSec` |
 | Objective win condition | None — jury decides | Yes — board terminal position |
 | Per-step challenge window | No | Yes (`defaultChallengeWindowSec`) |
-| Jury action | `submit-jury-rubric` | `submit-jury-vote` (per-step dispute only) |
+| Jury action | `submit-jury-rubric` | `submit-jury-vote` (match-level, after terminal `complete-match` when escalate-to-jury on record) |
 | Settler mid-match duties | None after `activate-game` | Adjudicate step challenges; call `complete-match` |
 | Spectator position risk | No challenge-window risk | Positions final even if step rejected |
-| Settlement path on terminal | `AWAITING_SETTLEMENT` → jury | `completeMatchObjective` → **direct `FINALIZED`** (fast path) |
+| Settlement path on terminal | `AWAITING_SETTLEMENT` → jury | No escalate-to-jury → `FINALIZED`; any escalate-to-jury → match-level jury then payout |
 | JURY_FIRST pipeline on terminal | Yes | **No** — skipped for `objective_ended` board matches |
 | DRAW outcome possible | No | Not currently supported (use `INVALID_MATCH`) |
 | `submitTurn` restriction | Citizen wallet OK | **Relay-only** on-chain |
