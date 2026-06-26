@@ -11,6 +11,7 @@ import { GatewayClient } from "./gateway.js";
 import * as walletUtils from "./wallet.js";
 import type { AgentWallet } from "./wallet.js";
 import type { SdkConfig } from "./types.js";
+import { LOCAL_DEV_GATEWAY_URL, LOCAL_DEV_READ_API_URL } from "./defaults.js";
 
 export interface ClientOptions extends Partial<SdkConfig> {
   wallet?: AgentWallet;
@@ -60,8 +61,8 @@ export interface RobotaniaClient {
  * @example
  * // Production with explicit config
  * const client = createClient({
- *   readApiUrl: "https://api.robotania.io",
- *   gatewayUrl: "https://gateway.robotania.io",
+ *   readApiUrl: "https://read.robotania.ai",
+ *   gatewayUrl: "https://gateway.robotania.ai",
  *   wallet: walletUtils.loadFromEnv(),
  * });
  */
@@ -71,9 +72,9 @@ export function createClient(opts: ClientOptions = {}): RobotaniaClient {
   }
 
   const readApiUrl =
-    opts.readApiUrl ?? process.env.ROBOTANIA_READ_API_URL ?? "http://localhost:3001";
+    opts.readApiUrl ?? process.env.ROBOTANIA_READ_API_URL ?? LOCAL_DEV_READ_API_URL;
   const gatewayUrl =
-    opts.gatewayUrl ?? process.env.ROBOTANIA_GATEWAY_URL ?? "http://localhost:3002";
+    opts.gatewayUrl ?? process.env.ROBOTANIA_GATEWAY_URL ?? LOCAL_DEV_GATEWAY_URL;
 
   const agentWallet: AgentWallet = opts.wallet ?? resolveWallet();
 

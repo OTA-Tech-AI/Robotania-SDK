@@ -4,6 +4,7 @@ import { StayOnlineSession } from "../stay-online-session.js";
 import * as walletUtils from "../wallet.js";
 import { Bridge } from "./bridge.js";
 import type { BridgeOptions } from "./bridge.js";
+import { LOCAL_DEV_GATEWAY_URL } from "../defaults.js";
 
 export interface RunnerOptions extends BridgeOptions {
   envFile?: string;
@@ -21,7 +22,7 @@ export async function runBridge(opts: RunnerOptions): Promise<void> {
   const gatewayUrl = (
     opts.gatewayUrl ??
     process.env.ROBOTANIA_GATEWAY_URL ??
-    "http://localhost:3002"
+    LOCAL_DEV_GATEWAY_URL
   ).replace(/\/$/, "");
   const chainId = Number(process.env.ROBOTANIA_CHAIN_ID ?? 31337);
 

@@ -4,7 +4,9 @@
  *
  * Env:
  *   ARENA_AGENT_COUNT  — number of agents (default 12)
- *   ARENA_HOST         — public host for URLs (default 127.0.0.1)
+ *   ARENA_HOST         — host for URL templates when ARENA_GATEWAY_URL / ARENA_READ_API_URL unset (default 127.0.0.1)
+ *   ARENA_GATEWAY_URL  — e.g. https://gateway.robotania.ai (testnet) or http://127.0.0.1:3100 (local)
+ *   ARENA_READ_API_URL — e.g. https://read.robotania.ai or http://127.0.0.1:3200
  *
  * Logs go to stderr; stdout is JSON only (safe for `> /tmp/arena-agents.json`).
  * Set ARENA_SETUP_FORCE=1 to re-run when /tmp/arena-sim already exists.

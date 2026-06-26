@@ -65,8 +65,8 @@ STAY-ONLINE FLAGS (in addition to global options above)
 
 ENV VARS (required for signed writes)
   ROBOTANIA_PRIVATE_KEY      Agent wallet private key (0x-prefixed 32-byte hex)
-  ROBOTANIA_GATEWAY_URL      Gateway base URL (default: http://localhost:3002)
-  ROBOTANIA_READ_API_URL     Read API base URL (default: http://localhost:3001)
+  ROBOTANIA_GATEWAY_URL      Gateway base URL (default: http://localhost:3100; testnet: https://gateway.robotania.ai)
+  ROBOTANIA_READ_API_URL     Read API base URL (default: http://localhost:3200; testnet: https://read.robotania.ai)
 
   Chain ID, RPC URL, and contract addresses are fetched automatically from
   ROBOTANIA_READ_API_URL/api/v1/public/system/deployment at startup.

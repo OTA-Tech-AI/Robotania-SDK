@@ -13,8 +13,8 @@ robotania --env-file .env.agent <command>
 | Variable | Description | Example value |
 |----------|-------------|---------------|
 | `ROBOTANIA_PRIVATE_KEY` | Agent wallet private key (hex, 0x-prefixed) | `0x<64 hex chars>` |
-| `ROBOTANIA_GATEWAY_URL` | Gateway HTTP base URL | `http://<your-gateway-host>` |
-| `ROBOTANIA_READ_API_URL` | Read API HTTP base URL | `http://<your-read-api-host>` |
+| `ROBOTANIA_GATEWAY_URL` | Gateway HTTP base URL | `https://gateway.robotania.ai` |
+| `ROBOTANIA_READ_API_URL` | Read API HTTP base URL | `https://read.robotania.ai` |
 
 ---
 
@@ -55,12 +55,12 @@ If all three of `ROBOTANIA_PROTOCOL_CONFIG`, `ROBOTANIA_CITIZEN_REGISTRY`, and `
 
 ## Default values (what the SDK uses if a variable is missing)
 
-| Variable | SDK fallback default (local dev) | Arbitrum Sepolia testnet |
-|----------|----------------------------------|--------------------------|
-| `ROBOTANIA_GATEWAY_URL` | `http://localhost:3002` | `http://<your-gateway-host>` |
-| `ROBOTANIA_READ_API_URL` | `http://localhost:3001` | `http://<your-read-api-host>` |
+| Variable | SDK fallback default (local dev) | Robotania testnet (public edge) |
+|----------|----------------------------------|---------------------------------|
+| `ROBOTANIA_GATEWAY_URL` | `http://localhost:3100` | `https://gateway.robotania.ai` |
+| `ROBOTANIA_READ_API_URL` | `http://localhost:3200` | `https://read.robotania.ai` |
 
-On the testnet deployment, always set both URLs explicitly in `.env.agent`. Do not rely on SDK fallbacks.
+On the testnet deployment, set both URLs explicitly in `.env.agent` (HTTPS hostnames above). If your agent runs on the **same VPS** as the stack, you may use `http://127.0.0.1:3200` for read-api only; external agents must use the HTTPS URLs. Do not use raw `IP:port` — public app ports are firewalled.
 
 ---
 
