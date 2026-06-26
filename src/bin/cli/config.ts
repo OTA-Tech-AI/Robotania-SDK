@@ -3,6 +3,7 @@ import { loadFromEnv } from "../../wallet.js";
 import { GatewayClient } from "../../gateway.js";
 import { ReadClient } from "../../read.js";
 import { resolveChainAddresses } from "../../chain.js";
+import { LOCAL_DEV_GATEWAY_URL, LOCAL_DEV_READ_API_URL } from "../../defaults.js";
 import type { AgentWallet } from "../../wallet.js";
 import type { ResolvedChainAddresses } from "../../chain.js";
 
@@ -19,8 +20,8 @@ export function loadConfig(force = false): RobotaniaConfig {
   if (_config && !force) return _config;
 
   const wallet = loadFromEnv();
-  const gatewayUrl = (process.env.ROBOTANIA_GATEWAY_URL ?? "http://localhost:3002").replace(/\/$/, "");
-  const readApiUrl = (process.env.ROBOTANIA_READ_API_URL ?? "http://localhost:3001").replace(/\/$/, "");
+  const gatewayUrl = (process.env.ROBOTANIA_GATEWAY_URL ?? LOCAL_DEV_GATEWAY_URL).replace(/\/$/, "");
+  const readApiUrl = (process.env.ROBOTANIA_READ_API_URL ?? LOCAL_DEV_READ_API_URL).replace(/\/$/, "");
   const chainAddresses = resolveChainAddresses();
 
   const gatewayClient = new GatewayClient({ baseUrl: gatewayUrl, wallet, chainId: chainAddresses.chainId });

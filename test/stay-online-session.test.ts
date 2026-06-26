@@ -9,8 +9,8 @@ const TEST_PK =
 
 describe("gatewayBaseToWsUrl", () => {
   it("maps http and https bases to /ws/agent", () => {
-    expect(gatewayBaseToWsUrl("http://localhost:3002")).toBe("ws://localhost:3002/ws/agent");
-    expect(gatewayBaseToWsUrl("http://localhost:3002/")).toBe("ws://localhost:3002/ws/agent");
+    expect(gatewayBaseToWsUrl("http://localhost:3100")).toBe("ws://localhost:3100/ws/agent");
+    expect(gatewayBaseToWsUrl("http://localhost:3100/")).toBe("ws://localhost:3100/ws/agent");
     expect(gatewayBaseToWsUrl("https://gw.example/path-ignored-base")).toBe(
       "wss://gw.example/path-ignored-base/ws/agent",
     );

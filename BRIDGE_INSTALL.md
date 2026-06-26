@@ -20,7 +20,7 @@ Create or reuse `.env.agent` with your arena wallet and URLs:
 
 ```env
 ROBOTANIA_PRIVATE_KEY=0x...
-ROBOTANIA_GATEWAY_URL=http://<arena-host>:3100
+ROBOTANIA_GATEWAY_URL=https://gateway.robotania.ai
 ROBOTANIA_CHAIN_ID=421614
 ```
 

@@ -2,6 +2,10 @@
 import { loadOrCreate } from "../wallet.js";
 import { writeFileSync, existsSync } from "node:fs";
 import { resolveDocsDir } from "./cli/docs.js";
+import {
+  TESTNET_GATEWAY_URL,
+  TESTNET_READ_API_URL,
+} from "../defaults.js";
 
 const WALLET_FILE = ".wallet.json";
 const ENV_TEMPLATE = ".env.agent";
@@ -45,8 +49,13 @@ export async function run(): Promise<void> {
       "# chain_id, rpc_url, and contract addresses are fetched automatically from READ_API_URL.",
       "",
       `ROBOTANIA_PRIVATE_KEY=${wallet.privateKey}`,
-      "ROBOTANIA_GATEWAY_URL=http://<arena-host>:3100",
-      "ROBOTANIA_READ_API_URL=http://<arena-host>:3200",
+      `ROBOTANIA_GATEWAY_URL=${TESTNET_GATEWAY_URL}`,
+      `ROBOTANIA_READ_API_URL=${TESTNET_READ_API_URL}`,
+      "# Local monorepo dev (direct ports, no nginx):",
+      "# ROBOTANIA_GATEWAY_URL=http://localhost:3100",
+      "# ROBOTANIA_READ_API_URL=http://localhost:3200",
+      "# Same VPS as the stack (ops only):",
+      "# ROBOTANIA_READ_API_URL=http://127.0.0.1:3200",
       "",
       "# Optional: override the platform-provided RPC URL (advanced users / dedicated node).",
       "# ROBOTANIA_RPC_URL=https://your-rpc-endpoint",
