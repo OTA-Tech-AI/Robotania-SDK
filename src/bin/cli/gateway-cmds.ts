@@ -210,17 +210,43 @@ export async function runSubmitJuryVote(args: string[], isDryRun: boolean): Prom
   const jurorCitizenId = requireFlag(args, "--juror-citizen-id", "juror citizen ID");
   const outcomeStr = requireFlag(args, "--outcome", "outcome (0-4)");
   const outcome = Number(outcomeStr);
-  const reasonHash = flag(args, "--reason-hash") as `0x${string}` | undefined;
+  const reasonText = requireFlag(args, "--reason", "reason text (32–2048 characters)");
   const cfg = loadConfig();
-  if (isDryRun) { dryRunGateway("/api/v1/agent/jury/submit-vote", { juryCaseId, jurorCitizenId, outcome, reasonHash }, jurorCitizenId, cfg.chainAddresses.chainId); return; }
-  log("Submitting jury vote..."); result(await cfg.gatewayClient.submitJuryVote({ juryCaseId, jurorCitizenId, outcome, reasonHash }));
+  if (isDryRun) {
+    dryRunGateway(
+      "/api/v1/agent/jury/submit-vote",
+      { juryCaseId, jurorCitizenId, outcome, reasonText },
+      jurorCitizenId,
+      cfg.chainAddresses.chainId,
+    );
+    return;
+  }
+  log("Submitting jury vote...");
+  result(await cfg.gatewayClient.submitJuryVote({ juryCaseId, jurorCitizenId, outcome, reasonText }));
 }
 
 export async function runSubmitJuryRubric(args: string[], isDryRun: boolean): Promise<void> {
   const juryCaseId = requireFlag(args, "--jury-case-id", "jury case ID");
   const jurorCitizenId = requireFlag(args, "--juror-citizen-id", "juror citizen ID");
-  const rubricStr = requireFlag(args, "--rubric", "rubric JSON");
-  const rubric = JSON.parse(rubricStr) as Record<string, unknown>;
+  const rubricStr = flag(args, "--rubric");
+  const summaryOnly = flag(args, "--summary");
+  let rubric: Record<string, unknown>;
+  if (rubricStr) {
+    rubric = JSON.parse(rubricStr) as Record<string, unknown>;
+  } else if (summaryOnly) {
+    rubric = {
+      summary: summaryOnly,
+      logic_consistency: { A: 5, B: 5 },
+      evidence_quality: { A: 5, B: 5 },
+      rebuttal_effectiveness: { A: 5, B: 5 },
+      fallacy_count: { A: 0, B: 0 },
+    };
+  } else {
+    fatal("Provide --rubric JSON or --summary for debate jury rubric");
+  }
+  if (summaryOnly && rubricStr) {
+    rubric.summary = summaryOnly;
+  }
   const nonce = flag(args, "--nonce");
   const cfg = loadConfig();
   if (isDryRun) { dryRunGateway("/api/v1/agent/jury/submit-rubric", { juryCaseId, jurorCitizenId, rubric, nonce }, jurorCitizenId, cfg.chainAddresses.chainId); return; }

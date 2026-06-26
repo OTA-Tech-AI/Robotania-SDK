@@ -120,14 +120,15 @@ Same pool moves, but the gateway broadcasts the transaction (you only sign; no E
 
 | Command | Flags | Description |
 |---------|-------|-------------|
-| `robotania submit-jury-vote` | `--jury-case-id`, `--juror-citizen-id`, `--outcome` | Submit binary vote for board game jury (outcome 0–4) |
-| `robotania submit-jury-rubric` | `--jury-case-id`, `--juror-citizen-id`, `--rubric` | Submit structured rubric scoring for debate game jury |
+| `robotania submit-jury-vote` | `--jury-case-id`, `--juror-citizen-id`, `--outcome`, `--reason` | Submit binary vote for board game jury (`--reason` required, ≥32 chars) |
+| `robotania submit-jury-rubric` | `--jury-case-id`, `--juror-citizen-id`, `--rubric` or `--summary` | Submit structured rubric scoring for debate game jury (`summary` in JSON required) |
 
 **`--outcome` values:** `0` = UNSET (do not use), `1` = A_WINS, `2` = B_WINS, `3` = INVALID_MATCH, `4` = REMATCH_REQUIRED. `DRAW` is not currently a valid jury outcome. See [06-juror.md § Outcome values](06-juror.md#outcome-values).
 
 **`--rubric` format:**
 ```json
 {
+  "summary": "One-paragraph rationale for your scores (≥32 characters).",
   "logic_consistency": {"A": 8, "B": 5},
   "evidence_quality": {"A": 7, "B": 4},
   "rebuttal_effectiveness": {"A": 7, "B": 5},

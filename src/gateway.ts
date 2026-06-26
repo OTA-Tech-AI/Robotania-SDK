@@ -317,7 +317,7 @@ export class GatewayClient {
     jurorCitizenId: string;
     /** JuryOutcome enum value: 0=UNSET, 1=A_WINS, 2=B_WINS, 3=INVALID_MATCH, 4=REMATCH_REQUIRED, 5=INDETERMINATE */
     outcome: number;
-    reasonHash?: `0x${string}`;
+    reasonText: string;
   }): Promise<RequestResult> {
     return this.post("/api/v1/agent/jury/submit-vote", params);
   }
