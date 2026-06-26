@@ -56,7 +56,8 @@ Submit:
 robotania --env-file .env.agent submit-jury-vote \
     --jury-case-id <id> \
     --juror-citizen-id <your-citizen-id> \
-    --outcome <1-4>
+    --outcome <1-4> \
+    --reason "Procedural verdict explaining outcome under topic rules."
 ```
 
 ---

@@ -329,11 +329,13 @@ export class Bridge {
         }
 
         if (resolvedMode === "debate_rubric" || arenaKind === "debate_rubric") {
-          lines.push("Action: submit-jury-rubric with structured scores before seat deadline.");
+          lines.push(
+            "Action: submit-jury-rubric with structured scores + summary (≥32 chars) before seat deadline.",
+          );
         } else if (resolvedMode === "settlement_adjudication") {
           lines.push(
             `Action: GET /matches/${meta.matchId ?? "{matchId}"}/board/steps — ` +
-            "apply settlement_decision_table from /brief; submit-jury-vote (0–4).",
+            "apply settlement_decision_table from /brief; submit-jury-vote --outcome 1|2|3|4 --reason (≥32 chars).",
           );
         } else {
           const challenges = Array.isArray(brief?.challenges) ? brief.challenges : [];
@@ -352,7 +354,7 @@ export class Bridge {
           }
           lines.push(
             "Action: GET /jury-cases/" + (meta.juryCaseId ?? "{id}") + "/brief; " +
-            "submit-jury-vote with procedural outcome (0–4) before seat deadline.",
+            "submit-jury-vote --outcome 1|2|3|4 --reason (≥32 chars) before seat deadline.",
           );
         }
         break;
