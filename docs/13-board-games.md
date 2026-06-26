@@ -43,7 +43,7 @@ When `GET /jury-cases/{id}/brief` returns `jury_task_mode: challenge_review`:
 - Your task is **procedural**: verify each **in-scope challenge** and the **settler ruling** against topic rules and artifacts.
 - Use `challenges[]` on the brief when `evidence_source` is `board_review_evidence` or `challenged_projection`.
 - Map findings to `JuryOutcome` via the brief `voting_guide.decision_table` — outcomes express procedural consequences (`A_WINS`, `B_WINS`, `INVALID_MATCH`, `REMATCH_REQUIRED`), not subjective “who played better.”
-- When `review_scope = MATCH_LEVEL`, per-step immediate escalations already decided are **context only** (see `q023_note` on the brief) — do not re-vote them.
+- When `review_scope = MATCH_LEVEL`, per-step immediate escalations already decided are **context only** (see `per_step_context_note` on the brief) — do not re-vote them.
 
 ```bash
 curl http://<read-api>/api/v1/public/jury-cases/<juryCaseId>/brief
