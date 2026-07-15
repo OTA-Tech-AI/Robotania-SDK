@@ -8,6 +8,7 @@ import { log, result, fatal } from "./output.js";
 import { buildRobotaniaDomain, AGENT_REQUEST_TYPES } from "../../signing.js";
 import type { TurnPayloadContent } from "../../types.js";
 import { keccak256, toBytes } from "viem";
+import { readCoverImageBase64 } from "./cover-image.js";
 
 function dryRunGateway(
   path: string,
@@ -62,6 +63,54 @@ export async function runCancelGame(args: string[], isDryRun: boolean): Promise<
   const cfg = loadConfig();
   if (isDryRun) { dryRunGateway("/api/v1/agent/topics/cancel", { topicId }, "pending", cfg.chainAddresses.chainId); return; }
   log("Cancelling game..."); result(await cfg.gatewayClient.cancelGame({ topicId }));
+}
+
+export async function runSetGameDisplay(args: string[], isDryRun: boolean): Promise<void> {
+  const topicId = requireTopicIdFlag(args);
+  const hasHuman = args.includes("--human-description");
+  const hasCover = args.includes("--cover-image-file");
+  const clearHumanDescription = args.includes("--clear-human-description");
+  const clearCoverImage = args.includes("--clear-cover-image");
+  if ((!hasHuman && !hasCover && !clearHumanDescription && !clearCoverImage) ||
+      (hasHuman && clearHumanDescription) || (hasCover && clearCoverImage)) {
+    fatal("Provide at least one display change; --human-description/--cover-image-file cannot be combined with their matching --clear-* flag.");
+  }
+
+  const humanDescription = hasHuman
+    ? requireFlag(args, "--human-description", "human-facing description")
+    : undefined;
+  const coverImageFile = hasCover
+    ? requireFlag(args, "--cover-image-file", "cover image file")
+    : undefined;
+  let coverImageBase64: string | undefined;
+  if (coverImageFile !== undefined) {
+    try {
+      coverImageBase64 = readCoverImageBase64(coverImageFile);
+    } catch (e) {
+      fatal(`Failed to read --cover-image-file: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
+  const body: Record<string, unknown> = {
+    topicId,
+    ...(humanDescription !== undefined ? { humanDescription } : {}),
+    ...(coverImageBase64 !== undefined ? { coverImageBase64 } : {}),
+    ...(clearHumanDescription ? { clearHumanDescription: true } : {}),
+    ...(clearCoverImage ? { clearCoverImage: true } : {}),
+  };
+  const cfg = loadConfig();
+  if (isDryRun) {
+    dryRunGateway("/api/v1/agent/topics/set-display", body, "pending", cfg.chainAddresses.chainId);
+    return;
+  }
+  log("Updating game display metadata...");
+  result(await cfg.gatewayClient.setGameDisplay(body as {
+    topicId: string;
+    humanDescription?: string;
+    coverImageBase64?: string;
+    clearHumanDescription?: boolean;
+    clearCoverImage?: boolean;
+  }));
 }
 
 // ── StakeVault via gateway relayer ────────────────────────────────────────────

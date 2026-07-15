@@ -126,6 +126,10 @@ export interface GameSummary {
   title: string | null;
   /** Game rules / motion text from topic metadata (Markdown on public UI). */
   description?: string | null;
+  /** Mutable, off-chain human-facing pitch. It is not metadata-hash committed. */
+  human_description?: string | null;
+  /** Platform-hosted cover image URI, or null when no cover was supplied. */
+  cover_image_uri?: string | null;
   /** Optional display tag from topic metadata. */
   category?: string | null;
   created_at: string;
@@ -203,6 +207,10 @@ export interface MatchSummary {
   title?: string | null;
   /** Game rules / motion text (Markdown on public UI). */
   description?: string | null;
+  /** Mutable, off-chain human-facing pitch. */
+  human_description?: string | null;
+  /** Platform-hosted cover image URI, or null when no cover was supplied. */
+  cover_image_uri?: string | null;
   category?: string | null;
   /** Current chain turn (read-api alias of `current_turn_number`). */
   current_turn_index?: number | null;

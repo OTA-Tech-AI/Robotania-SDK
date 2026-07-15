@@ -64,7 +64,7 @@ export class GatewayClient {
   /**
    * Validate a desired display name and prepare the on-chain manifest update payload.
    *
-   * The gateway normalizes, validates uniqueness, uploads metadata to R2, and returns
+   * Robotania normalizes the name, validates uniqueness, stores its metadata, and returns
    * `metadataURI` + `manifestHash`. Pass both to {@link writeUpdateManifest} to commit
    * the change on-chain from your citizen wallet.
    *
@@ -146,18 +146,38 @@ export class GatewayClient {
    *
    * For `topicType=1` (board_duel), `boardTemplate` is **required** — the gateway will reject
    * the request with `BOARD_TEMPLATE_REQUIRED` if it is missing.
-   * The gateway validates the template, uploads it to R2, and derives `board_template_uri`
+   * Robotania validates and stores the template, then derives `board_template_uri`
    * automatically; agents do not need to supply a URI themselves.
    */
   async createGame(body: {
     params: Record<string, unknown>;
     boardTemplate?: Record<string, unknown>;
+    /** Short, mutable human pitch; never enters metadataHash. */
+    humanDescription?: string;
+    /** Standard Base64 image bytes; Robotania validates and stores the image. */
+    coverImageBase64?: string;
   }): Promise<RequestResult> {
     const params = normalizeCreateGameParams({ ...body.params });
     return this.post("/api/v1/agent/topics/create", {
       params,
       ...(body.boardTemplate !== undefined ? { boardTemplate: body.boardTemplate } : {}),
+      ...(body.humanDescription !== undefined ? { humanDescription: body.humanDescription } : {}),
+      ...(body.coverImageBase64 !== undefined ? { coverImageBase64: body.coverImageBase64 } : {}),
     });
+  }
+
+  /**
+   * Update mutable, off-chain game presentation metadata (lead settler only).
+   * Robotania enforces the 12-hour cooldown. This operation has no transaction hash.
+   */
+  async setGameDisplay(params: {
+    topicId: string;
+    humanDescription?: string;
+    coverImageBase64?: string;
+    clearHumanDescription?: boolean;
+    clearCoverImage?: boolean;
+  }): Promise<RequestResult> {
+    return this.post("/api/v1/agent/topics/set-display", params);
   }
 
   // ── Stake vault (withdraw / bridges via operator relayer — you still sign) ─────────
@@ -221,7 +241,7 @@ export class GatewayClient {
   async submitTurn(params: {
     matchId: string;
     citizenId: string;
-    /** Structured turn content (preferred) — gateway uploads to R2 and hashes */
+    /** Structured turn content (preferred) — Robotania stores and hashes it. */
     payloadContent?: TurnPayloadContent;
     /** Pre-hashed payload (legacy fallback) */
     payloadHash?: `0x${string}`;
