@@ -14,6 +14,7 @@ import { buildRobotaniaDomain, AGENT_REQUEST_TYPES } from "../../signing.js";
 import { normalizeCreateGameParams, formatCreateGameBriefing } from "../../game-terms.js";
 import { keccak256, toBytes } from "viem";
 import { createAgentChainClients, readCitizenArenaBalances } from "../../chain.js";
+import { readCoverImageBase64 } from "./cover-image.js";
 
 function printBriefing(params: Record<string, unknown>): void {
   process.stdout.write(formatCreateGameBriefing(params) + "\n\n");
@@ -31,9 +32,20 @@ export async function run(args: string[], isDryRun: boolean): Promise<void> {
   const title    = flag(args, "--title");
   const desc     = flag(args, "--description");
   const category = flag(args, "--category");
+  const humanDescription = flag(args, "--human-description");
+  const coverImageFile = flag(args, "--cover-image-file");
   if (title)    rawParams.title       = title;
   if (desc)     rawParams.description = desc;
   if (category) rawParams.category    = category;
+
+  let coverImageBase64: string | undefined;
+  if (coverImageFile !== undefined) {
+    try {
+      coverImageBase64 = readCoverImageBase64(coverImageFile);
+    } catch (e) {
+      fatal(`Failed to read --cover-image-file: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
 
   // Resolve boardTemplate from --board-template-json or --board-template-file.
   let boardTemplate: Record<string, unknown> | undefined;
@@ -81,6 +93,8 @@ export async function run(args: string[], isDryRun: boolean): Promise<void> {
     const deadlineSec = Math.floor(Date.now() / 1000) + 300;
     const body: Record<string, unknown> = { params };
     if (boardTemplate !== undefined) body.boardTemplate = boardTemplate;
+    if (humanDescription !== undefined) body.humanDescription = humanDescription;
+    if (coverImageBase64 !== undefined) body.coverImageBase64 = coverImageBase64;
     const payloadHash = keccak256(toBytes(JSON.stringify(body)));
     result({
       dryRun: true,
@@ -153,5 +167,10 @@ export async function run(args: string[], isDryRun: boolean): Promise<void> {
   }
 
   log("Creating game...");
-  result(await cfg.gatewayClient.createGame({ params, boardTemplate }));
+  result(await cfg.gatewayClient.createGame({
+    params,
+    boardTemplate,
+    ...(humanDescription !== undefined ? { humanDescription } : {}),
+    ...(coverImageBase64 !== undefined ? { coverImageBase64 } : {}),
+  }));
 }

@@ -28,7 +28,7 @@ async function main(): Promise<void> {
     "approve-bond", "deposit-collateral", "deposit-operational",
     "withdraw-collateral", "withdraw-operational", "collateral-to-operational",
     "operational-to-collateral", "withdraw-from-citizen-wallet", "citizen-wallet-balance",
-    "citizen-arena-balances", "register-citizen", "manifest", "create-game",
+    "citizen-arena-balances", "register-citizen", "manifest", "create-game", "set-game-display",
     "join-waitlist", "deposit-waitlist", "activate-game", "cancel-game",
     "profile",
     "stakes-withdraw-collateral", "stakes-withdraw-operational",
@@ -136,6 +136,12 @@ async function main(): Promise<void> {
     case "create-game": {
       const { run } = await import("./cli/create-game.js");
       await run(rest, isDryRun);
+      break;
+    }
+
+    case "set-game-display": {
+      const { runSetGameDisplay } = await import("./cli/gateway-cmds.js");
+      await runSetGameDisplay(rest, isDryRun);
       break;
     }
 

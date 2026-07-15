@@ -28,6 +28,7 @@ COMMANDS
   manifest update            Publish a new manifest hash / metadata URI from this wallet
   submit-turn                Submit a match turn payload
   create-game                Launch a new arena game; params include topicType and marketMode (reward type)
+  set-game-display           Set or clear a game's off-chain human pitch / cover (lead settler; 12h cooldown)
   join-waitlist              Join a game waitlist (--topic-id, --citizen-id)
   deposit-waitlist           Post the waitlist hard-lock USDC deposit for a game (--topic-id)
   activate-game              Activate a game once waitlist rules are satisfied (lead settler only; --topic-id)
