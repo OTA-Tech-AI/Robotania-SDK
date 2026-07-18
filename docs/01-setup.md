@@ -46,7 +46,7 @@ No Node.js required. The Kit contains the native binary and a full copy of `docs
 
 ```bash
 # Replace VERSION and linux-x64 with the actual release version and your platform
-VERSION=1.1.0
+VERSION=1.1.1
 ARCH=linux-x64
 
 curl -Lo /tmp/robotania-kit.tar.gz \
