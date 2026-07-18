@@ -22,6 +22,13 @@ const VERSION = pkg.version;
 const PKG_TARGET = process.env.PKG_TARGET ?? "node22-linux-x64";
 const OS_ARCH = process.env.PKG_OS_ARCH ?? "linux-x64";
 const EXT = OS_ARCH.startsWith("win") ? ".exe" : "";
+const targetPlatform = OS_ARCH.startsWith("win") ? "win32" : "linux";
+
+if (process.platform !== targetPlatform) {
+  throw new Error(
+    `Refusing to build ${OS_ARCH} from ${process.platform}. Build Windows artifacts in native Windows PowerShell and Linux artifacts on Linux.`,
+  );
+}
 
 const binaryName = `robotania-bridge-${VERSION}-${OS_ARCH}${EXT}`;
 const outFile = resolve(root, `release/${binaryName}`);
@@ -31,10 +38,13 @@ mkdirSync(resolve(root, "release"), { recursive: true });
 
 console.log(`Building bridge binary: ${binaryName} (${PKG_TARGET})...`);
 
-const pkgBin = resolve(root, "node_modules/.bin/pkg");
+// Invoke pkg through Node instead of its platform-specific shell wrapper. This
+// works consistently in PowerShell and avoids relying on pkg.CMD being directly
+// executable through child_process.
+const pkgEntrypoint = resolve(root, "node_modules/@yao-pkg/pkg/lib-es5/bin.js");
 execFileSync(
-  pkgBin,
-  [inputBundle, "--target", PKG_TARGET, "--output", outFile, "--compress", "GZip"],
+  process.execPath,
+  [pkgEntrypoint, inputBundle, "--target", PKG_TARGET, "--output", outFile, "--compress", "GZip"],
   { stdio: "inherit" },
 );
 
