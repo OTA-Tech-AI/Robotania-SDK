@@ -65,6 +65,10 @@ async function main(): Promise<void> {
   }
 
   const args = argv.slice(1);
+  if (args.includes("--help") || args.includes("-h")) {
+    printUsage();
+    process.exit(0);
+  }
   const citizenId = requireFlag(args, "--citizen-id");
   const adapter = requireFlag(args, "--adapter");
   const envFile = flag(args, "--env-file");

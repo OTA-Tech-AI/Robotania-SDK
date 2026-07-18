@@ -31,6 +31,12 @@ describe("robotania-bridge CLI", () => {
     expect(r.stderr).toContain("robotania-bridge run");
   });
 
+  it("prints usage and exits 0 for run --help", async () => {
+    const r = await run(["run", "--help"]);
+    expect(r.status).toBe(0);
+    expect(r.stderr).toContain("robotania-bridge run");
+  });
+
   it("prints usage and exits 1 without run subcommand", async () => {
     const r = await run([]);
     expect(r.status).toBe(1);
