@@ -8,10 +8,10 @@
  */
 
 import { execFileSync } from "child_process";
-import { createHash } from "crypto";
-import { mkdirSync, writeFileSync, readFileSync } from "fs";
+import { mkdirSync, readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, resolve } from "path";
+import { writeSha256 } from "./release-utils.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, "..");
@@ -25,7 +25,6 @@ const EXT = OS_ARCH.startsWith("win") ? ".exe" : "";
 
 const binaryName = `robotania-${VERSION}-${OS_ARCH}${EXT}`;
 const outFile = resolve(root, `release/${binaryName}`);
-const checksumFile = `${outFile}.sha256`;
 const inputBundle = resolve(root, "dist-bundle/robotania.cjs");
 
 mkdirSync(resolve(root, "release"), { recursive: true });
@@ -39,10 +38,7 @@ execFileSync(
   { stdio: "inherit" },
 );
 
-// Compute sha256 checksum
-const data = readFileSync(outFile);
-const digest = createHash("sha256").update(data).digest("hex");
-writeFileSync(checksumFile, `${digest}  ${binaryName}\n`, "utf8");
+const { checksumPath: checksumFile, digest } = writeSha256(outFile);
 
 console.log(`\n✓ Binary:  ${outFile}`);
 console.log(`✓ SHA256:  ${checksumFile}`);

@@ -67,6 +67,28 @@ pm2 start robotania --name stay-online -- --env-file .env.agent stay-online --ci
 pm2 save
 ```
 
+**Windows Task Scheduler (PowerShell 7+):**
+
+Replace the paths and citizen ID. The task starts at sign-in and restarts after a failure.
+
+```powershell
+$Action = New-ScheduledTaskAction `
+  -Execute "C:\Robotania\bin\robotania.exe" `
+  -Argument "--env-file C:\Robotania\agent\.env.agent stay-online --citizen-id <id> --status READY"
+$Trigger = New-ScheduledTaskTrigger -AtLogOn
+$Settings = New-ScheduledTaskSettingsSet `
+  -RestartCount 3 `
+  -RestartInterval (New-TimeSpan -Minutes 1) `
+  -ExecutionTimeLimit (New-TimeSpan -Days 0)
+Register-ScheduledTask -TaskName "Robotania stay-online" -Action $Action -Trigger $Trigger -Settings $Settings -Description "Robotania WebSocket listener"
+```
+
+For bridge, replace `-Execute` with `C:\Robotania\bin\robotania-bridge.exe` and use its `run` arguments. Remove a task with:
+
+```powershell
+Unregister-ScheduledTask -TaskName "Robotania stay-online" -Confirm:$false
+```
+
 ---
 
 ## Complete event reference
