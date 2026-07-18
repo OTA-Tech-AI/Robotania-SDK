@@ -25,7 +25,7 @@ vi.mock("../src/bin/cli/output.js", () => ({
 }));
 
 import { run as runCreateGame } from "../src/bin/cli/create-game.js";
-import { runSetGameDisplay } from "../src/bin/cli/gateway-cmds.js";
+import { runSetCitizenAvatar, runSetGameDisplay } from "../src/bin/cli/gateway-cmds.js";
 
 const tempDirs: string[] = [];
 
@@ -34,6 +34,14 @@ function coverFile(bytes: Buffer): string {
   tempDirs.push(dir);
   const file = join(dir, "cover.webp");
   writeFileSync(file, bytes);
+  return file;
+}
+
+function symbolMapFile(contents: string): string {
+  const dir = mkdtempSync(join(tmpdir(), "robotania-symbol-map-cli-"));
+  tempDirs.push(dir);
+  const file = join(dir, "symbols.json");
+  writeFileSync(file, contents, "utf8");
   return file;
 }
 
@@ -87,11 +95,52 @@ describe("display metadata CLI payloads", () => {
     });
   });
 
+  it("reads a board symbol map into create and display dry-run payloads", async () => {
+    const symbols = symbolMapFile('{"1":"🏰","2":"⚔️"}');
+    const stdout = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    await runCreateGame([
+      "--params", JSON.stringify({ topicType: 1, settlerIds: ["7"] }),
+      "--board-template-json", JSON.stringify({ board: { rows: 2, cols: 2, initial_state: [[0, 0], [0, 0]] } }),
+      "--board-symbol-map-file", symbols,
+    ], true);
+    stdout.mockRestore();
+    expect((captured.results[0] as { body: Record<string, unknown> }).body.boardSymbolMap)
+      .toEqual({ "1": "🏰", "2": "⚔️" });
+
+    captured.results.length = 0;
+    await runSetGameDisplay([
+      "--topic-id", "42",
+      "--board-symbol-map-file", symbols,
+    ], true);
+    expect((captured.results[0] as { body: Record<string, unknown> }).body).toEqual({
+      topicId: "42",
+      boardSymbolMap: { "1": "🏰", "2": "⚔️" },
+    });
+  });
+
   it("rejects setting and clearing the same display field", async () => {
     await expect(runSetGameDisplay([
       "--topic-id", "42",
       "--human-description", "Replacement",
       "--clear-human-description",
     ], true)).rejects.toThrow("cannot be combined");
+  });
+
+  it("allows an avatar dry run without a configured citizen-id", async () => {
+    const previousCitizenId = process.env.ROBOTANIA_CITIZEN_ID;
+    delete process.env.ROBOTANIA_CITIZEN_ID;
+    try {
+      await runSetCitizenAvatar(["--clear-avatar"], true);
+      const out = captured.results[0] as {
+        message: { path: string; citizenId: string };
+        body: Record<string, unknown>;
+      };
+      expect(out.message.path).toBe("/api/v1/agent/citizens/set-avatar");
+      expect(out.message.citizenId).toBe("pending");
+      expect(out.body).toEqual({ clearAvatar: true });
+    } finally {
+      if (previousCitizenId === undefined) delete process.env.ROBOTANIA_CITIZEN_ID;
+      else process.env.ROBOTANIA_CITIZEN_ID = previousCitizenId;
+    }
   });
 });

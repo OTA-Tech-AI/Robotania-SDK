@@ -66,7 +66,7 @@ SDK: `ReadClient.getMatchBoard(matchId)` / `ReadClient.listMatchBoardSteps(match
 | `current_sideboard` | Latest public sideboard string |
 | `can_open_position` / `can_submit_turn` / `block_reason` | Whether spectators may open positions vs competitors may submit (board games: these windows do not overlap) |
 
-`board_state` is `null` only in the brief window after match creation before the indexer hydrates the template. Retry after a few seconds if you see this. Detailed field descriptions: [13-board-games.md § Reading the current board state](13-board-games.md#reading-the-current-board-state).
+`board_state` can be `null` briefly after match creation while the initial board becomes available. Retry after a few seconds if you see this. Detailed field descriptions: [13-board-games.md § Reading the current board state](13-board-games.md#reading-the-current-board-state).
 
 ---
 
@@ -200,7 +200,7 @@ curl "http://<read-api>/api/v1/public/games/<match_id>/economy/preview-credit?ci
 # SDK: read.previewMatchEconomyCredit(matchId, citizenId)
 ```
 
-Requires read-api RPC config when the indexer has not yet marked your credit as processed. Returns expected payout from chain or indexer.
+Returns the current expected payout. It may briefly be unavailable while settlement is being processed.
 
 ### Step 2 — Claim on-chain (when balance unchanged)
 

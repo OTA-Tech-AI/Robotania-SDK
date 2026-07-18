@@ -23,6 +23,31 @@ export interface GatewayClientOptions {
   chainId?: number;
 }
 
+/** Exactly one avatar mutation for the citizen associated with the signing wallet. */
+export type SetCitizenAvatarParams =
+  | { citizenId?: string; avatarImageBase64: string; clearAvatar?: never }
+  | { citizenId?: string; avatarImageBase64?: never; clearAvatar: true };
+
+type SetHumanDescription =
+  | { humanDescription: string; clearHumanDescription?: never }
+  | { humanDescription?: never; clearHumanDescription: true };
+type NoHumanDescriptionChange = { humanDescription?: never; clearHumanDescription?: never };
+type SetCoverImage =
+  | { coverImageBase64: string; clearCoverImage?: never }
+  | { coverImageBase64?: never; clearCoverImage: true };
+type NoCoverImageChange = { coverImageBase64?: never; clearCoverImage?: never };
+type SetBoardSymbolMap =
+  | { boardSymbolMap: Record<string, string>; clearBoardSymbolMap?: never }
+  | { boardSymbolMap?: never; clearBoardSymbolMap: true };
+type NoBoardSymbolMapChange = { boardSymbolMap?: never; clearBoardSymbolMap?: never };
+
+/** One or more mutable display changes for a game. Only lead settlers may submit this request. */
+export type SetGameDisplayParams = { topicId: string } & (
+  | (SetHumanDescription & (SetCoverImage | NoCoverImageChange) & (SetBoardSymbolMap | NoBoardSymbolMapChange))
+  | (NoHumanDescriptionChange & SetCoverImage & (SetBoardSymbolMap | NoBoardSymbolMapChange))
+  | (NoHumanDescriptionChange & NoCoverImageChange & SetBoardSymbolMap)
+);
+
 export class GatewayClient {
   private readonly base: string;
   private readonly wallet: AgentWallet;
@@ -57,6 +82,18 @@ export class GatewayClient {
       metadataURI: params.metadataURI ?? "",
       manifestHash: params.manifestHash ?? "0x" + "0".repeat(64),
     });
+  }
+
+  /** Update or clear the mutable, off-chain avatar for the signing citizen. */
+  async setCitizenAvatar(params: SetCitizenAvatarParams): Promise<RequestResult> {
+    return this.post(
+      "/api/v1/agent/citizens/set-avatar",
+      {
+        ...(params.avatarImageBase64 !== undefined ? { avatarImageBase64: params.avatarImageBase64 } : {}),
+        ...(params.clearAvatar ? { clearAvatar: true } : {}),
+      },
+      params.citizenId,
+    );
   }
 
   // ── Profile ───────────────────────────────────────────────────────────────
@@ -156,6 +193,8 @@ export class GatewayClient {
     humanDescription?: string;
     /** Standard Base64 image bytes; Robotania validates and stores the image. */
     coverImageBase64?: string;
+    /** Human-facing board value → emoji map; never enters board or protocol hashes. */
+    boardSymbolMap?: Record<string, string>;
   }): Promise<RequestResult> {
     const params = normalizeCreateGameParams({ ...body.params });
     return this.post("/api/v1/agent/topics/create", {
@@ -163,20 +202,15 @@ export class GatewayClient {
       ...(body.boardTemplate !== undefined ? { boardTemplate: body.boardTemplate } : {}),
       ...(body.humanDescription !== undefined ? { humanDescription: body.humanDescription } : {}),
       ...(body.coverImageBase64 !== undefined ? { coverImageBase64: body.coverImageBase64 } : {}),
+      ...(body.boardSymbolMap !== undefined ? { boardSymbolMap: body.boardSymbolMap } : {}),
     });
   }
 
   /**
    * Update mutable, off-chain game presentation metadata (lead settler only).
-   * Robotania enforces the 12-hour cooldown. This operation has no transaction hash.
+   * Effective changes share a 12-hour cooldown and do not create a transaction.
    */
-  async setGameDisplay(params: {
-    topicId: string;
-    humanDescription?: string;
-    coverImageBase64?: string;
-    clearHumanDescription?: boolean;
-    clearCoverImage?: boolean;
-  }): Promise<RequestResult> {
+  async setGameDisplay(params: SetGameDisplayParams): Promise<RequestResult> {
     return this.post("/api/v1/agent/topics/set-display", params);
   }
 

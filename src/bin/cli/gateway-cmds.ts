@@ -9,6 +9,8 @@ import { buildRobotaniaDomain, AGENT_REQUEST_TYPES } from "../../signing.js";
 import type { TurnPayloadContent } from "../../types.js";
 import { keccak256, toBytes } from "viem";
 import { readCoverImageBase64 } from "./cover-image.js";
+import { readBoardSymbolMapFile } from "./board-symbol-map.js";
+import type { SetGameDisplayParams } from "../../gateway.js";
 
 function dryRunGateway(
   path: string,
@@ -71,9 +73,11 @@ export async function runSetGameDisplay(args: string[], isDryRun: boolean): Prom
   const hasCover = args.includes("--cover-image-file");
   const clearHumanDescription = args.includes("--clear-human-description");
   const clearCoverImage = args.includes("--clear-cover-image");
-  if ((!hasHuman && !hasCover && !clearHumanDescription && !clearCoverImage) ||
-      (hasHuman && clearHumanDescription) || (hasCover && clearCoverImage)) {
-    fatal("Provide at least one display change; --human-description/--cover-image-file cannot be combined with their matching --clear-* flag.");
+  const hasBoardSymbolMap = args.includes("--board-symbol-map-file");
+  const clearBoardSymbolMap = args.includes("--clear-board-symbol-map");
+  if ((!hasHuman && !hasCover && !hasBoardSymbolMap && !clearHumanDescription && !clearCoverImage && !clearBoardSymbolMap) ||
+      (hasHuman && clearHumanDescription) || (hasCover && clearCoverImage) || (hasBoardSymbolMap && clearBoardSymbolMap)) {
+    fatal("Provide at least one display change; a --human-description/--cover-image-file/--board-symbol-map-file flag cannot be combined with its matching --clear-* flag.");
   }
 
   const humanDescription = hasHuman
@@ -81,6 +85,9 @@ export async function runSetGameDisplay(args: string[], isDryRun: boolean): Prom
     : undefined;
   const coverImageFile = hasCover
     ? requireFlag(args, "--cover-image-file", "cover image file")
+    : undefined;
+  const boardSymbolMapFile = hasBoardSymbolMap
+    ? requireFlag(args, "--board-symbol-map-file", "board symbol map JSON file")
     : undefined;
   let coverImageBase64: string | undefined;
   if (coverImageFile !== undefined) {
@@ -90,6 +97,14 @@ export async function runSetGameDisplay(args: string[], isDryRun: boolean): Prom
       fatal(`Failed to read --cover-image-file: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
+  let boardSymbolMap: Record<string, string> | undefined;
+  if (boardSymbolMapFile !== undefined) {
+    try {
+      boardSymbolMap = readBoardSymbolMapFile(boardSymbolMapFile);
+    } catch (e) {
+      fatal(`Failed to read --board-symbol-map-file: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
 
   const body: Record<string, unknown> = {
     topicId,
@@ -97,6 +112,8 @@ export async function runSetGameDisplay(args: string[], isDryRun: boolean): Prom
     ...(coverImageBase64 !== undefined ? { coverImageBase64 } : {}),
     ...(clearHumanDescription ? { clearHumanDescription: true } : {}),
     ...(clearCoverImage ? { clearCoverImage: true } : {}),
+    ...(boardSymbolMap !== undefined ? { boardSymbolMap } : {}),
+    ...(clearBoardSymbolMap ? { clearBoardSymbolMap: true } : {}),
   };
   const cfg = loadConfig();
   if (isDryRun) {
@@ -104,13 +121,48 @@ export async function runSetGameDisplay(args: string[], isDryRun: boolean): Prom
     return;
   }
   log("Updating game display metadata...");
-  result(await cfg.gatewayClient.setGameDisplay(body as {
-    topicId: string;
-    humanDescription?: string;
-    coverImageBase64?: string;
-    clearHumanDescription?: boolean;
-    clearCoverImage?: boolean;
-  }));
+  result(await cfg.gatewayClient.setGameDisplay(body as SetGameDisplayParams));
+}
+
+export async function runSetCitizenAvatar(args: string[], isDryRun: boolean): Promise<void> {
+  const hasAvatar = args.includes("--avatar-image-file");
+  const clearAvatar = args.includes("--clear-avatar");
+  if ((hasAvatar && clearAvatar) || (!hasAvatar && !clearAvatar)) {
+    fatal("Provide exactly one of --avatar-image-file <path> or --clear-avatar.");
+  }
+  const citizenId = flag(args, "--citizen-id") ?? process.env.ROBOTANIA_CITIZEN_ID;
+  if (citizenId !== undefined && citizenId.trim() !== "" && !/^[1-9]\d*$/.test(citizenId.trim())) {
+    fatal("--citizen-id / ROBOTANIA_CITIZEN_ID must be a positive decimal citizen ID when supplied");
+  }
+  // The Gateway resolves the target citizen from the signing wallet. This value
+  // only becomes the EIP-712 citizen-id hint for SDK compatibility.
+  const signingCitizenId = citizenId?.trim() || "pending";
+  const avatarImageFile = hasAvatar
+    ? requireFlag(args, "--avatar-image-file", "avatar image file")
+    : undefined;
+  let avatarImageBase64: string | undefined;
+  if (avatarImageFile) {
+    try {
+      avatarImageBase64 = readCoverImageBase64(avatarImageFile);
+    } catch (e) {
+      fatal(`Failed to read --avatar-image-file: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+  const body: Record<string, unknown> = {
+    ...(avatarImageBase64 ? { avatarImageBase64 } : {}),
+    ...(clearAvatar ? { clearAvatar: true } : {}),
+  };
+  const cfg = loadConfig();
+  if (isDryRun) {
+    dryRunGateway("/api/v1/agent/citizens/set-avatar", body, signingCitizenId, cfg.chainAddresses.chainId);
+    return;
+  }
+  log(clearAvatar ? "Clearing citizen avatar..." : "Updating citizen avatar...");
+  result(await cfg.gatewayClient.setCitizenAvatar(
+    avatarImageBase64 !== undefined
+      ? { citizenId: signingCitizenId, avatarImageBase64 }
+      : { citizenId: signingCitizenId, clearAvatar: true },
+  ));
 }
 
 // ── StakeVault via gateway relayer ────────────────────────────────────────────
