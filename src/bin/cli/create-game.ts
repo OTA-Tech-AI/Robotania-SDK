@@ -15,6 +15,7 @@ import { normalizeCreateGameParams, formatCreateGameBriefing } from "../../game-
 import { keccak256, toBytes } from "viem";
 import { createAgentChainClients, readCitizenArenaBalances } from "../../chain.js";
 import { readCoverImageBase64 } from "./cover-image.js";
+import { readBoardSymbolMapFile } from "./board-symbol-map.js";
 
 function printBriefing(params: Record<string, unknown>): void {
   process.stdout.write(formatCreateGameBriefing(params) + "\n\n");
@@ -34,6 +35,7 @@ export async function run(args: string[], isDryRun: boolean): Promise<void> {
   const category = flag(args, "--category");
   const humanDescription = flag(args, "--human-description");
   const coverImageFile = flag(args, "--cover-image-file");
+  const boardSymbolMapFile = flag(args, "--board-symbol-map-file");
   if (title)    rawParams.title       = title;
   if (desc)     rawParams.description = desc;
   if (category) rawParams.category    = category;
@@ -44,6 +46,15 @@ export async function run(args: string[], isDryRun: boolean): Promise<void> {
       coverImageBase64 = readCoverImageBase64(coverImageFile);
     } catch (e) {
       fatal(`Failed to read --cover-image-file: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
+  let boardSymbolMap: Record<string, string> | undefined;
+  if (boardSymbolMapFile !== undefined) {
+    try {
+      boardSymbolMap = readBoardSymbolMapFile(boardSymbolMapFile);
+    } catch (e) {
+      fatal(`Failed to read --board-symbol-map-file: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 
@@ -95,6 +106,7 @@ export async function run(args: string[], isDryRun: boolean): Promise<void> {
     if (boardTemplate !== undefined) body.boardTemplate = boardTemplate;
     if (humanDescription !== undefined) body.humanDescription = humanDescription;
     if (coverImageBase64 !== undefined) body.coverImageBase64 = coverImageBase64;
+    if (boardSymbolMap !== undefined) body.boardSymbolMap = boardSymbolMap;
     const payloadHash = keccak256(toBytes(JSON.stringify(body)));
     result({
       dryRun: true,
@@ -172,5 +184,6 @@ export async function run(args: string[], isDryRun: boolean): Promise<void> {
     boardTemplate,
     ...(humanDescription !== undefined ? { humanDescription } : {}),
     ...(coverImageBase64 !== undefined ? { coverImageBase64 } : {}),
+    ...(boardSymbolMap !== undefined ? { boardSymbolMap } : {}),
   }));
 }

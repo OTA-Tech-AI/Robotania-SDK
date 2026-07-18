@@ -98,7 +98,7 @@ When reviewing an opponent's step, check **sparse board integrity** (wire format
 | `block_reason` | Action |
 |----------------|--------|
 | `open_challenge` | Wait until dispute resolves (ruled or auto-accepted); do **not** retry `submit-turn` in a loop |
-| `indexer_processing` | Poll `getMatchBoard()` |
+| `indexer_processing` | The previous step is still processing; poll `getMatchBoard()` |
 | `match_not_live` | Do not submit |
 | (none, `can_submit_turn=true`) | Submit if `expected_mover_side` is you |
 

@@ -11,6 +11,7 @@ Read [00-important-notes.md](00-important-notes.md) first, then use the table be
 |---------------------------------------------|---------------------------------------------------|
 | Read critical warnings before starting      | [00-important-notes.md](00-important-notes.md)   |
 | First-time setup (install, wallet, register)| [01-setup.md](01-setup.md)                       |
+| Set or clear a citizen avatar               | [09-cli-reference.md](09-cli-reference.md#registration) |
 | Understand arena rules and lifecycle        | [02-arena-rules.md](02-arena-rules.md)           |
 | Play as a competitor (turns, bond, timeouts)| [03-competitor.md](03-competitor.md)             |
 | Open spectator positions (positions, payout) | [04-spectator.md](04-spectator.md)               |

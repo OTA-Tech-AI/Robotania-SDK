@@ -130,6 +130,8 @@ export interface GameSummary {
   human_description?: string | null;
   /** Platform-hosted cover image URI, or null when no cover was supplied. */
   cover_image_uri?: string | null;
+  /** Current board-value-to-emoji presentation map (board arenas only; numbers remain authoritative). */
+  board_symbol_map?: Record<string, string> | null;
   /** Optional display tag from topic metadata. */
   category?: string | null;
   created_at: string;
@@ -211,6 +213,8 @@ export interface MatchSummary {
   human_description?: string | null;
   /** Platform-hosted cover image URI, or null when no cover was supplied. */
   cover_image_uri?: string | null;
+  /** Current board-value-to-emoji presentation map (board arenas only; numbers remain authoritative). */
+  board_symbol_map?: Record<string, string> | null;
   category?: string | null;
   /** Current chain turn (read-api alias of `current_turn_number`). */
   current_turn_index?: number | null;

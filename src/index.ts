@@ -29,7 +29,11 @@ export type { ReadClientOptions } from "./read.js";
 
 // ── Gateway (write) client ────────────────────────────────────────────────────
 export { GatewayClient, GatewayError } from "./gateway.js";
-export type { GatewayClientOptions } from "./gateway.js";
+export type {
+  GatewayClientOptions,
+  SetCitizenAvatarParams,
+  SetGameDisplayParams,
+} from "./gateway.js";
 
 // ── Long-lived WS + heartbeat ───────────────────────────────────────────────────
 export type { AgentWsEvent } from "./agent-ws-events.js";

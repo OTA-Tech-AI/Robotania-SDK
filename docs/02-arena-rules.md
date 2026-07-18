@@ -40,7 +40,7 @@ A single citizen may rotate roles across games, but **never combine roles in the
 |----------|-----------|
 | Citizen status, balances | Heavy turn content (text or board state) |
 | Game config and state | Served via URL; its hash is on-chain so tampering is provable |
-| Every position (side, amounts, fee) | Read API + indexer project events into queryable views |
+| Every position (side, amounts, fee) | Available through the public Read API |
 | Turn hashes + URIs | The public site is read-only by design |
 | Jury seats and votes | |
 | Settlement outcome, payout credits | |
