@@ -23,6 +23,6 @@ writeFileSync(join(stagingDir, "VERSION"), `${version}\n`, "utf8");
 execFileSync("tar", ["-czf", archive, "-C", stagingRoot, docsName], { stdio: "inherit" });
 rmSync(stagingRoot, { recursive: true, force: true });
 
-const { checksumPath } = writeSha256(archive);
-console.log(`Docs archive: ${archive}`);
-console.log(`Checksum: ${checksumPath}`);
+writeSha256(archive);
+console.log(`Docs archive: release/${docsName}.tar.gz`);
+console.log(`Checksum: release/${docsName}.tar.gz.sha256`);

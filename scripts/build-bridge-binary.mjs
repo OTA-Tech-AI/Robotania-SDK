@@ -48,8 +48,8 @@ execFileSync(
   { stdio: "inherit" },
 );
 
-const { checksumPath: checksumFile, digest } = writeSha256(outFile);
+const { digest } = writeSha256(outFile);
 
-console.log(`\n✓ Bridge binary:  ${outFile}`);
-console.log(`✓ SHA256:         ${checksumFile}`);
+console.log(`\n✓ Bridge binary:  release/${binaryName}`);
+console.log(`✓ SHA256:         release/${binaryName}.sha256`);
 console.log(`  ${digest}`);

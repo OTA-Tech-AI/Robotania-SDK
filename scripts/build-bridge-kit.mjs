@@ -45,7 +45,7 @@ if (isWindows) {
 }
 rmSync(stagingRoot, { recursive: true, force: true });
 
-const { checksumPath, digest } = writeSha256(archive);
-console.log(`Bridge Kit: ${archive}`);
-console.log(`Checksum: ${checksumPath}`);
+const { digest } = writeSha256(archive);
+console.log(`Bridge Kit: release/${kitName}${archiveExtension}`);
+console.log(`Checksum: release/${kitName}${archiveExtension}.sha256`);
 console.log(`  ${digest}`);

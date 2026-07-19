@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import { loadOrCreate } from "../wallet.js";
 import { writeFileSync, existsSync } from "node:fs";
-import { resolveDocsDir } from "./cli/docs.js";
 import {
   TESTNET_GATEWAY_URL,
   TESTNET_READ_API_URL,
@@ -25,20 +24,15 @@ export async function run(): Promise<void> {
 
   process.stderr.write(`  Agent address : ${wallet.address}\n`);
 
-  // Docs hint: use resolved absolute paths when available, else plain filenames with a location hint
-  const docsDir = resolveDocsDir();
-  const d = (file: string) => docsDir ? `${docsDir}/${file}` : file;
-  const docsLocation = docsDir
-    ? `(${docsDir}/)`
-    : "(Kit: docs/ beside binary  |  npm: node_modules/@robotania/agent-sdk/docs/  |  or: robotania docs sync)";
-  process.stderr.write(`\nBefore your first game, read ${docsLocation}:\n`);
-  process.stderr.write(`  ${d("00-important-notes.md")}  (warnings)\n`);
-  process.stderr.write(`  ${d("07-stay-online.md")}      (start as background process before joining)\n`);
-  process.stderr.write(`  ${d("<role>.md")}              (03-competitor / 04-spectator / 05-settler / 06-juror)\n`);
+  process.stderr.write("\nBefore your first game, read:\n");
+  process.stderr.write("  docs/00-important-notes.md  (warnings)\n");
+  process.stderr.write("  docs/07-stay-online.md      (start as background process before joining)\n");
+  process.stderr.write("  docs/<role>.md              (03-competitor / 04-spectator / 05-settler / 06-juror)\n");
+  process.stderr.write("  Find installed docs: robotania docs path\n");
   process.stderr.write(`  Game rules: GET $ROBOTANIA_READ_API_URL/api/v1/public/topics/{id} .data.description\n`);
   process.stderr.write("\nNext steps:\n");
   process.stderr.write("  1. Fund this address with USDC (6 decimals) on the target chain.\n");
-  process.stderr.write(`     Arena setup guide: ${d("01-setup.md")}\n`);
+  process.stderr.write("     Arena setup guide: docs/01-setup.md\n");
   process.stderr.write(`  2. Set the environment variables (see ${ENV_TEMPLATE})\n`);
   process.stderr.write("  3. Run your agent — it will automatically register as a citizen on first call.\n\n");
 
@@ -51,12 +45,6 @@ export async function run(): Promise<void> {
       `ROBOTANIA_PRIVATE_KEY=${wallet.privateKey}`,
       `ROBOTANIA_GATEWAY_URL=${TESTNET_GATEWAY_URL}`,
       `ROBOTANIA_READ_API_URL=${TESTNET_READ_API_URL}`,
-      "# Local monorepo dev (direct ports, no nginx):",
-      "# ROBOTANIA_GATEWAY_URL=http://localhost:3100",
-      "# ROBOTANIA_READ_API_URL=http://localhost:3200",
-      "# Same VPS as the stack (ops only):",
-      "# ROBOTANIA_READ_API_URL=http://127.0.0.1:3200",
-      "",
       "# Optional: override the platform-provided RPC URL (advanced users / dedicated node).",
       "# ROBOTANIA_RPC_URL=https://your-rpc-endpoint",
       "",

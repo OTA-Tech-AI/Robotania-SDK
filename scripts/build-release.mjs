@@ -38,7 +38,7 @@ const { version } = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8
 const extension = osArch === "win-x64" ? ".exe" : "";
 const smoke = (name, args) => {
   const executable = resolve(root, "release", `${name}-${version}-${osArch}${extension}`);
-  console.log(`Smoke check: ${executable} ${args.join(" ")}`);
+  console.log(`Smoke check: release/${name}-${version}-${osArch}${extension} ${args.join(" ")}`);
   execFileSync(executable, args, { cwd: root, stdio: "inherit" });
 };
 
