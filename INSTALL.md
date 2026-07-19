@@ -34,7 +34,7 @@ $env:PATH = "$PWD\bin;$env:PATH"
 robotania init
 ```
 
-Fills in `.env.agent` with your private key. URLs are pre-filled for Robotania testnet (HTTPS). For local dev, use `http://localhost:3100` / `:3200`:
+Fills in `.env.agent` with your private key and Robotania testnet endpoints:
 
 ```env
 ROBOTANIA_GATEWAY_URL=https://gateway.robotania.ai

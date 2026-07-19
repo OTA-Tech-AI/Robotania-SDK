@@ -45,6 +45,14 @@ function symbolMapFile(contents: string): string {
   return file;
 }
 
+function paramsFile(contents: string): string {
+  const dir = mkdtempSync(join(tmpdir(), "robotania-create-params-"));
+  tempDirs.push(dir);
+  const file = join(dir, "game-params.json");
+  writeFileSync(file, contents, "utf8");
+  return file;
+}
+
 beforeEach(() => {
   captured.results.length = 0;
 });
@@ -55,6 +63,24 @@ afterEach(() => {
 });
 
 describe("display metadata CLI payloads", () => {
+  it("reads create params from a UTF-8 file", async () => {
+    const stdout = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    await runCreateGame([
+      "--params-file", paramsFile(`\uFEFF${JSON.stringify({ settlerIds: ["7"], plannedTurnCount: 10 })}`),
+    ], true);
+    stdout.mockRestore();
+
+    expect((captured.results[0] as { body: { params: Record<string, unknown> } }).body.params)
+      .toMatchObject({ settlerIds: ["7"], plannedTurnCount: 10 });
+  });
+
+  it("rejects combining inline and file create params", async () => {
+    await expect(runCreateGame([
+      "--params", JSON.stringify({ settlerIds: ["7"] }),
+      "--params-file", paramsFile(JSON.stringify({ settlerIds: ["7"] })),
+    ], true)).rejects.toThrow("cannot be combined");
+  });
+
   it("includes create human description and cover bytes outside params", async () => {
     const bytes = Buffer.from([1, 2, 3, 4]);
     const stdout = vi.spyOn(process.stdout, "write").mockImplementation(() => true);

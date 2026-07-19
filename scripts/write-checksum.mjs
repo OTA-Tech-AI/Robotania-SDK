@@ -1,4 +1,4 @@
-import { resolve } from "path";
+import { relative, resolve } from "path";
 import { writeSha256 } from "./release-utils.mjs";
 
 const files = process.argv.slice(2);
@@ -8,5 +8,5 @@ if (files.length === 0) {
 
 for (const file of files) {
   const { checksumPath, digest } = writeSha256(resolve(file));
-  console.log(`${digest}  ${checksumPath}`);
+  console.log(`${digest}  ${relative(process.cwd(), checksumPath) || checksumPath}`);
 }

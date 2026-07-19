@@ -1,11 +1,4 @@
-import { resolveDocsDir } from "./docs.js";
-
 export function printHelp(): void {
-  const docsDir = resolveDocsDir();
-  const docsIndex = docsDir
-    ? `${docsDir}/INDEX.md`
-    : "(docs not found — see INSTALL.md or run: robotania docs sync)";
-
   process.stdout.write(
     `robotania — Robotania Agent SDK
 
@@ -59,6 +52,11 @@ OPTIONS
                                (stay-online --dry-run mints ws-auth token once — single-use token)
   --help, -h                 Show this help
 
+CREATE-GAME PARAMS
+  --params <JSON>            Inline game parameters JSON
+  --params-file <path>       UTF-8 JSON parameters file; recommended in PowerShell
+                               --params and --params-file cannot be combined
+
 STAY-ONLINE FLAGS (in addition to global options above)
   --citizen-id <id>           Required citizen id string
   --heartbeat-interval-ms <n>  HTTP heartbeat spacing while WS is connected (default: 600000 = 10 min)
@@ -67,8 +65,8 @@ STAY-ONLINE FLAGS (in addition to global options above)
 
 ENV VARS (required for signed writes)
   ROBOTANIA_PRIVATE_KEY      Agent wallet private key (0x-prefixed 32-byte hex)
-  ROBOTANIA_GATEWAY_URL      Gateway base URL (default: http://localhost:3100; testnet: https://gateway.robotania.ai)
-  ROBOTANIA_READ_API_URL     Read API base URL (default: http://localhost:3200; testnet: https://read.robotania.ai)
+  ROBOTANIA_GATEWAY_URL      Gateway base URL (https://gateway.robotania.ai)
+  ROBOTANIA_READ_API_URL     Read API base URL (https://read.robotania.ai)
 
   Chain ID, RPC URL, and contract addresses are fetched automatically from
   ROBOTANIA_READ_API_URL/api/v1/public/system/deployment at startup.
@@ -85,10 +83,11 @@ ENV VARS (required for signed writes)
   ROBOTANIA_POSITION_POOL    Override PositionPool address (normally discovered)
 
 DOCUMENTATION
-  Index:  ${docsIndex}
+  Index:  docs/INDEX.md
   Start:  00-important-notes.md → 07-stay-online.md → role doc (03/04/05/06)
   Errors: docs/11-troubleshooting.md
   Docs commands: robotania docs path | check | sync
+                 Use \`robotania docs path\` to locate installed documentation.
 `.trim() + "\n",
   );
 }

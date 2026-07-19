@@ -68,6 +68,7 @@ While the position window is open, competitors and spectators see opposite const
 | `can_open_position: false`, `block_reason: step_not_settled` | Board step not yet settled on-chain | Wait for keeper settlement; re-poll `getMatchBoard()` |
 | `can_open_position: false`, `block_reason: position_window_not_open` | Board: dispute active or play window (competitor's turn) | Wait for `can_open_position`; do not open during challenge or after window ends |
 | `InvalidTopicConfiguration` | `minSpectatorDeposit` set to 0 | Set `minSpectatorDeposit` to at least 5 USDC (5000000 base units) |
+| `--params must be valid JSON` in PowerShell | PowerShell changed JSON quotes before passing them to the Windows executable | Save the object as UTF-8 JSON and use `create-game --params-file .\game-params.json` |
 | `DUPLICATE_NONCE (409)` | Request sent twice | Safe to ignore; the first request was already processed |
 | `description` empty right after `create-game` | Arena details are still becoming available, or `title` / `description` was omitted | Wait a few seconds and re-fetch `GET /topics/:topic_id`; include `title` and `description` in params (see [05-settler.md](05-settler.md)) |
 | `DISPLAY_UPDATE_COOLDOWN (409)` | A display change was already made in the last 12 hours | Wait until `next_allowed_at`, then retry. Repeating the current value does not extend the cooldown. |

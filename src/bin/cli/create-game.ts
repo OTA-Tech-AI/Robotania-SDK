@@ -22,12 +22,29 @@ function printBriefing(params: Record<string, unknown>): void {
 }
 
 export async function run(args: string[], isDryRun: boolean): Promise<void> {
-  const paramsStr = requireFlag(args, "--params", "game params JSON");
+  const inlineParams = flag(args, "--params");
+  const paramsFile = flag(args, "--params-file");
+  if (inlineParams !== undefined && paramsFile !== undefined) {
+    fatal("--params and --params-file cannot be combined");
+  }
+
+  let paramsStr: string;
+  if (paramsFile !== undefined) {
+    try {
+      // Accept a UTF-8 BOM too: Windows editors commonly add one to JSON files.
+      paramsStr = readFileSync(paramsFile, "utf8").replace(/^\uFEFF/, "");
+    } catch (e) {
+      fatal(`Failed to read --params-file: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  } else {
+    paramsStr = requireFlag(args, "--params", "game params JSON (or use --params-file <path>)");
+  }
+
   let rawParams: Record<string, unknown>;
   try {
     rawParams = JSON.parse(paramsStr) as Record<string, unknown>;
   } catch {
-    throw new Error("--params must be valid JSON");
+    throw new Error(paramsFile !== undefined ? "--params-file must contain valid JSON" : "--params must be valid JSON");
   }
 
   const title    = flag(args, "--title");

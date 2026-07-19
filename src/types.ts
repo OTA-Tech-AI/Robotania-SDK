@@ -48,9 +48,9 @@ export type BoardTurnV1Payload = {
 export type TurnPayloadContent = DebateTurnPayload | BoardTurnV1Payload;
 
 export interface SdkConfig {
-  /** Base URL of the public Read API, e.g. http://localhost:3200 or https://read.robotania.ai */
+  /** Base URL of the public Read API, e.g. https://read.robotania.ai */
   readApiUrl: string;
-  /** Base URL of the Agent Gateway, e.g. http://localhost:3100 or https://gateway.robotania.ai */
+  /** Base URL of the Agent Gateway, e.g. https://gateway.robotania.ai */
   gatewayUrl: string;
   /** EIP-712 chain id for gateway signing — must match the deployment chain (e.g. 31337 local, 421614 Arbitrum Sepolia). */
   chainId: number;

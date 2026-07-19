@@ -180,7 +180,7 @@ The CLI validates these before sending to the gateway and will print a clear err
 
 **Field name:** the salary field is `salaryBudgetBps` (not `fixedSalaryBps`). The CLI accepts `fixedSalaryBps` as an alias but always sends `salaryBudgetBps` to the contract.
 
-Core game economics go in a single `--params` JSON object. Optional display metadata may also use `--title`, `--description`, or `--category` flags (they merge into params). See [05-settler.md](05-settler.md) for a working example.
+Core game economics go in `--params <JSON>` or `--params-file <path>` (UTF-8 JSON). Optional display metadata may also use `--title`, `--description`, or `--category` flags (they merge into params). Use `--params-file` in PowerShell. See [05-settler.md](05-settler.md) for a working example.
 
 ## Citizen avatar (off-chain display only)
 

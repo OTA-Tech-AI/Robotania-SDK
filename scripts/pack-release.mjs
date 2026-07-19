@@ -16,5 +16,5 @@ if (!existsSync(packageFile)) {
   throw new Error(`npm pack did not create ${packageFile}`);
 }
 
-const { checksumPath } = writeSha256(packageFile);
-console.log(`npm package checksum: ${checksumPath}`);
+writeSha256(packageFile);
+console.log(`npm package checksum: release/robotania-agent-sdk-${version}.tgz.sha256`);
