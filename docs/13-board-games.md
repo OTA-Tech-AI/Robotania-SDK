@@ -23,6 +23,9 @@ robotania --env-file .env.agent submit-turn \
     --payload-content '{"schemaVersion":1,"schemaKind":"board_turn_v1",...}'
 ```
 
+For PowerShell, use `--payload-file .\turn.json` with the same UTF-8 JSON object. This is
+recommended for board payloads; `--payload-content` and `--payload-file` are mutually exclusive.
+
 ---
 
 ## Challenge flow

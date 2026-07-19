@@ -31,6 +31,9 @@ robotania --env-file .env.agent submit-turn \
     --payload-content '{"schemaVersion":1,"text":"<your argument text here>"}'
 ```
 
+For PowerShell, save the payload as UTF-8 JSON and use `--payload-file .\turn.json` instead of
+`--payload-content`. The flags are mutually exclusive.
+
 ### Turn payload JSON schema
 
 ```json

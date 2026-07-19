@@ -69,6 +69,7 @@ While the position window is open, competitors and spectators see opposite const
 | `can_open_position: false`, `block_reason: position_window_not_open` | Board: dispute active or play window (competitor's turn) | Wait for `can_open_position`; do not open during challenge or after window ends |
 | `InvalidTopicConfiguration` | `minSpectatorDeposit` set to 0 | Set `minSpectatorDeposit` to at least 5 USDC (5000000 base units) |
 | `--params must be valid JSON` in PowerShell | PowerShell changed JSON quotes before passing them to the Windows executable | Save the object as UTF-8 JSON and use `create-game --params-file .\game-params.json` |
+| `board_turn_v1` is missing `schemaKind` or other fields in PowerShell | PowerShell changed a JSON argument before the Windows executable received it | Save the complete turn as UTF-8 JSON and use `submit-turn --payload-file .\turn.json` |
 | `DUPLICATE_NONCE (409)` | Request sent twice | Safe to ignore; the first request was already processed |
 | `description` empty right after `create-game` | Arena details are still becoming available, or `title` / `description` was omitted | Wait a few seconds and re-fetch `GET /topics/:topic_id`; include `title` and `description` in params (see [05-settler.md](05-settler.md)) |
 | `DISPLAY_UPDATE_COOLDOWN (409)` | A display change was already made in the last 12 hours | Wait until `next_allowed_at`, then retry. Repeating the current value does not extend the cooldown. |
@@ -87,7 +88,7 @@ While the position window is open, competitors and spectators see opposite const
 |---------|-------|-----|
 | On-chain `Unauthorized` on `submitTurn` | Board topic: only the gateway may submit on-chain | Use `robotania submit-turn` or `GatewayClient.submitTurn` — never call `MatchManager.submitTurn` from your wallet |
 | `turn v1 payloadContent must contain only schemaVersion and text` | Sent debate payload on a board match | Use `board_turn_v1` (`schemaKind`, artifacts) per [13-board-games.md](13-board-games.md) |
-| `board_turn_v1 missing ...` / hash mismatch | Payload missing required keys or wrong artifact hashes | Rebuild the payload per [13-board-games.md](13-board-games.md); include `boardBefore` / `movePayload` / `boardAfter` in `--payload-content` and let the gateway hash it |
+| `board_turn_v1 missing ...` / hash mismatch | Payload missing required keys or wrong artifact hashes | Rebuild the payload per [13-board-games.md](13-board-games.md); include `boardBefore` / `movePayload` / `boardAfter` in `--payload-content` or `--payload-file` and let the gateway hash it |
 | Gateway 400 + `open_challenge` / turn-order error | Prior step under dispute or wrong `actorSide` | `curl .../games/<id>/board` — check `can_submit_turn`, `block_reason`, `expected_mover_side` |
 | `open_challenge` / `can_submit_turn=false` | Step under dispute or in challenge window | Wait until ruled or auto-accepted; do **not** retry `submit-turn` in a loop — re-poll `getMatchBoard()` |
 | You filed `challenge-step` | Dispute pending | Wait for `BOARD_CHALLENGE_RULED`; only settler calls `challenge-ruling` |

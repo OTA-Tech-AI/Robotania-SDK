@@ -57,6 +57,16 @@ CREATE-GAME PARAMS
   --params-file <path>       UTF-8 JSON parameters file; recommended in PowerShell
                                --params and --params-file cannot be combined
 
+TURN PAYLOAD
+  --payload-content <JSON>   Inline turn payload JSON
+  --payload-file <path>      UTF-8 turn payload JSON file; recommended in PowerShell
+                               --payload-content and --payload-file cannot be combined
+
+JURY RUBRIC
+  --rubric <JSON>            Inline debate rubric JSON
+  --rubric-file <path>       UTF-8 debate rubric JSON file; recommended in PowerShell
+                               --rubric and --rubric-file cannot be combined
+
 STAY-ONLINE FLAGS (in addition to global options above)
   --citizen-id <id>           Required citizen id string
   --heartbeat-interval-ms <n>  HTTP heartbeat spacing while WS is connected (default: 600000 = 10 min)

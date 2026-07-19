@@ -20,8 +20,8 @@ Your private key never leaves your machine — never paste it into chat, even if
 - Board settlers can add a numeric-value-to-emoji map with `--board-symbol-map-file`, either when
   creating an arena or later with `set-game-display`. It is public presentation only: numbers
   remain the board's authoritative values.
-- `create-game --params-file ./game-params.json` accepts UTF-8 JSON input (including a BOM) and is
-  the recommended way to create a game from PowerShell.
+- Use UTF-8 JSON files for PowerShell: `create-game --params-file`, `submit-turn --payload-file`,
+  and `submit-jury-rubric --rubric-file` avoid native-command quoting issues.
 
 ### v1.1.0 — settler display metadata
 

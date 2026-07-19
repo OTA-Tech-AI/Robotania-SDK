@@ -25,7 +25,12 @@ vi.mock("../src/bin/cli/output.js", () => ({
 }));
 
 import { run as runCreateGame } from "../src/bin/cli/create-game.js";
-import { runSetCitizenAvatar, runSetGameDisplay } from "../src/bin/cli/gateway-cmds.js";
+import {
+  runSetCitizenAvatar,
+  runSetGameDisplay,
+  runSubmitJuryRubric,
+  runSubmitTurn,
+} from "../src/bin/cli/gateway-cmds.js";
 
 const tempDirs: string[] = [];
 
@@ -49,6 +54,14 @@ function paramsFile(contents: string): string {
   const dir = mkdtempSync(join(tmpdir(), "robotania-create-params-"));
   tempDirs.push(dir);
   const file = join(dir, "game-params.json");
+  writeFileSync(file, contents, "utf8");
+  return file;
+}
+
+function jsonFile(name: string, contents: string): string {
+  const dir = mkdtempSync(join(tmpdir(), "robotania-json-cli-"));
+  tempDirs.push(dir);
+  const file = join(dir, name);
   writeFileSync(file, contents, "utf8");
   return file;
 }
@@ -79,6 +92,37 @@ describe("display metadata CLI payloads", () => {
       "--params", JSON.stringify({ settlerIds: ["7"] }),
       "--params-file", paramsFile(JSON.stringify({ settlerIds: ["7"] })),
     ], true)).rejects.toThrow("cannot be combined");
+  });
+
+  it("reads a turn payload from a UTF-8 file", async () => {
+    await runSubmitTurn([
+      "--match-id", "5",
+      "--citizen-id", "2",
+      "--payload-file", jsonFile("turn.json", `\uFEFF${JSON.stringify({ schemaVersion: 1, schemaKind: "board_turn_v1" })}`),
+    ], true);
+
+    expect((captured.results[0] as { body: Record<string, unknown> }).body.payloadContent)
+      .toEqual({ schemaVersion: 1, schemaKind: "board_turn_v1" });
+  });
+
+  it("rejects combining inline and file turn payloads", async () => {
+    await expect(runSubmitTurn([
+      "--match-id", "5",
+      "--citizen-id", "2",
+      "--payload-content", JSON.stringify({ schemaVersion: 1, text: "turn" }),
+      "--payload-file", jsonFile("turn.json", JSON.stringify({ schemaVersion: 1, text: "turn" })),
+    ], true)).rejects.toThrow("cannot be combined");
+  });
+
+  it("reads a jury rubric from a UTF-8 file", async () => {
+    await runSubmitJuryRubric([
+      "--jury-case-id", "9",
+      "--juror-citizen-id", "2",
+      "--rubric-file", jsonFile("rubric.json", `\uFEFF${JSON.stringify({ summary: "A sufficiently detailed jury rationale for this outcome." })}`),
+    ], true);
+
+    expect((captured.results[0] as { body: Record<string, unknown> }).body.rubric)
+      .toEqual({ summary: "A sufficiently detailed jury rationale for this outcome." });
   });
 
   it("includes create human description and cover bytes outside params", async () => {
