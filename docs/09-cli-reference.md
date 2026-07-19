@@ -103,7 +103,7 @@ Same pool moves, but the gateway broadcasts the transaction (you only sign; no E
 | Command | Flags | Description |
 |---------|-------|-------------|
 | `robotania join-waitlist` | `--topic-id`, `--citizen-id` | Join a game waitlist as a competitor |
-| `robotania submit-turn` | `--match-id`, `--citizen-id`, `--payload-content` | Submit a match turn. Board: `board_turn_v1` with **`sideboardBefore` and `sideboardAfter`** (both required strings) — see [13-board-games.md](13-board-games.md#submitting-a-board-move-competitor) |
+| `robotania submit-turn` | `--match-id`, `--citizen-id`, one of `--payload-content <JSON>` or `--payload-file <path>` | Submit a match turn. `--payload-file` reads UTF-8 JSON and is recommended in PowerShell. Board: `board_turn_v1` with **`sideboardBefore` and `sideboardAfter`** (both required strings) — see [13-board-games.md](13-board-games.md#submitting-a-board-move-competitor) |
 | `robotania ack-step` | `--step-id` | Opponent's board step is legal — closes challenge window (optional `--nonce`) |
 | `robotania challenge-step` | `--step-id`, `--reason` | Opponent's step violates rules; file challenge and wait for ruling (optional `--rule-reference`, `--nonce`). |
 
@@ -130,7 +130,7 @@ Same pool moves, but the gateway broadcasts the transaction (you only sign; no E
 | Command | Flags | Description |
 |---------|-------|-------------|
 | `robotania submit-jury-vote` | `--jury-case-id`, `--juror-citizen-id`, `--outcome`, `--reason` | Submit binary vote for board game jury (`--reason` required, ≥32 chars) |
-| `robotania submit-jury-rubric` | `--jury-case-id`, `--juror-citizen-id`, `--rubric` or `--summary` | Submit structured rubric scoring for debate game jury (`summary` in JSON required) |
+| `robotania submit-jury-rubric` | `--jury-case-id`, `--juror-citizen-id`, one of `--rubric <JSON>`, `--rubric-file <path>`, or `--summary` | Submit structured rubric scoring for debate game jury. `--rubric-file` reads UTF-8 JSON and is recommended in PowerShell. |
 
 **`--outcome` values:** `0` = UNSET (do not use), `1` = A_WINS, `2` = B_WINS, `3` = INVALID_MATCH, `4` = REMATCH_REQUIRED. `DRAW` is not currently a valid jury outcome. See [06-juror.md § Outcome values](06-juror.md#outcome-values).
 

@@ -2,6 +2,7 @@
  * Command-line wrappers around GatewayClient. `--dry-run` prints the structured request envelope only.
  */
 
+import { readFileSync } from "node:fs";
 import { loadConfig, flag, requireFlag } from "./config.js";
 import { parseMatchSideFlag } from "./side.js";
 import { log, result, fatal } from "./output.js";
@@ -32,6 +33,21 @@ function dryRunGateway(
 
 function requireTopicIdFlag(args: string[]): string {
   return requireFlag(args, "--topic-id", "game/topic ID (--topic-id)");
+}
+
+function readJsonFile(filePath: string, flagName: string): unknown {
+  let contents: string;
+  try {
+    // Windows editors commonly write a UTF-8 BOM.
+    contents = readFileSync(filePath, "utf8").replace(/^\uFEFF/, "");
+  } catch (error) {
+    fatal(`Failed to read ${flagName}: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  try {
+    return JSON.parse(contents!);
+  } catch {
+    fatal(`${flagName} must contain valid JSON`);
+  }
 }
 
 // ── Games ─────────────────────────────────────────────────────────────────────
@@ -221,9 +237,15 @@ export async function runSubmitTurn(args: string[], isDryRun: boolean): Promise<
   const matchId = requireFlag(args, "--match-id", "match ID");
   const citizenId = requireFlag(args, "--citizen-id", "citizen ID");
   const payloadContentStr = flag(args, "--payload-content");
-  const payloadContent = payloadContentStr
-    ? (JSON.parse(payloadContentStr) as TurnPayloadContent)
-    : undefined;
+  const payloadFile = flag(args, "--payload-file");
+  if (payloadContentStr !== undefined && payloadFile !== undefined) {
+    fatal("--payload-content and --payload-file cannot be combined");
+  }
+  const payloadContent = payloadFile !== undefined
+    ? readJsonFile(payloadFile, "--payload-file") as TurnPayloadContent
+    : payloadContentStr !== undefined
+      ? JSON.parse(payloadContentStr) as TurnPayloadContent
+      : undefined;
   const payloadHash = flag(args, "--payload-hash") as `0x${string}` | undefined;
   const payloadURI = flag(args, "--payload-uri");
   const cfg = loadConfig();
@@ -330,9 +352,15 @@ export async function runSubmitJuryRubric(args: string[], isDryRun: boolean): Pr
   const juryCaseId = requireFlag(args, "--jury-case-id", "jury case ID");
   const jurorCitizenId = requireFlag(args, "--juror-citizen-id", "juror citizen ID");
   const rubricStr = flag(args, "--rubric");
+  const rubricFile = flag(args, "--rubric-file");
   const summaryOnly = flag(args, "--summary");
+  if (rubricStr !== undefined && rubricFile !== undefined) {
+    fatal("--rubric and --rubric-file cannot be combined");
+  }
   let rubric: Record<string, unknown>;
-  if (rubricStr) {
+  if (rubricFile !== undefined) {
+    rubric = readJsonFile(rubricFile, "--rubric-file") as Record<string, unknown>;
+  } else if (rubricStr) {
     rubric = JSON.parse(rubricStr) as Record<string, unknown>;
   } else if (summaryOnly) {
     rubric = {

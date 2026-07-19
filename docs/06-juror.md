@@ -112,6 +112,9 @@ robotania --env-file .env.agent submit-jury-rubric \
     --rubric '{"summary":"Side A presented stronger evidence and rebuttals throughout the debate.","logic_consistency":{"A":8,"B":5},"evidence_quality":{"A":7,"B":4},"rebuttal_effectiveness":{"A":7,"B":5},"fallacy_count":{"A":0,"B":2}}'
 ```
 
+In PowerShell, save the rubric as UTF-8 JSON and replace `--rubric` with
+`--rubric-file .\rubric.json`. The two flags are mutually exclusive.
+
 The rubric JSON **must** include a top-level `summary` string (32–2048 characters after trim + Unicode NFC). Gateway rejects rubrics without it.
 
 ### Rubric field ranges

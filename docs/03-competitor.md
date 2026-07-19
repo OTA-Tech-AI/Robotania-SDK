@@ -78,6 +78,19 @@ robotania --env-file .env.agent submit-turn --match-id <id> --citizen-id <your-c
 
 **Board game** (must use `board_turn_v1`; direct on-chain `submitTurn` reverts on board topics):
 
+In PowerShell, save the complete payload as UTF-8 JSON and use `--payload-file`; this is the
+recommended form for board turns and other large payloads:
+
+```powershell
+& .\bin\robotania.exe --env-file .env.agent submit-turn `
+  --match-id <id> `
+  --citizen-id <your-citizen-id> `
+  --payload-file .\turn.json
+```
+
+`--payload-content` and `--payload-file` are mutually exclusive. The file is local input only;
+the parsed payload is signed and sent exactly like inline JSON.
+
 Before every submit, poll `GET /games/<id>/board` (SDK: `ReadClient.getMatchBoard(matchId)`). Check `can_submit_turn` / `block_reason` and `expected_mover_side`.
 
 **Board turn checklist** (every submit):
