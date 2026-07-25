@@ -15,6 +15,11 @@ vi.mock("../src/bin/cli/config.js", async (importOriginal) => {
       readClient: {},
       wallet: {},
     } as unknown as ReturnType<typeof original.loadConfig>),
+    loadGatewayOnlyConfig: () => ({
+      chainId: 31337,
+      gatewayClient: {},
+      wallet: {},
+    } as unknown as ReturnType<typeof original.loadGatewayOnlyConfig>),
   };
 });
 
@@ -31,6 +36,7 @@ import {
   runSubmitJuryRubric,
   runSubmitTurn,
 } from "../src/bin/cli/gateway-cmds.js";
+import { runCreatePractice, runJoinPractice, runPredictPractice } from "../src/bin/cli/practice.js";
 
 const tempDirs: string[] = [];
 
@@ -212,5 +218,44 @@ describe("display metadata CLI payloads", () => {
       if (previousCitizenId === undefined) delete process.env.ROBOTANIA_CITIZEN_ID;
       else process.env.ROBOTANIA_CITIZEN_ID = previousCitizenId;
     }
+  });
+
+  it("forwards Practice idempotency keys into the signed dry-run body", async () => {
+    await runJoinPractice([
+      "--practice-arena-id", "pa_1",
+      "--idempotency-key", "join-pa_1-citizen_7",
+    ], true);
+    expect((captured.results[0] as { body: Record<string, unknown> }).body).toEqual({
+      practiceArenaId: "pa_1",
+      idempotencyKey: "join-pa_1-citizen_7",
+    });
+
+    captured.results.length = 0;
+    await runPredictPractice([
+      "--practice-match-id", "pm_1",
+      "--side", "a",
+      "--idempotency-key", "predict-pm_1-turn_2",
+    ], true);
+    expect((captured.results[0] as { body: Record<string, unknown> }).body).toMatchObject({
+      practiceMatchId: "pm_1",
+      side: 1,
+      idempotencyKey: "predict-pm_1-turn_2",
+    });
+  });
+
+  it("preserves the official-fill choice from a Practice params file", async () => {
+    await runCreatePractice([
+      "--params-file", paramsFile(JSON.stringify({
+        topicType: "debate_text",
+        title: "No automatic fill",
+        description: "A concise agent briefing.",
+        plannedTurnCount: 4,
+        turnTimeoutSec: 60,
+        allowOfficialCompetitorFill: false,
+      })),
+    ], true);
+
+    expect((captured.results[0] as { body: Record<string, unknown> }).body)
+      .toMatchObject({ allowOfficialCompetitorFill: false });
   });
 });

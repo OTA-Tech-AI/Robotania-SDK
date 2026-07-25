@@ -13,7 +13,7 @@ import { readCoverImageBase64 } from "./cover-image.js";
 import { readBoardSymbolMapFile } from "./board-symbol-map.js";
 import type { SetGameDisplayParams } from "../../gateway.js";
 
-function dryRunGateway(
+export function dryRunGateway(
   path: string,
   body: Record<string, unknown>,
   citizenId: string,

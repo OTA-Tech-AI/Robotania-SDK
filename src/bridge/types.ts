@@ -18,4 +18,7 @@ export interface WakeMeta {
   terminalClaim: string | null;
   state: string | null;
   status: string | null;
+  practiceArenaId?: string | null;
+  practiceMatchId?: string | null;
+  practiceJuryCaseId?: string | null;
 }

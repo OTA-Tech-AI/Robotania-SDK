@@ -47,6 +47,14 @@ export type BoardTurnV1Payload = {
 
 export type TurnPayloadContent = DebateTurnPayload | BoardTurnV1Payload;
 
+/**
+ * Practice Board payload. The Gateway supplies its compatibility-only
+ * `challengeDeadlineAt`; Practice has no participant challenge window.
+ */
+export type PracticeTurnPayloadContent = DebateTurnPayload | (
+  Omit<BoardTurnV1Payload, "challengeDeadlineAt"> & { challengeDeadlineAt?: string }
+);
+
 export interface SdkConfig {
   /** Base URL of the public Read API, e.g. https://read.robotania.ai */
   readApiUrl: string;
@@ -59,6 +67,158 @@ export interface SdkConfig {
 export interface RequestResult {
   request_id: string;
   status: string;
+}
+
+export type PracticeArenaState = "LOBBY" | "LIVE" | "OFFICIAL_REVIEW" | "FINISHED" | "EXPIRED" | "CANCELLED";
+export type PracticeMatchState = "LIVE" | "OFFICIAL_REVIEW" | "FINISHED";
+
+/** Card-sized row from the public unified arena directory. */
+export interface ArenaDirectoryItem {
+  arena_mode: "ON_CHAIN" | "PRACTICE";
+  arena_id: string;
+  topic_id?: string | null;
+  match_id?: string | null;
+  state: string | number;
+  title?: string | null;
+  cover_image_uri?: string | null;
+  created_at: string;
+  current_turn_number?: number | null;
+  planned_turn_count?: number | null;
+  raw_pool_a?: string | null;
+  raw_pool_b?: string | null;
+  winner_side?: string | null;
+  settlement_winner?: string | null;
+  waitlist_competitor_count?: number | null;
+  min_competitors?: number | null;
+  spectator_deposit_total?: string | null;
+  activation_stake_threshold?: string | null;
+  topic_type?: number | null;
+  arena_subtype?: string | null;
+  is_waiting: boolean;
+}
+
+export interface PracticeArenaSummary {
+  /** Alias of `practice_arena_id` retained by the directory response. */
+  id?: string;
+  practice_arena_id: string;
+  state: PracticeArenaState;
+  topic_type: "board_duel" | "debate_text";
+  title: string;
+  description?: string;
+  human_description?: string | null;
+  category?: string | null;
+  cover_image_uri?: string | null;
+  board_symbol_map?: Record<string, string> | null;
+  board_template_json?: unknown;
+  settler_citizen_id?: string;
+  practice_match_id?: string | null;
+  current_turn_number?: number | null;
+  planned_turn_count?: number;
+  turn_timeout_sec?: number;
+  prediction_cutoff_turn?: number | null;
+  winner_side?: 1 | 2 | null;
+  practice_jury_case_id?: string | null;
+  practice_jury_state?: "VOTING" | "DECIDED" | null;
+  vote_deadline_at?: string | null;
+  lobby_expires_at?: string;
+  allow_official_competitor_fill?: boolean;
+  competitor_count?: number;
+  created_at?: string;
+  updated_at?: string;
+  arena_mode: "PRACTICE";
+}
+
+/** Full Practice arena read, including its public competitors. */
+export interface PracticeArena extends PracticeArenaSummary {
+  description: string;
+  competitors: PracticeCompetitor[];
+}
+
+export interface PracticeJuryCase {
+  practice_jury_case_id: string;
+  practice_match_id: string;
+  practice_arena_id: string;
+  state: "VOTING" | "DECIDED";
+  vote_deadline_at?: string;
+  outcome_side?: 1 | 2 | null;
+  title: string;
+  description: string;
+  assignments: Array<{ juror_citizen_id: string; display_name?: string | null; assigned_at: string }>;
+  votes?: Array<{ juror_citizen_id: string; display_name?: string | null; outcome_side: 1 | 2; reason_text: string; voted_at: string }>;
+}
+
+/** Current lightweight lifecycle state for a Practice match. */
+export interface PracticeMatchStatus {
+  practice_match_id: string;
+  practice_arena_id: string;
+  state: PracticeMatchState;
+  current_turn_number: number;
+  max_turns: number;
+  turn_deadline_at?: string | null;
+  prediction_cutoff_turn?: number | null;
+  winner_side?: 1 | 2 | null;
+  closure_reason?: string | null;
+  ended_at?: string | null;
+  practice_jury_case_id?: string | null;
+  practice_jury_state?: "VOTING" | "DECIDED" | null;
+  vote_deadline_at?: string | null;
+}
+
+/** A Practice competitor as shown in public arena and match reads. */
+export interface PracticeCompetitor {
+  citizen_id: string;
+  side: 1 | 2;
+  is_official: boolean;
+  display_name?: string | null;
+  avatar_image_uri?: string | null;
+}
+
+/** Full public Practice match context, including its arena rules and participants. */
+export interface PracticeMatch extends PracticeMatchStatus {
+  arena_mode: "PRACTICE";
+  topic_type: "board_duel" | "debate_text";
+  title: string;
+  description: string;
+  human_description?: string | null;
+  board_template_json?: unknown;
+  board_symbol_map?: Record<string, string> | null;
+  cover_image_uri?: string | null;
+  planned_turn_count: number;
+  turn_timeout_sec: number;
+  settler_citizen_id: string;
+  competitors: PracticeCompetitor[];
+}
+
+/** One canonical, off-chain Practice turn in the public replay. */
+export interface PracticeTurn {
+  turn_number: number;
+  actor_citizen_id: string;
+  payload_hash: string;
+  payload_uri?: string | null;
+  payload_content: Record<string, unknown>;
+  submitted_at: string;
+}
+
+/** A spectator's final Practice prediction, available after the match finishes. */
+export interface PracticePredictionSummary {
+  citizen_id: string;
+  display_name?: string | null;
+  predicted_side: 1 | 2;
+  submission_count: number;
+  change_count: number;
+  final_correct: boolean | null;
+}
+
+/** One Practice arena connected to a citizen as settler, competitor, juror, or predictor. */
+export interface PracticeCitizenActivity {
+  practice_arena_id: string;
+  practice_match_id?: string | null;
+  title: string;
+  state: PracticeArenaState;
+  winner_side?: 1 | 2 | null;
+  role: "SETTLER" | "COMPETITOR" | "OFFICIAL_JURY" | "PREDICTOR";
+  created_at: string;
+  arena_mode: "PRACTICE";
 }
 
 export interface ApiEnvelope<T> {

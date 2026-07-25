@@ -21,6 +21,15 @@ import type {
   MatchEconomyQuote,
   MatchEconomyQuoteInput,
   MatchEconomyPreviewCredit,
+  ArenaDirectoryItem,
+  PracticeArenaSummary,
+  PracticeArena,
+  PracticeJuryCase,
+  PracticeMatchStatus,
+  PracticeMatch,
+  PracticeTurn,
+  PracticePredictionSummary,
+  PracticeCitizenActivity,
 } from "./types.js";
 
 export interface ReadClientOptions {
@@ -168,6 +177,68 @@ export class ReadClient {
    */
   async getGame(topicId: string): Promise<GameSummary & { settlers?: unknown[]; waitlist?: unknown[] }> {
     return this.get<GameSummary & { settlers?: unknown[]; waitlist?: unknown[] }>(this.pub(`/topics/${topicId}`));
+  }
+
+  /**
+   * Unified card directory for verified and Practice Arenas. Every row declares
+   * `arena_mode`; use the mode-specific detail reads after selecting a row.
+   */
+  async listArenas(params?: {
+    page?: number;
+    page_size?: number;
+    q?: string;
+    state?: "waitlist" | "pending_start" | "live" | "finalized" | "jury_review" | "expired";
+  }): Promise<ArenaDirectoryItem[]> {
+    const qs = toQs(params as Record<string, unknown>);
+    const res = await this.getEnvelope<ArenaDirectoryItem[]>(this.pub(`/arenas${qs}`));
+    return res.data;
+  }
+
+  /** Read-only Practice Arena directory. Practice never creates a transaction or uses USDC. */
+  async listPracticeArenas(params?: { page?: number; page_size?: number; q?: string; state?: string }): Promise<PracticeArenaSummary[]> {
+    const qs = toQs(params as Record<string, unknown>);
+    const res = await this.getEnvelope<PracticeArenaSummary[]>(this.pub(`/practice/arenas${qs}`));
+    return res.data;
+  }
+
+  async getPracticeArena(practiceArenaId: string): Promise<PracticeArena> {
+    return this.get<PracticeArena>(this.pub(`/practice/arenas/${encodeURIComponent(practiceArenaId)}`));
+  }
+
+  async getPracticeMatch(practiceMatchId: string): Promise<PracticeMatch> {
+    return this.get<PracticeMatch>(this.pub(`/practice/matches/${encodeURIComponent(practiceMatchId)}`));
+  }
+
+  async listPracticeTimeline(practiceMatchId: string, params?: { page?: number; page_size?: number; order?: "asc" | "desc" }): Promise<PracticeTurn[]> {
+    const qs = toQs(params as Record<string, unknown>);
+    const res = await this.getEnvelope<PracticeTurn[]>(this.pub(`/practice/matches/${encodeURIComponent(practiceMatchId)}/timeline${qs}`));
+    return res.data;
+  }
+
+  /** Most recent Practice turn, or `null` before either competitor has acted. */
+  async getLatestPracticeTurn(practiceMatchId: string): Promise<PracticeTurn | null> {
+    return this.get<PracticeTurn | null>(this.pub(`/practice/matches/${encodeURIComponent(practiceMatchId)}/latest-turn`));
+  }
+
+  async getPracticeMatchStatus(practiceMatchId: string): Promise<PracticeMatchStatus> {
+    return this.get<PracticeMatchStatus>(this.pub(`/practice/matches/${encodeURIComponent(practiceMatchId)}/status`));
+  }
+
+  /** Final spectator predictions. This endpoint returns 403 until the match is finished. */
+  async listPracticePredictions(practiceMatchId: string, params?: { page?: number; page_size?: number }): Promise<PracticePredictionSummary[]> {
+    const qs = toQs(params as Record<string, unknown>);
+    const res = await this.getEnvelope<PracticePredictionSummary[]>(this.pub(`/practice/matches/${encodeURIComponent(practiceMatchId)}/predictions${qs}`));
+    return res.data;
+  }
+
+  async getPracticeJuryCase(practiceJuryCaseId: string): Promise<PracticeJuryCase> {
+    return this.get<PracticeJuryCase>(this.pub(`/practice/jury-cases/${encodeURIComponent(practiceJuryCaseId)}`));
+  }
+
+  async listCitizenPracticeActivity(citizenId: string, params?: { page?: number; page_size?: number }): Promise<PracticeCitizenActivity[]> {
+    const qs = toQs(params as Record<string, unknown>);
+    const res = await this.getEnvelope<PracticeCitizenActivity[]>(this.pub(`/practice/citizens/${encodeURIComponent(citizenId)}${qs}`));
+    return res.data;
   }
 
   async getGameWaitlist(topicId: string): Promise<unknown[]> {

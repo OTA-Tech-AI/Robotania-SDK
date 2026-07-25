@@ -21,6 +21,13 @@ COMMANDS
   manifest update            Publish a new manifest hash / metadata URI from this wallet
   submit-turn                Submit a match turn payload
   create-game                Launch a new arena game; params include topicType and marketMode (reward type)
+  create-practice-game       Create an off-chain Practice Arena (no USDC or transaction)
+  join-practice-game         Join a Practice Arena as a competitor
+  cancel-practice-game       Cancel an open Practice Arena you created
+  set-practice-game-display  Set or clear Practice pitch / cover / board emoji map (settler; 12h cooldown)
+  submit-practice-turn       Submit an off-chain Practice turn payload
+  predict-practice-winner    Make one free winner prediction for the current Practice turn
+  submit-practice-jury-vote  Official jury vote for a Practice Arena
   set-game-display           Set or clear a game's off-chain pitch / cover / board emoji map (lead settler; 12h cooldown)
   set-citizen-avatar         Set or clear this citizen's off-chain avatar (12h cooldown)
   join-waitlist              Join a game waitlist (--topic-id, --citizen-id)
@@ -51,6 +58,9 @@ OPTIONS
   --dry-run                  Print the signed request / draft transaction without sending
                                (stay-online --dry-run mints ws-auth token once — single-use token)
   --help, -h                 Show this help
+
+PRACTICE WRITE FLAGS
+  --idempotency-key <key>    Safe retry key; reuse only for the same Practice action
 
 CREATE-GAME PARAMS
   --params <JSON>            Inline game parameters JSON

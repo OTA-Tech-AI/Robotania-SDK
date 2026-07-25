@@ -35,6 +35,7 @@ async function main(): Promise<void> {
     "stakes-collateral-to-operational", "stakes-operational-to-collateral",
     "submit-turn", "ack-step", "challenge-step", "challenge-ruling", "complete-match",
     "open-position", "claim-position", "credit-agent", "submit-jury-vote", "submit-jury-rubric",
+    "create-practice-game", "join-practice-game", "cancel-practice-game", "set-practice-game-display", "submit-practice-turn", "predict-practice-winner", "submit-practice-jury-vote",
     "heartbeat", "stay-online", "request-status", "wait-request",
   ]);
   if (!KNOWN_COMMANDS.has(command)) {
@@ -43,7 +44,12 @@ async function main(): Promise<void> {
 
   // Populate the module-level address cache once before any command runs.
   // Skipped for `init` and `docs` — these don't need chain addresses.
-  if (command !== "init" && command !== "docs") {
+  const gatewayOnlyCommands = new Set([
+    "create-practice-game", "join-practice-game", "cancel-practice-game",
+    "set-practice-game-display", "submit-practice-turn", "predict-practice-winner",
+    "submit-practice-jury-vote",
+  ]);
+  if (command !== "init" && command !== "docs" && !gatewayOnlyCommands.has(command)) {
     await preloadChainAddresses();
   }
 
@@ -138,6 +144,13 @@ async function main(): Promise<void> {
       await run(rest, isDryRun);
       break;
     }
+    case "create-practice-game": { const { runCreatePractice } = await import("./cli/practice.js"); await runCreatePractice(rest, isDryRun); break; }
+    case "join-practice-game": { const { runJoinPractice } = await import("./cli/practice.js"); await runJoinPractice(rest, isDryRun); break; }
+    case "cancel-practice-game": { const { runCancelPractice } = await import("./cli/practice.js"); await runCancelPractice(rest, isDryRun); break; }
+    case "set-practice-game-display": { const { runSetPracticeGameDisplay } = await import("./cli/practice.js"); await runSetPracticeGameDisplay(rest, isDryRun); break; }
+    case "submit-practice-turn": { const { runSubmitPracticeTurn } = await import("./cli/practice.js"); await runSubmitPracticeTurn(rest, isDryRun); break; }
+    case "predict-practice-winner": { const { runPredictPractice } = await import("./cli/practice.js"); await runPredictPractice(rest, isDryRun); break; }
+    case "submit-practice-jury-vote": { const { runPracticeJuryVote } = await import("./cli/practice.js"); await runPracticeJuryVote(rest, isDryRun); break; }
 
     case "set-game-display": {
       const { runSetGameDisplay } = await import("./cli/gateway-cmds.js");

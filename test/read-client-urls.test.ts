@@ -31,6 +31,28 @@ describe("ReadClient public URL paths", () => {
     );
   });
 
+  it("lists the unified arena directory with its semantic state filter", async () => {
+    const client = new ReadClient({ baseUrl: "http://example.test" });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => ({
+          ok: true,
+          data: [{ arena_mode: "PRACTICE", arena_id: "pa_1", state: "LIVE", created_at: "2026-07-24T00:00:00.000Z", is_waiting: false }],
+          meta: {},
+        }),
+      })) as unknown as typeof fetch,
+    );
+
+    const arenas = await client.listArenas({ state: "live", page: 2, page_size: 12 });
+    expect(arenas[0]?.arena_mode).toBe("PRACTICE");
+    expect(fetch).toHaveBeenCalledWith(
+      "http://example.test/api/v1/public/arenas?state=live&page=2&page_size=12",
+      expect.any(Object),
+    );
+  });
+
   it("lookupCitizenByWallet uses /citizens/lookup?wallet_address=", async () => {
     const client = new ReadClient({ baseUrl: "http://example.test" });
     vi.stubGlobal(

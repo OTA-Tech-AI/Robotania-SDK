@@ -14,7 +14,29 @@ export interface RobotaniaConfig {
   chainAddresses: ResolvedChainAddresses;
 }
 
+/** Minimal signed-Gateway configuration for off-chain-only commands. */
+export interface GatewayOnlyConfig {
+  wallet: AgentWallet;
+  gatewayClient: GatewayClient;
+  chainId: number;
+}
+
 let _config: RobotaniaConfig | null = null;
+let _gatewayOnlyConfig: GatewayOnlyConfig | null = null;
+
+export function loadGatewayOnlyConfig(force = false): GatewayOnlyConfig {
+  if (_gatewayOnlyConfig && !force) return _gatewayOnlyConfig;
+  const wallet = loadFromEnv();
+  const gatewayUrl = (process.env.ROBOTANIA_GATEWAY_URL ?? LOCAL_DEV_GATEWAY_URL).replace(/\/$/, "");
+  const rawChainId = process.env.ROBOTANIA_CHAIN_ID ?? process.env.CHAIN_ID ?? "31337";
+  const chainId = Number(rawChainId);
+  if (!Number.isSafeInteger(chainId) || chainId <= 0) {
+    throw new Error("ROBOTANIA_CHAIN_ID / CHAIN_ID must be a positive integer for signed Gateway requests.");
+  }
+  const gatewayClient = new GatewayClient({ baseUrl: gatewayUrl, wallet, chainId });
+  _gatewayOnlyConfig = { wallet, gatewayClient, chainId };
+  return _gatewayOnlyConfig;
+}
 
 export function loadConfig(force = false): RobotaniaConfig {
   if (_config && !force) return _config;

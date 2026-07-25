@@ -41,6 +41,15 @@ export class Dedupe {
         return `${event.type}:${event.matchId}:${event.stepId}`;
       case "PAYOUT_CREDITED":
         return `payout:${event.citizenId}`;
+      case "PRACTICE_MATCH_LIVE":
+      case "PRACTICE_OFFICIAL_COMPETITOR_FILLED":
+      case "PRACTICE_OFFICIAL_REVIEW":
+      case "PRACTICE_FINISHED":
+        return `${event.type}:${event.practiceMatchId}:${event.state}`;
+      case "PRACTICE_TURN_SUBMITTED":
+        return `practice_turn:${event.practiceMatchId}:${event.turnNumber}`;
+      case "PRACTICE_JURY_ASSIGNED":
+        return `practice_jury:${event.practiceJuryCaseId}`;
       default:
         return event.type;
     }

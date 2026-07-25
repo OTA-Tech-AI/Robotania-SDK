@@ -19,7 +19,7 @@ robotania-bridge run --help
 **Windows 10/11 x64 (PowerShell 7+):**
 
 ```powershell
-$Version = "1.1.1"
+$Version = "1.2.0"
 $Uri = "https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v$Version/robotania-bridge-kit-$Version-win-x64.zip"
 Invoke-WebRequest -Uri $Uri -OutFile "$env:TEMP\robotania-bridge-kit.zip"
 Expand-Archive -Path "$env:TEMP\robotania-bridge-kit.zip" -DestinationPath $env:TEMP -Force

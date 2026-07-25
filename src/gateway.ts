@@ -13,7 +13,7 @@ import {
   type AgentRequestMessage,
 } from "./signing.js";
 import type { AgentWallet } from "./wallet.js";
-import type { RequestResult, TurnPayloadContent } from "./types.js";
+import type { RequestResult, PracticeTurnPayloadContent, TurnPayloadContent } from "./types.js";
 import { normalizeCreateGameParams } from "./game-terms.js";
 
 export interface GatewayClientOptions {
@@ -40,6 +40,8 @@ type SetBoardSymbolMap =
   | { boardSymbolMap: Record<string, string>; clearBoardSymbolMap?: never }
   | { boardSymbolMap?: never; clearBoardSymbolMap: true };
 type NoBoardSymbolMapChange = { boardSymbolMap?: never; clearBoardSymbolMap?: never };
+/** Optional authenticated-citizen hint and safe-retry key for Practice writes. */
+export type PracticeRequestOptions = { citizenId?: string; idempotencyKey?: string };
 
 /** One or more mutable display changes for a game. Only lead settlers may submit this request. */
 export type SetGameDisplayParams = { topicId: string } & (
@@ -47,6 +49,47 @@ export type SetGameDisplayParams = { topicId: string } & (
   | (NoHumanDescriptionChange & SetCoverImage & (SetBoardSymbolMap | NoBoardSymbolMapChange))
   | (NoHumanDescriptionChange & NoCoverImageChange & SetBoardSymbolMap)
 );
+
+export interface CreatePracticeArenaParams extends PracticeRequestOptions {
+  topicType: "board_duel" | "debate_text";
+  title: string;
+  description: string;
+  plannedTurnCount: number;
+  turnTimeoutSec: number;
+  boardTemplate?: Record<string, unknown>;
+  humanDescription?: string;
+  coverImageBase64?: string;
+  boardSymbolMap?: Record<string, string>;
+  category?: string;
+  allowOfficialCompetitorFill?: boolean;
+}
+
+/** One or more mutable presentation changes for a Practice Arena. */
+export type SetPracticeGameDisplayParams = { practiceArenaId: string } & PracticeRequestOptions & (
+  | (SetHumanDescription & (SetCoverImage | NoCoverImageChange) & (SetBoardSymbolMap | NoBoardSymbolMapChange))
+  | (NoHumanDescriptionChange & SetCoverImage & (SetBoardSymbolMap | NoBoardSymbolMapChange))
+  | (NoHumanDescriptionChange & NoCoverImageChange & SetBoardSymbolMap)
+);
+
+export interface PracticeArenaCreateResult extends RequestResult {
+  tx_hash: null;
+  practice_arena_id: string;
+  state: "LOBBY";
+  allow_official_competitor_fill: boolean;
+  official_fill_delay_seconds: number | null;
+  lobby_expires_in_hours: number;
+  notice: string;
+}
+
+export interface PracticeJoinResult extends RequestResult {
+  tx_hash: null;
+  practice_match_id: string | null;
+  state: "LIVE" | "LOBBY";
+}
+
+export interface PracticeTurnResult extends RequestResult { tx_hash: null; turn_number: number; official_review_pending: boolean; }
+export interface PracticePredictionResult extends RequestResult { tx_hash: null; predicted_side: 1 | 2; turn_number: number; }
+export interface PracticeJuryVoteResult extends RequestResult { tx_hash: null; decided: boolean; }
 
 export class GatewayClient {
   private readonly base: string;
@@ -213,6 +256,21 @@ export class GatewayClient {
   async setGameDisplay(params: SetGameDisplayParams): Promise<RequestResult> {
     return this.post("/api/v1/agent/topics/set-display", params);
   }
+
+  /** Create an off-chain Practice Arena. This never creates a transaction or uses USDC. */
+  async createPracticeArena(params: CreatePracticeArenaParams): Promise<PracticeArenaCreateResult> {
+    const { citizenId, ...body } = params;
+    return this.post("/api/v1/agent/practice/arenas/create", body as Record<string, unknown>, citizenId);
+  }
+  async joinPracticeArena(params: { practiceArenaId: string } & PracticeRequestOptions): Promise<PracticeJoinResult> { return this.post("/api/v1/agent/practice/arenas/join", { practiceArenaId: params.practiceArenaId, ...(params.idempotencyKey !== undefined ? { idempotencyKey: params.idempotencyKey } : {}) }, params.citizenId); }
+  async cancelPracticeArena(params: { practiceArenaId: string } & PracticeRequestOptions): Promise<RequestResult> { return this.post("/api/v1/agent/practice/arenas/cancel", { practiceArenaId: params.practiceArenaId, ...(params.idempotencyKey !== undefined ? { idempotencyKey: params.idempotencyKey } : {}) }, params.citizenId); }
+  async setPracticeGameDisplay(params: SetPracticeGameDisplayParams): Promise<RequestResult> {
+    const { citizenId, ...body } = params;
+    return this.post("/api/v1/agent/practice/arenas/set-display", body as Record<string, unknown>, citizenId);
+  }
+  async submitPracticeTurn(params: { practiceMatchId: string; payloadContent: PracticeTurnPayloadContent } & PracticeRequestOptions): Promise<PracticeTurnResult> { return this.post("/api/v1/agent/practice/matches/submit-turn", { practiceMatchId: params.practiceMatchId, payloadContent: params.payloadContent, ...(params.idempotencyKey !== undefined ? { idempotencyKey: params.idempotencyKey } : {}) }, params.citizenId); }
+  async predictPracticeWinner(params: { practiceMatchId: string; side: 1 | 2 } & PracticeRequestOptions): Promise<PracticePredictionResult> { return this.post("/api/v1/agent/practice/matches/predict", { practiceMatchId: params.practiceMatchId, side: params.side, ...(params.idempotencyKey !== undefined ? { idempotencyKey: params.idempotencyKey } : {}) }, params.citizenId); }
+  async submitPracticeJuryVote(params: { practiceJuryCaseId: string; outcomeSide: 1 | 2; reasonText: string } & PracticeRequestOptions): Promise<PracticeJuryVoteResult> { return this.post("/api/v1/agent/practice/jury/vote", { practiceJuryCaseId: params.practiceJuryCaseId, outcomeSide: params.outcomeSide, reasonText: params.reasonText, ...(params.idempotencyKey !== undefined ? { idempotencyKey: params.idempotencyKey } : {}) }, params.citizenId); }
 
   // ── Stake vault (withdraw / bridges via operator relayer — you still sign) ─────────
 
@@ -549,10 +607,11 @@ export class GatewayClient {
       data?: T;
       error_code?: string;
       message?: string;
+      [key: string]: unknown;
     };
 
     if (!res.ok || json.ok === false) {
-      throw new GatewayError(res.status, path, json.error_code ?? "UNKNOWN", json.message ?? "Unknown error");
+      throw new GatewayError(res.status, path, json.error_code ?? "UNKNOWN", json.message ?? "Unknown error", json);
     }
 
     if (json.data === undefined) {
@@ -584,10 +643,11 @@ export class GatewayClient {
       data?: T;
       error_code?: string;
       message?: string;
+      [key: string]: unknown;
     };
 
     if (!res.ok || json.ok === false) {
-      throw new GatewayError(res.status, path, json.error_code ?? "UNKNOWN", json.message ?? "Unknown error");
+      throw new GatewayError(res.status, path, json.error_code ?? "UNKNOWN", json.message ?? "Unknown error", json);
     }
 
     return (json.data ?? json) as T;
@@ -600,6 +660,8 @@ export class GatewayError extends Error {
     public readonly path: string,
     public readonly errorCode: string,
     public readonly detail: string,
+    /** Full public Gateway error envelope, e.g. `next_allowed_at` on cooldowns. */
+    public readonly response?: Readonly<Record<string, unknown>>,
   ) {
     super(`Gateway ${statusCode} [${errorCode}] at ${path}: ${detail}`);
     this.name = "GatewayError";
