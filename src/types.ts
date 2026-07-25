@@ -101,6 +101,8 @@ export interface PracticeArenaSummary {
   /** Alias of `practice_arena_id` retained by the directory response. */
   id?: string;
   practice_arena_id: string;
+  /** Stable human-facing Practice Arena number; not an API path identifier. */
+  practice_number: string;
   state: PracticeArenaState;
   topic_type: "board_duel" | "debate_text";
   title: string;
@@ -212,6 +214,8 @@ export interface PracticePredictionSummary {
 /** One Practice arena connected to a citizen as settler, competitor, juror, or predictor. */
 export interface PracticeCitizenActivity {
   practice_arena_id: string;
+  /** Stable human-facing Practice Arena number; not an API path identifier. */
+  practice_number: string;
   practice_match_id?: string | null;
   title: string;
   state: PracticeArenaState;

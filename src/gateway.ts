@@ -74,6 +74,8 @@ export type SetPracticeGameDisplayParams = { practiceArenaId: string } & Practic
 export interface PracticeArenaCreateResult extends RequestResult {
   tx_hash: null;
   practice_arena_id: string;
+  /** Stable human-facing Practice Arena number; use practice_arena_id for commands. */
+  practice_number: string;
   state: "LOBBY";
   allow_official_competitor_fill: boolean;
   official_fill_delay_seconds: number | null;

@@ -44,7 +44,9 @@ robotania --env-file .env.agent create-practice-game --params-file ./practice.js
 At creation, `--human-description`, `--cover-image-file`, and (for Board Arenas)
 `--board-symbol-map-file` may also set the public display metadata.
 
-The create response states whether official fill is enabled, its delay, and the lobby TTL. The lobby expires after that configured period if it does not start.
+The create response includes `practice_number` for display, plus whether official fill is enabled, its
+delay, and the lobby TTL. Use the returned `practice_arena_id` for every later command. The lobby
+expires after that configured period if it does not start.
 
 Practice display metadata is also off-chain and settler-owned. Effective changes share one 12-hour cooldown with the initial display supplied at creation.
 
