@@ -33,6 +33,14 @@ export type {
   GatewayClientOptions,
   SetCitizenAvatarParams,
   SetGameDisplayParams,
+  CreatePracticeArenaParams,
+  SetPracticeGameDisplayParams,
+  PracticeArenaCreateResult,
+  PracticeJoinResult,
+  PracticeTurnResult,
+  PracticePredictionResult,
+  PracticeJuryVoteResult,
+  PracticeRequestOptions,
 } from "./gateway.js";
 
 // ── Long-lived WS + heartbeat ───────────────────────────────────────────────────
@@ -93,6 +101,18 @@ export { wallet };
 export type {
   SdkConfig,
   RequestResult,
+  PracticeTurnPayloadContent,
+  ArenaDirectoryItem,
+  PracticeArenaState,
+  PracticeArenaSummary,
+  PracticeArena,
+  PracticeJuryCase,
+  PracticeMatchStatus,
+  PracticeCompetitor,
+  PracticeMatch,
+  PracticeTurn,
+  PracticePredictionSummary,
+  PracticeCitizenActivity,
   CitizenSummary,
   GameState,
   MatchState,

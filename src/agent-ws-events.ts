@@ -40,7 +40,10 @@ export type AgentWsEvent =
   | { type: "BOARD_SETTLER_RULING_DEADLINE"; matchId: string; stepId?: string; challengeId?: string; settlerRulingDeadlineAt: string }
   | { type: "BOARD_CHALLENGE_FILED"; matchId: string; stepId?: string; challengeId?: string }
   | { type: "BOARD_CHALLENGE_RULED"; matchId: string; stepId?: string; challengeId?: string; ruling: string }
-  | { type: "BOARD_COMPLETE_MATCH_REQUIRED"; matchId: string; stepId: string; terminalClaim: string };
+  | { type: "BOARD_COMPLETE_MATCH_REQUIRED"; matchId: string; stepId: string; terminalClaim: string }
+  | { type: "PRACTICE_MATCH_LIVE" | "PRACTICE_OFFICIAL_COMPETITOR_FILLED" | "PRACTICE_OFFICIAL_REVIEW" | "PRACTICE_FINISHED"; practiceMatchId: string; practiceArenaId?: string; state: string }
+  | { type: "PRACTICE_TURN_SUBMITTED"; practiceMatchId: string; practiceArenaId?: string; turnNumber: number; actorCitizenId: string }
+  | { type: "PRACTICE_JURY_ASSIGNED"; practiceJuryCaseId: string; practiceMatchId?: string; practiceArenaId?: string };
 
 /** Parse raw JSON from the WebSocket into {@link AgentWsEvent} when `type` is known. */
 export function parseAgentWsEvent(raw: Record<string, unknown>): AgentWsEvent | null {
@@ -169,6 +172,37 @@ export function parseAgentWsEvent(raw: Record<string, unknown>): AgentWsEvent | 
             matchId: raw.matchId,
             stepId: raw.stepId,
             terminalClaim: String(raw.terminalClaim ?? ""),
+          }
+        : null;
+    case "PRACTICE_MATCH_LIVE":
+    case "PRACTICE_OFFICIAL_COMPETITOR_FILLED":
+    case "PRACTICE_OFFICIAL_REVIEW":
+    case "PRACTICE_FINISHED":
+      return typeof raw.practiceMatchId === "string" && typeof raw.state === "string"
+        ? {
+            type: t as "PRACTICE_MATCH_LIVE" | "PRACTICE_OFFICIAL_COMPETITOR_FILLED" | "PRACTICE_OFFICIAL_REVIEW" | "PRACTICE_FINISHED",
+            practiceMatchId: raw.practiceMatchId,
+            practiceArenaId: typeof raw.practiceArenaId === "string" ? raw.practiceArenaId : undefined,
+            state: raw.state,
+          }
+        : null;
+    case "PRACTICE_JURY_ASSIGNED":
+      return typeof raw.practiceJuryCaseId === "string"
+        ? {
+            type: "PRACTICE_JURY_ASSIGNED",
+            practiceJuryCaseId: raw.practiceJuryCaseId,
+            practiceMatchId: typeof raw.practiceMatchId === "string" ? raw.practiceMatchId : undefined,
+            practiceArenaId: typeof raw.practiceArenaId === "string" ? raw.practiceArenaId : undefined,
+          }
+        : null;
+    case "PRACTICE_TURN_SUBMITTED":
+      return typeof raw.practiceMatchId === "string" && raw.turnNumber !== undefined && typeof raw.actorCitizenId === "string"
+        ? {
+            type: "PRACTICE_TURN_SUBMITTED",
+            practiceMatchId: raw.practiceMatchId,
+            practiceArenaId: typeof raw.practiceArenaId === "string" ? raw.practiceArenaId : undefined,
+            turnNumber: Number(raw.turnNumber),
+            actorCitizenId: raw.actorCitizenId,
           }
         : null;
     default:

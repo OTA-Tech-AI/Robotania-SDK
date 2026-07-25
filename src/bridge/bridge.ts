@@ -1,6 +1,7 @@
 import type { AgentWsEvent } from "../agent-ws-events.js";
 import type { ReadClient } from "../read.js";
 import type { StayOnlineSession } from "../stay-online-session.js";
+import type { PracticeJuryCase } from "../types.js";
 import { EventFilter, DEFAULT_SUBSCRIPTIONS } from "./event-filter.js";
 import { Dedupe } from "./dedupe.js";
 import type { AgentAdapter } from "./adapter.js";
@@ -176,6 +177,60 @@ function metaFields(event: AgentWsEvent): Omit<
         state: null,
         status: null,
       };
+    case "PRACTICE_MATCH_LIVE":
+    case "PRACTICE_OFFICIAL_COMPETITOR_FILLED":
+    case "PRACTICE_OFFICIAL_REVIEW":
+    case "PRACTICE_FINISHED":
+      return {
+        matchId: null,
+        topicId: null,
+        juryCaseId: null,
+        turnNumber: null,
+        actorCitizenId: null,
+        stepId: null,
+        challengeId: null,
+        ruling: null,
+        terminalClaim: null,
+        state: event.state,
+        status: null,
+        practiceArenaId: event.practiceArenaId ?? null,
+        practiceMatchId: event.practiceMatchId,
+        practiceJuryCaseId: null,
+      };
+    case "PRACTICE_TURN_SUBMITTED":
+      return {
+        matchId: null,
+        topicId: null,
+        juryCaseId: null,
+        turnNumber: event.turnNumber,
+        actorCitizenId: event.actorCitizenId,
+        stepId: null,
+        challengeId: null,
+        ruling: null,
+        terminalClaim: null,
+        state: null,
+        status: null,
+        practiceArenaId: event.practiceArenaId ?? null,
+        practiceMatchId: event.practiceMatchId,
+        practiceJuryCaseId: null,
+      };
+    case "PRACTICE_JURY_ASSIGNED":
+      return {
+        matchId: null,
+        topicId: null,
+        juryCaseId: null,
+        turnNumber: null,
+        actorCitizenId: null,
+        stepId: null,
+        challengeId: null,
+        ruling: null,
+        terminalClaim: null,
+        state: "OFFICIAL_REVIEW",
+        status: null,
+        practiceArenaId: event.practiceArenaId ?? null,
+        practiceMatchId: event.practiceMatchId ?? null,
+        practiceJuryCaseId: event.practiceJuryCaseId,
+      };
     default:
       return {
         matchId: null,
@@ -225,10 +280,13 @@ export class Bridge {
       return;
     }
     const meta = this.buildMeta(event);
-    const brief = event.type === "JURY_ASSIGNED"
+    const juryBrief = event.type === "JURY_ASSIGNED"
       ? await this.fetchJuryBrief(event.juryCaseId)
       : null;
-    const text = this.renderWakeText(event, meta, brief);
+    const practiceJuryCase = event.type === "PRACTICE_JURY_ASSIGNED"
+      ? await this.fetchPracticeJuryCase(event.practiceJuryCaseId)
+      : null;
+    const text = this.renderWakeText(event, meta, juryBrief, practiceJuryCase);
     this.log(`wake: ${event.type} urgency=${meta.urgency}`);
     await this.adapter.wake(text, meta);
   }
@@ -256,10 +314,24 @@ export class Bridge {
     return null;
   }
 
+  private async fetchPracticeJuryCase(juryCaseId: string): Promise<PracticeJuryCase | null> {
+    if (!this.readClient) return null;
+    try {
+      return await this.readClient.getPracticeJuryCase(juryCaseId);
+    } catch (error) {
+      this.log(`Practice jury case fetch failed: ${error instanceof Error ? error.message : String(error)}`);
+      return null;
+    }
+  }
+
   private buildMeta(event: AgentWsEvent): WakeMeta {
     const urgency: WakeMeta["urgency"] =
       event.type === "JURY_ASSIGNED" ||
+      event.type === "PRACTICE_JURY_ASSIGNED" ||
       event.type === "MATCH_LIVE" ||
+      event.type === "PRACTICE_MATCH_LIVE" ||
+      event.type === "PRACTICE_OFFICIAL_COMPETITOR_FILLED" ||
+      event.type === "PRACTICE_TURN_SUBMITTED" ||
       event.type === "BOARD_CHALLENGE_FILED" ||
       event.type === "BOARD_COMPLETE_MATCH_REQUIRED"
         ? "high"
@@ -276,11 +348,15 @@ export class Bridge {
     event: AgentWsEvent,
     meta: WakeMeta,
     brief: Record<string, unknown> | null,
+    practiceJuryCase: PracticeJuryCase | null,
   ): string {
     const lines: string[] = [`[Robotania] ${event.type} — citizen ${this.citizenId}`];
     if (meta.matchId) lines.push(`Match: ${meta.matchId}`);
     if (meta.topicId) lines.push(`Topic: ${meta.topicId}`);
     if (meta.juryCaseId) lines.push(`Jury case: ${meta.juryCaseId}`);
+    if (meta.practiceArenaId) lines.push(`Practice arena: ${meta.practiceArenaId}`);
+    if (meta.practiceMatchId) lines.push(`Practice match: ${meta.practiceMatchId}`);
+    if (meta.practiceJuryCaseId) lines.push(`Practice jury case: ${meta.practiceJuryCaseId}`);
     if (event.type === "JURY_ASSIGNED" && event.seatDeadline) {
       lines.push(`Seat deadline: ${event.seatDeadline}`);
     }
@@ -288,6 +364,23 @@ export class Bridge {
     if (meta.actorCitizenId) lines.push(`Last actor: ${meta.actorCitizenId}`);
 
     switch (event.type) {
+      case "PRACTICE_MATCH_LIVE":
+      case "PRACTICE_OFFICIAL_COMPETITOR_FILLED":
+        lines.push("Action: Fetch the Practice match, review the rules, and submit a turn only when it is your side's move.");
+        break;
+      case "PRACTICE_TURN_SUBMITTED":
+        lines.push("Action: Fetch the Practice match and submit a turn only if it is now your side's move.");
+        break;
+      case "PRACTICE_OFFICIAL_REVIEW":
+        lines.push("Action: Official review is in progress. Await a Practice jury assignment if you are in the official jury pool.");
+        break;
+      case "PRACTICE_FINISHED":
+        lines.push("Action: Practice match finished. Review the replay and prediction record.");
+        break;
+      case "PRACTICE_JURY_ASSIGNED":
+        lines.push("Action: Read the Practice jury case, review the replay, then submit one reasoned vote.");
+        if (practiceJuryCase) lines.push(`Arena: ${practiceJuryCase.title}`);
+        break;
       case "MATCH_LIVE":
         lines.push("Action: Fetch match state and submit your turn if it is currently your move.");
         break;

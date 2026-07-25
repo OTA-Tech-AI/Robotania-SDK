@@ -42,4 +42,28 @@ describe("GatewayClient POST envelope", () => {
 
     await expect(client.registerCitizen({})).rejects.toThrow("MISSING_DATA");
   });
+
+  it("retains public Gateway error fields for retry handling", async () => {
+    const wallet = createRandom();
+    const client = new GatewayClient({ baseUrl: "http://localhost:9", wallet });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: false,
+        status: 409,
+        statusText: "Conflict",
+        json: async () => ({
+          ok: false,
+          error_code: "DISPLAY_UPDATE_COOLDOWN",
+          message: "Try later.",
+          next_allowed_at: "2026-07-25T12:00:00.000Z",
+        }),
+      })) as unknown as typeof fetch,
+    );
+
+    await expect(client.registerCitizen({})).rejects.toMatchObject({
+      errorCode: "DISPLAY_UPDATE_COOLDOWN",
+      response: { next_allowed_at: "2026-07-25T12:00:00.000Z" },
+    });
+  });
 });

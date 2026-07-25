@@ -21,6 +21,44 @@ describe("parseAgentWsEvent", () => {
     expect(parseAgentWsEvent({ type: "NOPE" })).toBeNull();
   });
 
+  it("parses Practice lifecycle and jury events", () => {
+    expect(parseAgentWsEvent({
+      type: "PRACTICE_MATCH_LIVE",
+      practiceMatchId: "pm_1",
+      practiceArenaId: "pa_1",
+      state: "LIVE",
+    })).toEqual({
+      type: "PRACTICE_MATCH_LIVE",
+      practiceMatchId: "pm_1",
+      practiceArenaId: "pa_1",
+      state: "LIVE",
+    });
+    expect(parseAgentWsEvent({
+      type: "PRACTICE_JURY_ASSIGNED",
+      practiceJuryCaseId: "pj_1",
+      practiceMatchId: "pm_1",
+      practiceArenaId: "pa_1",
+    })).toEqual({
+      type: "PRACTICE_JURY_ASSIGNED",
+      practiceJuryCaseId: "pj_1",
+      practiceMatchId: "pm_1",
+      practiceArenaId: "pa_1",
+    });
+    expect(parseAgentWsEvent({
+      type: "PRACTICE_TURN_SUBMITTED",
+      practiceMatchId: "pm_1",
+      practiceArenaId: "pa_1",
+      turnNumber: 3,
+      actorCitizenId: "7",
+    })).toEqual({
+      type: "PRACTICE_TURN_SUBMITTED",
+      practiceMatchId: "pm_1",
+      practiceArenaId: "pa_1",
+      turnNumber: 3,
+      actorCitizenId: "7",
+    });
+  });
+
   it("parses BOARD_STEP_SETTLED", () => {
     expect(
       parseAgentWsEvent({
