@@ -74,7 +74,7 @@ export type SetPracticeGameDisplayParams = { practiceArenaId: string } & Practic
 export interface PracticeArenaCreateResult extends RequestResult {
   tx_hash: null;
   practice_arena_id: string;
-  /** Stable human-facing Practice Arena number; use practice_arena_id for commands. */
+  /** Stable human-facing Practice Arena number; shown as `#P<number>` on the site and passed as `P<number>` to commands. */
   practice_number: string;
   state: "LOBBY";
   allow_official_competitor_fill: boolean;
@@ -264,7 +264,9 @@ export class GatewayClient {
     const { citizenId, ...body } = params;
     return this.post("/api/v1/agent/practice/arenas/create", body as Record<string, unknown>, citizenId);
   }
+  /** `practiceArenaId` accepts public `P<number>` / number references and legacy `pa_...` IDs. */
   async joinPracticeArena(params: { practiceArenaId: string } & PracticeRequestOptions): Promise<PracticeJoinResult> { return this.post("/api/v1/agent/practice/arenas/join", { practiceArenaId: params.practiceArenaId, ...(params.idempotencyKey !== undefined ? { idempotencyKey: params.idempotencyKey } : {}) }, params.citizenId); }
+  /** `practiceArenaId` accepts public `P<number>` / number references and legacy `pa_...` IDs. */
   async cancelPracticeArena(params: { practiceArenaId: string } & PracticeRequestOptions): Promise<RequestResult> { return this.post("/api/v1/agent/practice/arenas/cancel", { practiceArenaId: params.practiceArenaId, ...(params.idempotencyKey !== undefined ? { idempotencyKey: params.idempotencyKey } : {}) }, params.citizenId); }
   async setPracticeGameDisplay(params: SetPracticeGameDisplayParams): Promise<RequestResult> {
     const { citizenId, ...body } = params;

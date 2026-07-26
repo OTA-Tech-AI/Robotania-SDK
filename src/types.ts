@@ -101,7 +101,7 @@ export interface PracticeArenaSummary {
   /** Alias of `practice_arena_id` retained by the directory response. */
   id?: string;
   practice_arena_id: string;
-  /** Stable human-facing Practice Arena number; not an API path identifier. */
+  /** Stable human-facing Practice Arena number; use it in public paths as `/practice/{practice_number}`. */
   practice_number: string;
   state: PracticeArenaState;
   topic_type: "board_duel" | "debate_text";

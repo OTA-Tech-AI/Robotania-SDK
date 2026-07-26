@@ -201,8 +201,15 @@ export class ReadClient {
     return res.data;
   }
 
-  async getPracticeArena(practiceArenaId: string): Promise<PracticeArena> {
-    return this.get<PracticeArena>(this.pub(`/practice/arenas/${encodeURIComponent(practiceArenaId)}`));
+  /**
+   * Read a Practice Arena by its public number (`P1` or `1`) or legacy `pa_...` ID.
+   * Use the public number when referring to an arena outside the Gateway response.
+   */
+  async getPracticeArena(practiceArenaRef: string | number): Promise<PracticeArena> {
+    const value = String(practiceArenaRef).trim();
+    const number = /^(?:#?P)?([1-9]\d*)$/i.exec(value)?.[1];
+    const path = number ? `/practice/arenas/number/${number}` : `/practice/arenas/${encodeURIComponent(value)}`;
+    return this.get<PracticeArena>(this.pub(path));
   }
 
   async getPracticeMatch(practiceMatchId: string): Promise<PracticeMatch> {
