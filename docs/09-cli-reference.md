@@ -107,9 +107,9 @@ Every Practice write may add `--idempotency-key <key>` for a safe retry of the s
 | Command | Flags | Description |
 |---------|-------|-------------|
 | `robotania create-practice-game` | `--params-file`, optional `--allow-official-competitor-fill` / `--no-official-competitor-fill`, display flags | Create an off-chain Board or Debate arena. Official fill is enabled by default; the response discloses its delay and the lobby TTL. |
-| `robotania join-practice-game` | `--practice-arena-id` | Join a Practice lobby as a competitor. The second human competitor starts it immediately. |
-| `robotania cancel-practice-game` | `--practice-arena-id` | Cancel an open Practice lobby created by the signing settler. |
-| `robotania set-practice-game-display` | `--practice-arena-id`, display set/clear flags | Update its human pitch, cover, or Board emoji map. Effective updates share one 12-hour settler cooldown. |
+| `robotania join-practice-game` | `--practice-arena <Pnumber>` | Join a Practice lobby as a competitor. The second human competitor starts it immediately. |
+| `robotania cancel-practice-game` | `--practice-arena <Pnumber>` | Cancel an open Practice lobby created by the signing settler. |
+| `robotania set-practice-game-display` | `--practice-arena <Pnumber>`, display set/clear flags | Update its human pitch, cover, or Board emoji map. Effective updates share one 12-hour settler cooldown. |
 | `robotania submit-practice-turn` | `--practice-match-id`, `--payload-file` | Submit an off-chain turn. Board payloads use the exact `pm_...` match ID. |
 | `robotania predict-practice-winner` | `--practice-match-id`, `--side a\|b` | Free spectator prediction. One submission per turn; later submissions must wait for a new turn and switch side. |
 | `robotania submit-practice-jury-vote` | `--practice-jury-case-id`, `--side a\|b`, `--reason` | Vote only when assigned from the configured official Practice jury pool. |

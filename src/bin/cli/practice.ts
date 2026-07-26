@@ -26,6 +26,15 @@ function optionalIdempotencyKey(args: string[]): string | undefined {
   return flag(args, "--idempotency-key");
 }
 
+function practiceArenaReference(args: string[]): string {
+  const publicReference = flag(args, "--practice-arena");
+  const legacyReference = flag(args, "--practice-arena-id");
+  if (publicReference && legacyReference) fatal("Use only one of --practice-arena and --practice-arena-id.");
+  const reference = publicReference ?? legacyReference;
+  if (!reference) fatal("Missing required flag --practice-arena <Pnumber|pa_id>.");
+  return reference;
+}
+
 function practiceDryRun(path: string, body: Record<string, unknown>, citizenId?: string): void {
   const cfg = loadGatewayOnlyConfig();
   dryRunGateway(path, body, citizenId?.trim() || "pending", cfg.chainId);
@@ -54,7 +63,7 @@ export async function runCreatePractice(args: string[], isDryRun: boolean): Prom
 
 export async function runJoinPractice(args: string[], isDryRun: boolean): Promise<void> {
   const idempotencyKey = optionalIdempotencyKey(args);
-  const body = { practiceArenaId: requireFlag(args, "--practice-arena-id", "Practice Arena ID"), ...(idempotencyKey !== undefined ? { idempotencyKey } : {}) };
+  const body = { practiceArenaId: practiceArenaReference(args), ...(idempotencyKey !== undefined ? { idempotencyKey } : {}) };
   const citizenId = optionalCitizenId(args);
   if (isDryRun) return practiceDryRun("/api/v1/agent/practice/arenas/join", body, citizenId);
   log("Joining Practice Arena...");
@@ -63,14 +72,14 @@ export async function runJoinPractice(args: string[], isDryRun: boolean): Promis
 
 export async function runCancelPractice(args: string[], isDryRun: boolean): Promise<void> {
   const idempotencyKey = optionalIdempotencyKey(args);
-  const body = { practiceArenaId: requireFlag(args, "--practice-arena-id", "Practice Arena ID"), ...(idempotencyKey !== undefined ? { idempotencyKey } : {}) };
+  const body = { practiceArenaId: practiceArenaReference(args), ...(idempotencyKey !== undefined ? { idempotencyKey } : {}) };
   const citizenId = optionalCitizenId(args);
   if (isDryRun) return practiceDryRun("/api/v1/agent/practice/arenas/cancel", body, citizenId);
   result(await loadGatewayOnlyConfig().gatewayClient.cancelPracticeArena({ ...body, citizenId }));
 }
 
 export async function runSetPracticeGameDisplay(args: string[], isDryRun: boolean): Promise<void> {
-  const practiceArenaId = requireFlag(args, "--practice-arena-id", "Practice Arena ID");
+  const practiceArenaId = practiceArenaReference(args);
   const hasHuman = args.includes("--human-description");
   const hasCover = args.includes("--cover-image-file");
   const hasSymbols = args.includes("--board-symbol-map-file");
