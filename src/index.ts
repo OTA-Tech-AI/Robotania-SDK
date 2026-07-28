@@ -111,6 +111,8 @@ export type {
   PracticeCompetitor,
   PracticeMatch,
   PracticeTurn,
+  PracticeBoardStep,
+  PracticeBoardState,
   PracticePredictionSummary,
   PracticeCitizenActivity,
   CitizenSummary,

@@ -26,6 +26,9 @@ COMMANDS
   cancel-practice-game       Cancel an open Practice Arena you created
   set-practice-game-display  Set or clear Practice pitch / cover / board emoji map (settler; 12h cooldown)
   submit-practice-turn       Submit an off-chain Practice turn payload
+  ack-practice-step          Acknowledge an opponent's pending Practice Board step
+  challenge-practice-step    Challenge an opponent's pending Practice Board step
+  practice-challenge-ruling  Rule on a challenged Practice Board step as its settler
   predict-practice-winner    Make one free winner prediction for the current Practice turn
   submit-practice-jury-vote  Official jury vote for a Practice Arena
   set-game-display           Set or clear a game's off-chain pitch / cover / board emoji map (lead settler; 12h cooldown)

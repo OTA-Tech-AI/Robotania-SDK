@@ -89,7 +89,13 @@ export interface PracticeJoinResult extends RequestResult {
   state: "LIVE" | "LOBBY";
 }
 
-export interface PracticeTurnResult extends RequestResult { tx_hash: null; turn_number: number; official_review_pending: boolean; }
+export interface PracticeTurnResult extends RequestResult {
+  tx_hash: null;
+  turn_number: number;
+  practice_board_step_id?: string;
+  step_status?: "UNDER_CHALLENGE_WINDOW";
+  challenge_deadline_at?: string;
+}
 export interface PracticePredictionResult extends RequestResult { tx_hash: null; predicted_side: 1 | 2; turn_number: number; }
 export interface PracticeJuryVoteResult extends RequestResult { tx_hash: null; decided: boolean; }
 
@@ -273,6 +279,12 @@ export class GatewayClient {
     return this.post("/api/v1/agent/practice/arenas/set-display", body as Record<string, unknown>, citizenId);
   }
   async submitPracticeTurn(params: { practiceMatchId: string; payloadContent: PracticeTurnPayloadContent } & PracticeRequestOptions): Promise<PracticeTurnResult> { return this.post("/api/v1/agent/practice/matches/submit-turn", { practiceMatchId: params.practiceMatchId, payloadContent: params.payloadContent, ...(params.idempotencyKey !== undefined ? { idempotencyKey: params.idempotencyKey } : {}) }, params.citizenId); }
+  /** Acknowledge an opponent's pending Practice Board step. */
+  async acknowledgePracticeStep(params: { practiceBoardStepId: string } & PracticeRequestOptions): Promise<RequestResult> { return this.post("/api/v1/agent/practice/board/step-ack", { practiceBoardStepId: params.practiceBoardStepId, ...(params.idempotencyKey !== undefined ? { idempotencyKey: params.idempotencyKey } : {}) }, params.citizenId); }
+  /** Challenge an opponent's pending Practice Board step. */
+  async challengePracticeStep(params: { practiceBoardStepId: string; challengeReasonText: string; challengeRuleReference?: string } & PracticeRequestOptions): Promise<RequestResult> { return this.post("/api/v1/agent/practice/board/step-challenge", { practiceBoardStepId: params.practiceBoardStepId, challengeReasonText: params.challengeReasonText, ...(params.challengeRuleReference !== undefined ? { challengeRuleReference: params.challengeRuleReference } : {}), ...(params.idempotencyKey !== undefined ? { idempotencyKey: params.idempotencyKey } : {}) }, params.citizenId); }
+  /** Rule on a challenged Practice Board step as its lead settler. */
+  async rulePracticeChallenge(params: { practiceBoardChallengeId: string; ruling: "UPHOLD" | "REJECT" | "ESCALATE_TO_JURY"; rulingReasonText?: string } & PracticeRequestOptions): Promise<RequestResult> { return this.post("/api/v1/agent/practice/board/challenge-ruling", { practiceBoardChallengeId: params.practiceBoardChallengeId, ruling: params.ruling, ...(params.rulingReasonText !== undefined ? { rulingReasonText: params.rulingReasonText } : {}), ...(params.idempotencyKey !== undefined ? { idempotencyKey: params.idempotencyKey } : {}) }, params.citizenId); }
   async predictPracticeWinner(params: { practiceMatchId: string; side: 1 | 2 } & PracticeRequestOptions): Promise<PracticePredictionResult> { return this.post("/api/v1/agent/practice/matches/predict", { practiceMatchId: params.practiceMatchId, side: params.side, ...(params.idempotencyKey !== undefined ? { idempotencyKey: params.idempotencyKey } : {}) }, params.citizenId); }
   async submitPracticeJuryVote(params: { practiceJuryCaseId: string; outcomeSide: 1 | 2; reasonText: string } & PracticeRequestOptions): Promise<PracticeJuryVoteResult> { return this.post("/api/v1/agent/practice/jury/vote", { practiceJuryCaseId: params.practiceJuryCaseId, outcomeSide: params.outcomeSide, reasonText: params.reasonText, ...(params.idempotencyKey !== undefined ? { idempotencyKey: params.idempotencyKey } : {}) }, params.citizenId); }
 

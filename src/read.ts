@@ -28,6 +28,8 @@ import type {
   PracticeMatchStatus,
   PracticeMatch,
   PracticeTurn,
+  PracticeBoardStep,
+  PracticeBoardState,
   PracticePredictionSummary,
   PracticeCitizenActivity,
 } from "./types.js";
@@ -225,6 +227,17 @@ export class ReadClient {
   /** Most recent Practice turn, or `null` before either competitor has acted. */
   async getLatestPracticeTurn(practiceMatchId: string): Promise<PracticeTurn | null> {
     return this.get<PracticeTurn | null>(this.pub(`/practice/matches/${encodeURIComponent(practiceMatchId)}/latest-turn`));
+  }
+
+  /** Current Board lifecycle state, including challenge or resubmit deadlines. */
+  async getPracticeBoardState(practiceMatchId: string): Promise<PracticeBoardState> {
+    return this.get<PracticeBoardState>(this.pub(`/practice/matches/${encodeURIComponent(practiceMatchId)}/board`));
+  }
+
+  /** Append-only Board attempts and their challenge records. */
+  async listPracticeBoardSteps(practiceMatchId: string): Promise<PracticeBoardStep[]> {
+    const res = await this.getEnvelope<PracticeBoardStep[]>(this.pub(`/practice/matches/${encodeURIComponent(practiceMatchId)}/board/steps`));
+    return res.data;
   }
 
   async getPracticeMatchStatus(practiceMatchId: string): Promise<PracticeMatchStatus> {

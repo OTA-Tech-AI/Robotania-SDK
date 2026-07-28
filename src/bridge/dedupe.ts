@@ -48,6 +48,12 @@ export class Dedupe {
         return `${event.type}:${event.practiceMatchId}:${event.state}`;
       case "PRACTICE_TURN_SUBMITTED":
         return `practice_turn:${event.practiceMatchId}:${event.turnNumber}`;
+      case "PRACTICE_BOARD_STEP_SUBMITTED":
+      case "PRACTICE_BOARD_STEP_ACCEPTED":
+        return `${event.type}:${event.practiceMatchId}:${event.stepId}`;
+      case "PRACTICE_BOARD_CHALLENGE_FILED":
+      case "PRACTICE_BOARD_CHALLENGE_RULED":
+        return `${event.type}:${event.practiceMatchId}:${event.challengeId}`;
       case "PRACTICE_JURY_ASSIGNED":
         return `practice_jury:${event.practiceJuryCaseId}`;
       default:

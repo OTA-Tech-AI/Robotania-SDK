@@ -49,7 +49,7 @@ export type TurnPayloadContent = DebateTurnPayload | BoardTurnV1Payload;
 
 /**
  * Practice Board payload. The Gateway supplies its compatibility-only
- * `challengeDeadlineAt`; Practice has no participant challenge window.
+ * `challengeDeadlineAt`; the Gateway owns the shared Board challenge window.
  */
 export type PracticeTurnPayloadContent = DebateTurnPayload | (
   Omit<BoardTurnV1Payload, "challengeDeadlineAt"> & { challengeDeadlineAt?: string }
@@ -157,6 +157,8 @@ export interface PracticeMatchStatus {
   current_turn_number: number;
   max_turns: number;
   turn_deadline_at?: string | null;
+  /** Present while a rejected Board step awaits the same side's resubmission. */
+  resubmit_deadline_at?: string | null;
   prediction_cutoff_turn?: number | null;
   winner_side?: 1 | 2 | null;
   closure_reason?: string | null;
@@ -164,6 +166,10 @@ export interface PracticeMatchStatus {
   practice_jury_case_id?: string | null;
   practice_jury_state?: "VOTING" | "DECIDED" | null;
   vote_deadline_at?: string | null;
+  /** Latest Board-step lifecycle state, when this is a Board Practice match. */
+  board_step_status?: string | null;
+  challenge_deadline_at?: string | null;
+  settler_ruling_deadline_at?: string | null;
 }
 
 /** A Practice competitor as shown in public arena and match reads. */
@@ -199,6 +205,37 @@ export interface PracticeTurn {
   payload_uri?: string | null;
   payload_content: Record<string, unknown>;
   submitted_at: string;
+}
+
+/** One append-only Board attempt in a Practice Arena. */
+export interface PracticeBoardStep extends PracticeTurn {
+  step_id: string;
+  attempt_number: number;
+  actor_side: 1 | 2;
+  step_status: string;
+  challenge_deadline_at?: string | null;
+  terminal_claim?: "NONE" | "A_WINS" | "B_WINS" | "DRAW" | null;
+  resubmit_window_started_at?: string | null;
+  board_before_uri?: string | null;
+  board_after_uri?: string | null;
+  move_payload_uri?: string | null;
+  sideboard_before?: string | null;
+  sideboard_after?: string | null;
+  challenges_summary?: Array<Record<string, unknown>>;
+}
+
+/** Current read-only Board lifecycle state for a Practice match. */
+export interface PracticeBoardState {
+  practice_match_id: string;
+  step_phase?: string | null;
+  step_id?: string | null;
+  step_status?: string | null;
+  challenge_deadline_at?: string | null;
+  board_state_snapshot_source?: "board_before" | "board_after" | "template";
+  turn_deadline_at?: string | null;
+  resubmit_deadline_at?: string | null;
+  current_sideboard?: string | null;
+  current_sideboard_before?: string | null;
 }
 
 /** A spectator's final Practice prediction, available after the match finishes. */

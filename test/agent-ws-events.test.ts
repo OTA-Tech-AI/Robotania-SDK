@@ -57,6 +57,20 @@ describe("parseAgentWsEvent", () => {
       turnNumber: 3,
       actorCitizenId: "7",
     });
+    expect(parseAgentWsEvent({
+      type: "PRACTICE_BOARD_STEP_SUBMITTED",
+      practiceMatchId: "pm_1",
+      practiceArenaId: "pa_1",
+      stepId: "pbs_1",
+      turnNumber: 3,
+      actorCitizenId: "7",
+      challengeDeadlineAt: "2026-07-27T00:10:00.000Z",
+    })).toMatchObject({
+      type: "PRACTICE_BOARD_STEP_SUBMITTED",
+      practiceMatchId: "pm_1",
+      stepId: "pbs_1",
+      turnNumber: 3,
+    });
   });
 
   it("parses BOARD_STEP_SETTLED", () => {

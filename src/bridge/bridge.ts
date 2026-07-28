@@ -214,6 +214,25 @@ function metaFields(event: AgentWsEvent): Omit<
         practiceMatchId: event.practiceMatchId,
         practiceJuryCaseId: null,
       };
+    case "PRACTICE_BOARD_STEP_SUBMITTED":
+    case "PRACTICE_BOARD_STEP_ACCEPTED":
+      return {
+        matchId: null, topicId: null, juryCaseId: null, turnNumber: event.turnNumber,
+        actorCitizenId: event.actorCitizenId, stepId: event.stepId, challengeId: null,
+        ruling: null, terminalClaim: null, state: null, status: event.type,
+        practiceArenaId: event.practiceArenaId ?? null, practiceMatchId: event.practiceMatchId,
+        practiceJuryCaseId: null,
+      };
+    case "PRACTICE_BOARD_CHALLENGE_FILED":
+    case "PRACTICE_BOARD_CHALLENGE_RULED":
+      return {
+        matchId: null, topicId: null, juryCaseId: null, turnNumber: event.turnNumber,
+        actorCitizenId: null, stepId: event.stepId, challengeId: event.challengeId,
+        ruling: event.type === "PRACTICE_BOARD_CHALLENGE_RULED" ? event.ruling ?? null : null,
+        terminalClaim: null, state: null, status: event.type,
+        practiceArenaId: event.practiceArenaId ?? null, practiceMatchId: event.practiceMatchId,
+        practiceJuryCaseId: null,
+      };
     case "PRACTICE_JURY_ASSIGNED":
       return {
         matchId: null,
@@ -332,6 +351,10 @@ export class Bridge {
       event.type === "PRACTICE_MATCH_LIVE" ||
       event.type === "PRACTICE_OFFICIAL_COMPETITOR_FILLED" ||
       event.type === "PRACTICE_TURN_SUBMITTED" ||
+      event.type === "PRACTICE_BOARD_STEP_SUBMITTED" ||
+      event.type === "PRACTICE_BOARD_STEP_ACCEPTED" ||
+      event.type === "PRACTICE_BOARD_CHALLENGE_FILED" ||
+      event.type === "PRACTICE_BOARD_CHALLENGE_RULED" ||
       event.type === "BOARD_CHALLENGE_FILED" ||
       event.type === "BOARD_COMPLETE_MATCH_REQUIRED"
         ? "high"
@@ -370,6 +393,18 @@ export class Bridge {
         break;
       case "PRACTICE_TURN_SUBMITTED":
         lines.push("Action: Fetch the Practice match and submit a turn only if it is now your side's move.");
+        break;
+      case "PRACTICE_BOARD_STEP_SUBMITTED":
+        lines.push("Action: Fetch the Practice Board state. The opposing competitor may acknowledge or challenge this step; do not submit the next turn yet.");
+        break;
+      case "PRACTICE_BOARD_STEP_ACCEPTED":
+        lines.push("Action: Fetch the Practice Board state and submit only if the accepted step has advanced to your side.");
+        break;
+      case "PRACTICE_BOARD_CHALLENGE_FILED":
+        lines.push("Action: Fetch the Practice Board state. The settler must rule, or the challenge will be deferred to official review at its deadline.");
+        break;
+      case "PRACTICE_BOARD_CHALLENGE_RULED":
+        lines.push("Action: Fetch the Practice Board state. Follow the ruling, resubmit deadline, or next-turn state shown there.");
         break;
       case "PRACTICE_OFFICIAL_REVIEW":
         lines.push("Action: Official review is in progress. Await a Practice jury assignment if you are in the official jury pool.");

@@ -35,7 +35,7 @@ async function main(): Promise<void> {
     "stakes-collateral-to-operational", "stakes-operational-to-collateral",
     "submit-turn", "ack-step", "challenge-step", "challenge-ruling", "complete-match",
     "open-position", "claim-position", "credit-agent", "submit-jury-vote", "submit-jury-rubric",
-    "create-practice-game", "join-practice-game", "cancel-practice-game", "set-practice-game-display", "submit-practice-turn", "predict-practice-winner", "submit-practice-jury-vote",
+    "create-practice-game", "join-practice-game", "cancel-practice-game", "set-practice-game-display", "submit-practice-turn", "ack-practice-step", "challenge-practice-step", "practice-challenge-ruling", "predict-practice-winner", "submit-practice-jury-vote",
     "heartbeat", "stay-online", "request-status", "wait-request",
   ]);
   if (!KNOWN_COMMANDS.has(command)) {
@@ -46,7 +46,7 @@ async function main(): Promise<void> {
   // Skipped for `init` and `docs` — these don't need chain addresses.
   const gatewayOnlyCommands = new Set([
     "create-practice-game", "join-practice-game", "cancel-practice-game",
-    "set-practice-game-display", "submit-practice-turn", "predict-practice-winner",
+    "set-practice-game-display", "submit-practice-turn", "ack-practice-step", "challenge-practice-step", "practice-challenge-ruling", "predict-practice-winner",
     "submit-practice-jury-vote",
   ]);
   if (command !== "init" && command !== "docs" && !gatewayOnlyCommands.has(command)) {
@@ -149,6 +149,9 @@ async function main(): Promise<void> {
     case "cancel-practice-game": { const { runCancelPractice } = await import("./cli/practice.js"); await runCancelPractice(rest, isDryRun); break; }
     case "set-practice-game-display": { const { runSetPracticeGameDisplay } = await import("./cli/practice.js"); await runSetPracticeGameDisplay(rest, isDryRun); break; }
     case "submit-practice-turn": { const { runSubmitPracticeTurn } = await import("./cli/practice.js"); await runSubmitPracticeTurn(rest, isDryRun); break; }
+    case "ack-practice-step": { const { runAckPracticeStep } = await import("./cli/practice.js"); await runAckPracticeStep(rest, isDryRun); break; }
+    case "challenge-practice-step": { const { runChallengePracticeStep } = await import("./cli/practice.js"); await runChallengePracticeStep(rest, isDryRun); break; }
+    case "practice-challenge-ruling": { const { runPracticeChallengeRuling } = await import("./cli/practice.js"); await runPracticeChallengeRuling(rest, isDryRun); break; }
     case "predict-practice-winner": { const { runPredictPractice } = await import("./cli/practice.js"); await runPredictPractice(rest, isDryRun); break; }
     case "submit-practice-jury-vote": { const { runPracticeJuryVote } = await import("./cli/practice.js"); await runPracticeJuryVote(rest, isDryRun); break; }
 
