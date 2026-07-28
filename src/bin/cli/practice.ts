@@ -130,6 +130,44 @@ export async function runSubmitPracticeTurn(args: string[], isDryRun: boolean): 
   result(await loadGatewayOnlyConfig().gatewayClient.submitPracticeTurn({ ...body, citizenId }));
 }
 
+export async function runAckPracticeStep(args: string[], isDryRun: boolean): Promise<void> {
+  const idempotencyKey = optionalIdempotencyKey(args);
+  const body = { practiceBoardStepId: requireFlag(args, "--practice-board-step-id", "Practice Board step ID"), ...(idempotencyKey !== undefined ? { idempotencyKey } : {}) };
+  const citizenId = optionalCitizenId(args);
+  if (isDryRun) return practiceDryRun("/api/v1/agent/practice/board/step-ack", body, citizenId);
+  result(await loadGatewayOnlyConfig().gatewayClient.acknowledgePracticeStep({ ...body, citizenId }));
+}
+
+export async function runChallengePracticeStep(args: string[], isDryRun: boolean): Promise<void> {
+  const idempotencyKey = optionalIdempotencyKey(args);
+  const ruleReference = flag(args, "--rule-reference");
+  const body = {
+    practiceBoardStepId: requireFlag(args, "--practice-board-step-id", "Practice Board step ID"),
+    challengeReasonText: requireFlag(args, "--reason", "challenge reason"),
+    ...(ruleReference !== undefined ? { challengeRuleReference: ruleReference } : {}),
+    ...(idempotencyKey !== undefined ? { idempotencyKey } : {}),
+  };
+  const citizenId = optionalCitizenId(args);
+  if (isDryRun) return practiceDryRun("/api/v1/agent/practice/board/step-challenge", body, citizenId);
+  result(await loadGatewayOnlyConfig().gatewayClient.challengePracticeStep({ ...body, citizenId }));
+}
+
+export async function runPracticeChallengeRuling(args: string[], isDryRun: boolean): Promise<void> {
+  const ruling = requireFlag(args, "--ruling", "UPHOLD, REJECT, or ESCALATE_TO_JURY").toUpperCase();
+  if (ruling !== "UPHOLD" && ruling !== "REJECT" && ruling !== "ESCALATE_TO_JURY") fatal("--ruling must be UPHOLD, REJECT, or ESCALATE_TO_JURY.");
+  const idempotencyKey = optionalIdempotencyKey(args);
+  const reason = flag(args, "--reason");
+  const body = {
+    practiceBoardChallengeId: requireFlag(args, "--practice-board-challenge-id", "Practice Board challenge ID"),
+    ruling: ruling as "UPHOLD" | "REJECT" | "ESCALATE_TO_JURY",
+    ...(reason !== undefined ? { rulingReasonText: reason } : {}),
+    ...(idempotencyKey !== undefined ? { idempotencyKey } : {}),
+  };
+  const citizenId = optionalCitizenId(args);
+  if (isDryRun) return practiceDryRun("/api/v1/agent/practice/board/challenge-ruling", body, citizenId);
+  result(await loadGatewayOnlyConfig().gatewayClient.rulePracticeChallenge({ ...body, citizenId }));
+}
+
 export async function runPredictPractice(args: string[], isDryRun: boolean): Promise<void> {
   const idempotencyKey = optionalIdempotencyKey(args);
   const body = { practiceMatchId: requireFlag(args, "--practice-match-id", "Practice match ID"), side: parseMatchSideFlag(requireFlag(args, "--side", "Side A/B")), ...(idempotencyKey !== undefined ? { idempotencyKey } : {}) };
