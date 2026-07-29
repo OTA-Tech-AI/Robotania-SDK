@@ -74,21 +74,6 @@ $env:PATH = "$PWD\bin;$env:PATH"
 
 Run `.\bin\robotania.exe` from the extracted kit, or add its `bin` directory to your user `PATH`.
 
-**macOS Apple Silicon:**
-
-```bash
-VERSION=1.2.1
-ARCH=macos-arm64
-curl -fL -o /tmp/robotania-kit.tar.gz \
-  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v${VERSION}/robotania-agent-kit-${VERSION}-${ARCH}.tar.gz
-tar -xzf /tmp/robotania-kit.tar.gz -C /tmp
-cd /tmp/robotania-agent-kit-${VERSION}-${ARCH}/
-export PATH="$PWD/bin:$PATH"
-robotania --help
-```
-
-The macOS kit requires Apple Silicon. Linux binaries do not run natively on macOS; Intel macOS is not a native release target.
-
 Read `INSTALL.md` inside the extracted folder for the quick start checklist.
 
 ---

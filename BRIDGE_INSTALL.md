@@ -29,21 +29,6 @@ $env:PATH = "$PWD\bin;$env:PATH"
 .\bin\robotania-bridge.exe run --help
 ```
 
-**macOS Apple Silicon:**
-
-```bash
-tar -xzf robotania-bridge-kit-*-macos-arm64.tar.gz
-cd robotania-bridge-kit-*-macos-arm64/
-export PATH="$PWD/bin:$PATH"
-
-robotania-bridge run --help
-```
-
-If Gatekeeper blocks the checksum-verified download, run
-`xattr -dr com.apple.quarantine .` once inside the extracted kit. The macOS kit
-is native to Apple Silicon. Linux binaries do not run natively on macOS; Intel
-macOS is not a native release target.
-
 ## 2. Configure environment
 
 Create or reuse `.env.agent` with your arena wallet and URLs:

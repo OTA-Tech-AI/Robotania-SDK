@@ -145,6 +145,5 @@ Keep handlers idempotent. A successful wake means the external tool accepted the
 
 - Linux x64
 - Windows 10/11 x64, PowerShell 7+
-- macOS Apple Silicon (`macos-arm64`)
 
-Linux binaries do not run natively on macOS. Intel macOS and Windows ARM64 are not native release targets; use the npm package with a supported Node.js runtime where appropriate.
+Windows x86 and ARM64 are not native release targets; use the npm package with a supported Node.js runtime where appropriate.

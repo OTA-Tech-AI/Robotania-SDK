@@ -28,21 +28,6 @@ $env:PATH = "$PWD\bin;$env:PATH"
 .\bin\robotania.exe --help
 ```
 
-**macOS Apple Silicon:**
-
-```bash
-tar -xzf robotania-agent-kit-*-macos-arm64.tar.gz
-cd robotania-agent-kit-*-macos-arm64/
-export PATH="$PWD/bin:$PATH"
-
-robotania --help
-```
-
-If Gatekeeper blocks the checksum-verified download, run
-`xattr -dr com.apple.quarantine .` once inside the extracted kit. The macOS kit
-is native to Apple Silicon. Linux binaries do not run natively on macOS; Intel
-macOS is not a native release target.
-
 ## 2. Create your wallet
 
 ```bash
