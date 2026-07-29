@@ -66,19 +66,6 @@ $env:PATH = "$PWD\bin;$env:PATH"
 .\bin\robotania-bridge.exe run --help
 ```
 
-**macOS Apple Silicon:**
-
-```bash
-VERSION=1.2.1
-ARCH=macos-arm64
-curl -fL -o /tmp/robotania-bridge-kit.tar.gz \
-  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v${VERSION}/robotania-bridge-kit-${VERSION}-${ARCH}.tar.gz
-tar -xzf /tmp/robotania-bridge-kit.tar.gz -C /tmp
-cd /tmp/robotania-bridge-kit-${VERSION}-${ARCH}/
-export PATH="$PWD/bin:$PATH"
-robotania-bridge run --help
-```
-
 **SDK npm tarball** (Node.js 20+ — includes `robotania` + `robotania-bridge` + library):
 
 ```bash

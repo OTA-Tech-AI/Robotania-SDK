@@ -123,20 +123,6 @@ $env:PATH = "$PWD\bin;$env:PATH"
 .\bin\robotania.exe --help
 ```
 
-**macOS Apple Silicon:**
-
-```bash
-VERSION=1.2.1
-ARCH=macos-arm64
-
-curl -fL -o /tmp/robotania-kit.tar.gz \
-  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v${VERSION}/robotania-agent-kit-${VERSION}-${ARCH}.tar.gz
-tar -xzf /tmp/robotania-kit.tar.gz -C /tmp
-cd /tmp/robotania-agent-kit-${VERSION}-${ARCH}/
-export PATH="$PWD/bin:$PATH"
-robotania --help
-```
-
 **Bridge Kit tarball** (optional, no Node.js) — **`robotania-bridge`** binary + bridge docs only:
 
 **Linux x64:**
@@ -165,20 +151,6 @@ $env:PATH = "$PWD\bin;$env:PATH"
 .\bin\robotania-bridge.exe run --help
 ```
 
-**macOS Apple Silicon:**
-
-```bash
-VERSION=1.2.1
-ARCH=macos-arm64
-
-curl -fL -o /tmp/robotania-bridge-kit.tar.gz \
-  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v${VERSION}/robotania-bridge-kit-${VERSION}-${ARCH}.tar.gz
-tar -xzf /tmp/robotania-bridge-kit.tar.gz -C /tmp
-cd /tmp/robotania-bridge-kit-${VERSION}-${ARCH}/
-export PATH="$PWD/bin:$PATH"
-robotania-bridge run --help
-```
-
 **SDK npm tarball** (Node.js 20+ required) — includes **`robotania`** and **`robotania-bridge`** (library + both CLIs):
 
 ```bash
@@ -194,14 +166,14 @@ robotania docs check   # or: robotania docs sync
 
 | Artifact | Contents |
 |----------|----------|
-| `robotania-*-linux-x64` / `robotania-*-win-x64.exe` / `robotania-*-macos-arm64` | Raw native `robotania` binary |
-| `robotania-bridge-*-linux-x64` / `robotania-bridge-*-win-x64.exe` / `robotania-bridge-*-macos-arm64` | Raw native optional bridge binary |
+| `robotania-*-linux-x64` / `robotania-*-win-x64.exe` | Raw native `robotania` binary |
+| `robotania-bridge-*-linux-x64` / `robotania-bridge-*-win-x64.exe` | Raw native optional bridge binary |
 | `robotania-agent-kit-*` | `robotania` binary + full docs |
 | `robotania-bridge-kit-*` | **`robotania-bridge` binary only** + bridge docs (optional) |
 | `robotania-agent-sdk-*.tgz` | `robotania` + `robotania-bridge` + library (`npm install -g`) |
 | `robotania-docs-*.tar.gz` | docs only (`robotania docs sync`) |
 
-Native binaries support Linux x64, Windows 10/11 x64, and macOS Apple Silicon. Windows kits are ZIP files; Linux and macOS kits are TAR.GZ. Linux binaries do not run natively on macOS. Intel macOS, Windows x86/ARM64, installers, and simulation scripts are not release targets.
+Native binaries support Linux x64 and Windows 10/11 x64. Windows kits are ZIP files; Linux kits are TAR.GZ. Windows x86/ARM64, installers, and simulation scripts are not release targets.
 
 ## Documentation
 
