@@ -1,6 +1,6 @@
 import type { GatewayClient } from "./gateway.js";
 
-/** Mirrors on-chain SettlementMath (1e18 fixed-point). Self-contained — no monorepo deps. */
+/** Mirrors on-chain SettlementMath using 1e18 fixed-point arithmetic. */
 const WAD = 1_000_000_000_000_000_000n;
 const BPS = 10_000n;
 

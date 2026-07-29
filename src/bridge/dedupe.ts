@@ -5,17 +5,28 @@ export class Dedupe {
 
   constructor(private readonly windowMs = 10_000) {}
 
-  isDuplicate(event: AgentWsEvent): boolean {
+  has(event: AgentWsEvent): boolean {
     const key = this.buildKey(event);
     const now = Date.now();
     const last = this.seen.get(key);
-    if (last !== undefined && now - last < this.windowMs) return true;
+    return last !== undefined && now - last < this.windowMs;
+  }
+
+  mark(event: AgentWsEvent): void {
+    const now = Date.now();
+    const key = this.buildKey(event);
     this.seen.set(key, now);
     this.prune(now);
+  }
+
+  isDuplicate(event: AgentWsEvent): boolean {
+    if (this.has(event)) return true;
+    this.mark(event);
     return false;
   }
 
   private buildKey(event: AgentWsEvent): string {
+    if (event.eventId) return `event:${event.eventId}`;
     switch (event.type) {
       case "MATCH_LIVE":
         return `match_live:${event.matchId}`;
@@ -40,7 +51,7 @@ export class Dedupe {
       case "BOARD_COMPLETE_MATCH_REQUIRED":
         return `${event.type}:${event.matchId}:${event.stepId}`;
       case "PAYOUT_CREDITED":
-        return `payout:${event.citizenId}`;
+        return `payout:${event.citizenId}:${event.createdAt ?? ""}`;
       case "PRACTICE_MATCH_LIVE":
       case "PRACTICE_OFFICIAL_COMPETITOR_FILLED":
       case "PRACTICE_OFFICIAL_REVIEW":
@@ -57,7 +68,7 @@ export class Dedupe {
       case "PRACTICE_JURY_ASSIGNED":
         return `practice_jury:${event.practiceJuryCaseId}`;
       default:
-        return event.type;
+        return `${event.type}:${event.revision ?? ""}`;
     }
   }
 

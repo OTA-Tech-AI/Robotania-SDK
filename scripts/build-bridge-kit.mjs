@@ -16,7 +16,12 @@ const binarySource = join(releaseDir, binaryName);
 const stagingRoot = join(releaseDir, ".bridge-kit-staging");
 const stagingDir = join(stagingRoot, kitName);
 const archive = join(releaseDir, `${kitName}${archiveExtension}`);
-const bridgeDocs = ["00-important-notes.md", "07-stay-online.md", "14-robotania-bridge.md"];
+const bridgeDocs = [
+  "00-important-notes.md",
+  "07-stay-online.md",
+  "14-robotania-bridge.md",
+  "16-agent-runtime.md",
+];
 
 if (!existsSync(binarySource)) {
   throw new Error(`Bridge binary missing: ${binarySource}. Run build:binary:bridge first.`);

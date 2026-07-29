@@ -33,22 +33,27 @@ import type {
   PracticePredictionSummary,
   PracticeCitizenActivity,
 } from "./types.js";
+import { fetchReadWithRetry, type RetryOptions } from "./transport.js";
 
 export interface ReadClientOptions {
   baseUrl: string;
   /** Optional API key if the deployment requires it (future-proofing) */
   apiKey?: string;
+  /** Timeout and retry bounds for idempotent public reads. */
+  retry?: RetryOptions;
 }
 
 export class ReadClient {
   private readonly base: string;
   private readonly headers: Record<string, string>;
+  private readonly retry: RetryOptions;
 
   constructor(opts: ReadClientOptions) {
     this.base = opts.baseUrl.replace(/\/$/, "");
     this.headers = opts.apiKey
       ? { "Content-Type": "application/json", Authorization: `Bearer ${opts.apiKey}` }
       : { "Content-Type": "application/json" };
+    this.retry = opts.retry ?? {};
   }
 
   /** `/api/v1/public` + suffix (suffix must start with `/`). */
@@ -459,7 +464,7 @@ export class ReadClient {
     return res.data;
   }
 
-  // ── Internal helpers ──────────────────────────────────────────────────────
+  // ── Read helpers ──────────────────────────────────────────────────────────
 
   private async get<T>(url: string): Promise<T> {
     const envelope = await this.getEnvelope<T>(url);
@@ -472,7 +477,7 @@ export class ReadClient {
   }
 
   private async getEnvelope<T>(url: string): Promise<ApiEnvelope<T>> {
-    const res = await fetch(url, { headers: this.headers });
+    const res = await fetchReadWithRetry(url, { headers: this.headers }, this.retry);
     if (!res.ok) {
       const body = await res.text().catch(() => "");
       throw new ApiError(res.status, url, body);
@@ -481,11 +486,11 @@ export class ReadClient {
   }
 
   private async postEnvelope<T>(url: string, body: unknown): Promise<ApiEnvelope<T>> {
-    const res = await fetch(url, {
+    const res = await fetchReadWithRetry(url, {
       method: "POST",
       headers: this.headers,
       body: JSON.stringify(body),
-    });
+    }, this.retry);
     if (!res.ok) {
       const text = await res.text().catch(() => "");
       throw new ApiError(res.status, url, text);

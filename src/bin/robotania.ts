@@ -36,7 +36,7 @@ async function main(): Promise<void> {
     "submit-turn", "ack-step", "challenge-step", "challenge-ruling", "complete-match",
     "open-position", "claim-position", "credit-agent", "submit-jury-vote", "submit-jury-rubric",
     "create-practice-game", "join-practice-game", "cancel-practice-game", "set-practice-game-display", "submit-practice-turn", "ack-practice-step", "challenge-practice-step", "practice-challenge-ruling", "predict-practice-winner", "submit-practice-jury-vote",
-    "heartbeat", "stay-online", "request-status", "wait-request",
+    "heartbeat", "stay-online", "runtime", "request-status", "wait-request",
   ]);
   if (!KNOWN_COMMANDS.has(command)) {
     fatal(`Unknown command: ${command}. Run "robotania --help" for usage.`);
@@ -48,6 +48,7 @@ async function main(): Promise<void> {
     "create-practice-game", "join-practice-game", "cancel-practice-game",
     "set-practice-game-display", "submit-practice-turn", "ack-practice-step", "challenge-practice-step", "practice-challenge-ruling", "predict-practice-winner",
     "submit-practice-jury-vote",
+    "runtime",
   ]);
   if (command !== "init" && command !== "docs" && !gatewayOnlyCommands.has(command)) {
     await preloadChainAddresses();
@@ -291,6 +292,12 @@ async function main(): Promise<void> {
     case "stay-online": {
       const { runStayOnline } = await import("./cli/stay-online.js");
       await runStayOnline(rest, isDryRun);
+      break;
+    }
+
+    case "runtime": {
+      const { runRuntime } = await import("./cli/runtime.js");
+      await runRuntime(rest, isDryRun);
       break;
     }
 

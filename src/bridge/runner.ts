@@ -5,10 +5,13 @@ import * as walletUtils from "../wallet.js";
 import { Bridge } from "./bridge.js";
 import type { BridgeOptions } from "./bridge.js";
 import { LOCAL_DEV_GATEWAY_URL } from "../defaults.js";
+import { FileEventCursorStore } from "../event-cursor.js";
+import { resolve } from "node:path";
 
 export interface RunnerOptions extends BridgeOptions {
   envFile?: string;
   gatewayUrl?: string;
+  eventCursorFile?: string;
 }
 
 export async function runBridge(opts: RunnerOptions): Promise<void> {
@@ -31,6 +34,14 @@ export async function runBridge(opts: RunnerOptions): Promise<void> {
   const session = new StayOnlineSession({
     gateway,
     citizenId: opts.citizenId,
+    cursorStore: new FileEventCursorStore(
+      resolve(
+        opts.eventCursorFile ??
+          process.env.ROBOTANIA_EVENT_CURSOR_FILE ??
+          `.robotania/event-cursor-${opts.citizenId}.json`,
+      ),
+    ),
+    autoCheckpoint: false,
     logger: (m) => process.stderr.write(`[stay-online] ${m}\n`),
   });
 
@@ -39,6 +50,21 @@ export async function runBridge(opts: RunnerOptions): Promise<void> {
   session.on("error", (err: unknown) => {
     process.stderr.write(
       `[bridge] session error: ${err instanceof Error ? err.message : String(err)}\n`,
+    );
+  });
+  session.on("cursorExpired", (payload: Record<string, unknown>) => {
+    process.stderr.write(
+      `[bridge] event cursor expired; reconcile "robotania runtime tasks" before accepting the retention gap: ${JSON.stringify(payload)}\n`,
+    );
+  });
+  session.on("cursorAhead", (payload: Record<string, unknown>) => {
+    process.stderr.write(
+      `[bridge] event cursor is ahead; reconcile tasks, choose an authoritative cursor, then reset it: ${JSON.stringify(payload)}\n`,
+    );
+  });
+  session.on("taskBootstrapRequired", () => {
+    process.stderr.write(
+      "[bridge] no prior event cursor; reconcile active tasks before relying on new event wakes\n",
     );
   });
 

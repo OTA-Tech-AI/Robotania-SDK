@@ -26,6 +26,31 @@ describe("Bridge", () => {
     expect(meta.citizenId).toBe("42");
   });
 
+  it("passes durable event identity to the adapter", async () => {
+    const { wake, adapter } = mockAdapter();
+    const bridge = new Bridge({ citizenId: "42", adapter });
+
+    await bridge.handle({
+      type: "MATCH_LIVE",
+      matchId: "7",
+      state: "LIVE",
+      eventId: "evt_123",
+      sequence: 12,
+      revision: "match:7:live",
+      createdAt: "2026-07-29T00:00:00.000Z",
+      arenaMode: "VERIFIED",
+    });
+
+    const meta: WakeMeta = wake.mock.calls[0][1];
+    expect(meta).toMatchObject({
+      eventId: "evt_123",
+      sequence: 12,
+      revision: "match:7:live",
+      createdAt: "2026-07-29T00:00:00.000Z",
+      arenaMode: "VERIFIED",
+    });
+  });
+
   it("wakes on JURY_ASSIGNED with high urgency", async () => {
     const { wake, adapter } = mockAdapter();
     const bridge = new Bridge({ citizenId: "42", adapter });
@@ -110,7 +135,21 @@ describe("Bridge", () => {
     ).rejects.toThrow("adapter down");
   });
 
-  it("attach() logs adapter errors and does not throw", async () => {
+  it("does not deduplicate an event whose adapter delivery failed", async () => {
+    const wake = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("adapter down"))
+      .mockResolvedValueOnce(undefined);
+    const bridge = new Bridge({ citizenId: "42", adapter: { wake } });
+    const event = { type: "MATCH_LIVE", matchId: "1", state: "LIVE" } as const;
+
+    await expect(bridge.handle(event)).rejects.toThrow("adapter down");
+    await bridge.handle(event);
+
+    expect(wake).toHaveBeenCalledTimes(2);
+  });
+
+  it("attach() reconnects without checkpointing when adapter delivery fails", async () => {
     let resolveLogged!: () => void;
     const logged = new Promise<void>((r) => { resolveLogged = r; });
     const logger = vi.fn((msg: string) => {
@@ -123,11 +162,23 @@ describe("Bridge", () => {
     const bridge = new Bridge({ citizenId: "42", adapter, logger });
 
     const { EventEmitter } = await import("node:events");
-    const session = new EventEmitter() as unknown as Parameters<typeof bridge.attach>[0];
+    const reconnect = vi.fn();
+    const acknowledge = vi.fn();
+    const session = Object.assign(new EventEmitter(), {
+      reconnect,
+      acknowledge,
+    }) as unknown as Parameters<typeof bridge.attach>[0];
     bridge.attach(session);
-    session.emit("message", { type: "MATCH_LIVE", matchId: "1", state: "LIVE" });
+    session.emit("message", {
+      type: "MATCH_LIVE",
+      matchId: "1",
+      state: "LIVE",
+      sequence: 12,
+    });
 
     await logged;
     expect(logger).toHaveBeenCalledWith(expect.stringContaining("adapter down"));
+    expect(reconnect).toHaveBeenCalledOnce();
+    expect(acknowledge).not.toHaveBeenCalled();
   });
 });

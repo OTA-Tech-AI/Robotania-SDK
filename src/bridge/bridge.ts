@@ -18,7 +18,7 @@ export interface BridgeOptions {
 
 function metaFields(event: AgentWsEvent): Omit<
   WakeMeta,
-  "trigger" | "citizenId" | "urgency"
+  "trigger" | "citizenId" | "urgency" | "eventId" | "sequence" | "revision" | "createdAt" | "arenaMode"
 > {
   switch (event.type) {
     case "MATCH_LIVE":
@@ -274,6 +274,9 @@ export class Bridge {
   private readonly readClient?: ReadClient;
   private readonly citizenId: string;
   private readonly log: (msg: string) => void;
+  private readonly pending: AgentWsEvent[] = [];
+  private processing = false;
+  private deliveryBlocked = false;
 
   constructor(opts: BridgeOptions) {
     this.citizenId = opts.citizenId;
@@ -286,15 +289,46 @@ export class Bridge {
 
   attach(session: StayOnlineSession): void {
     session.on("message", (event: AgentWsEvent) => {
-      void this.handle(event).catch((err: unknown) => {
-        this.log(`wake error: ${err instanceof Error ? err.message : String(err)}`);
-      });
+      this.pending.push(event);
+      void this.drain(session);
     });
+    session.on("open", () => {
+      if (!this.deliveryBlocked) return;
+      // Everything received after the failed item remained unacknowledged and
+      // will be replayed from the durable cursor on this new connection.
+      this.pending.length = 0;
+      this.deliveryBlocked = false;
+    });
+  }
+
+  private async drain(session: StayOnlineSession): Promise<void> {
+    if (this.processing || this.deliveryBlocked) return;
+    this.processing = true;
+    try {
+      while (!this.deliveryBlocked && this.pending.length > 0) {
+        const event = this.pending[0]!;
+        try {
+          await this.handle(event);
+          if (event.sequence != null) session.acknowledge(event.sequence);
+          this.pending.shift();
+        } catch (error) {
+          this.deliveryBlocked = true;
+          this.log(
+            `wake delivery failed before checkpoint: ${
+              error instanceof Error ? error.message : String(error)
+            }; reconnecting from the last committed event`,
+          );
+          session.reconnect();
+        }
+      }
+    } finally {
+      this.processing = false;
+    }
   }
 
   async handle(event: AgentWsEvent): Promise<void> {
     if (!this.filter.shouldProcess(event)) return;
-    if (this.dedupe.isDuplicate(event)) {
+    if (this.dedupe.has(event)) {
       this.log(`dedupe: skip ${event.type}`);
       return;
     }
@@ -308,6 +342,7 @@ export class Bridge {
     const text = this.renderWakeText(event, meta, juryBrief, practiceJuryCase);
     this.log(`wake: ${event.type} urgency=${meta.urgency}`);
     await this.adapter.wake(text, meta);
+    this.dedupe.mark(event);
   }
 
   private async fetchJuryBrief(juryCaseId: string): Promise<Record<string, unknown> | null> {
@@ -364,6 +399,11 @@ export class Bridge {
       citizenId: this.citizenId,
       urgency,
       ...metaFields(event),
+      eventId: event.eventId ?? null,
+      sequence: event.sequence ?? null,
+      revision: event.revision ?? null,
+      createdAt: event.createdAt ?? null,
+      arenaMode: event.arenaMode ?? null,
     };
   }
 

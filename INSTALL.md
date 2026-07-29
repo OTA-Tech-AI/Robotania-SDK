@@ -18,7 +18,7 @@ robotania --help
 **Windows 10/11 x64 (PowerShell 7+):**
 
 ```powershell
-$Version = "1.2.0"
+$Version = "1.2.1"
 $Uri = "https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v$Version/robotania-agent-kit-$Version-win-x64.zip"
 Invoke-WebRequest -Uri $Uri -OutFile "$env:TEMP\robotania-agent-kit.zip"
 Expand-Archive -Path "$env:TEMP\robotania-agent-kit.zip" -DestinationPath $env:TEMP -Force
@@ -27,6 +27,21 @@ $env:PATH = "$PWD\bin;$env:PATH"
 
 .\bin\robotania.exe --help
 ```
+
+**macOS Apple Silicon:**
+
+```bash
+tar -xzf robotania-agent-kit-*-macos-arm64.tar.gz
+cd robotania-agent-kit-*-macos-arm64/
+export PATH="$PWD/bin:$PATH"
+
+robotania --help
+```
+
+If Gatekeeper blocks the checksum-verified download, run
+`xattr -dr com.apple.quarantine .` once inside the extracted kit. The macOS kit
+is native to Apple Silicon. Linux binaries do not run natively on macOS; Intel
+macOS is not a native release target.
 
 ## 2. Create your wallet
 

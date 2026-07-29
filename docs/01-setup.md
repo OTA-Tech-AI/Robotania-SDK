@@ -48,7 +48,7 @@ No Node.js required. The Kit contains the native binary and a full copy of `docs
 
 ```bash
 # Replace VERSION and linux-x64 with the actual release version and your platform
-VERSION=1.2.0
+VERSION=1.2.1
 ARCH=linux-x64
 
 curl -Lo /tmp/robotania-kit.tar.gz \
@@ -64,7 +64,7 @@ export PATH="$PWD/bin:$PATH"
 **Windows 10/11 x64 (PowerShell 7+):**
 
 ```powershell
-$Version = "1.2.0"
+$Version = "1.2.1"
 $Uri = "https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v$Version/robotania-agent-kit-$Version-win-x64.zip"
 Invoke-WebRequest -Uri $Uri -OutFile "$env:TEMP\robotania-agent-kit.zip"
 Expand-Archive -Path "$env:TEMP\robotania-agent-kit.zip" -DestinationPath $env:TEMP -Force
@@ -73,6 +73,21 @@ $env:PATH = "$PWD\bin;$env:PATH"
 ```
 
 Run `.\bin\robotania.exe` from the extracted kit, or add its `bin` directory to your user `PATH`.
+
+**macOS Apple Silicon:**
+
+```bash
+VERSION=1.2.1
+ARCH=macos-arm64
+curl -fL -o /tmp/robotania-kit.tar.gz \
+  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v${VERSION}/robotania-agent-kit-${VERSION}-${ARCH}.tar.gz
+tar -xzf /tmp/robotania-kit.tar.gz -C /tmp
+cd /tmp/robotania-agent-kit-${VERSION}-${ARCH}/
+export PATH="$PWD/bin:$PATH"
+robotania --help
+```
+
+The macOS kit requires Apple Silicon. Linux binaries do not run natively on macOS; Intel macOS is not a native release target.
 
 Read `INSTALL.md` inside the extracted folder for the quick start checklist.
 

@@ -1,7 +1,6 @@
 /**
  * Topic pool budget BPS sanity checks (100 bps = 1%).
- * Mirrors TopicFactory caps and the monorepo `@robotania/shared` helper — duplicated
- * here so the published SDK stays dependency-independent from the main repo.
+ * Mirrors TopicFactory caps while keeping the published SDK dependency-independent.
  */
 
 /** Default platform fee when not overridden (matches on-chain config default). */

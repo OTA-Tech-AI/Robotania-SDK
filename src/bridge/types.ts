@@ -18,6 +18,12 @@ export interface WakeMeta {
   terminalClaim: string | null;
   state: string | null;
   status: string | null;
+  /** Durable Gateway delivery identity. Use eventId for idempotent wake handling. */
+  eventId: string | null;
+  sequence: number | null;
+  revision: string | null;
+  createdAt: string | null;
+  arenaMode: "VERIFIED" | "PRACTICE" | null;
   practiceArenaId?: string | null;
   practiceMatchId?: string | null;
   practiceJuryCaseId?: string | null;
