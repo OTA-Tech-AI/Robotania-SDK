@@ -15,12 +15,20 @@ import {
 import type { AgentWallet } from "./wallet.js";
 import type { RequestResult, PracticeTurnPayloadContent, TurnPayloadContent } from "./types.js";
 import { normalizeCreateGameParams } from "./game-terms.js";
+import type {
+  AgentEventsPage,
+  AgentTaskContext,
+  AgentTasksResult,
+} from "./agent-runtime.js";
+import type { RetryOptions } from "./transport.js";
 
 export interface GatewayClientOptions {
   baseUrl: string;
   wallet: AgentWallet;
   /** Chain ID of the network where citizens are registered. Defaults to 31337 (local Anvil). */
   chainId?: number;
+  /** Retry bounds used only by read-only Gateway query endpoints. */
+  queryRetry?: RetryOptions;
 }
 
 /** Exactly one avatar mutation for the citizen associated with the signing wallet. */
@@ -103,11 +111,20 @@ export class GatewayClient {
   private readonly base: string;
   private readonly wallet: AgentWallet;
   private readonly chainId: number;
+  private readonly queryRetry: Required<
+    Pick<RetryOptions, "timeoutMs" | "maxAttempts" | "initialDelayMs" | "maxDelayMs">
+  >;
 
   constructor(opts: GatewayClientOptions) {
     this.base = opts.baseUrl.replace(/\/$/, "");
     this.wallet = opts.wallet;
     this.chainId = opts.chainId ?? 31337;
+    this.queryRetry = {
+      timeoutMs: opts.queryRetry?.timeoutMs ?? 15_000,
+      maxAttempts: opts.queryRetry?.maxAttempts ?? 3,
+      initialDelayMs: opts.queryRetry?.initialDelayMs ?? 300,
+      maxDelayMs: opts.queryRetry?.maxDelayMs ?? 3_000,
+    };
   }
 
   /** Gateway origin (`http(S)` …, no trailing slash) — e.g. WebSocket base derivation. */
@@ -501,6 +518,29 @@ export class GatewayClient {
     );
   }
 
+  /** Durable event catch-up. Safe to retry because this endpoint never changes arena state. */
+  async queryAgentEvents(params: {
+    citizenId: string;
+    afterSequence?: number;
+    limit?: number;
+  }): Promise<AgentEventsPage> {
+    return this.queryPost(
+      "/api/v1/agent/events/query",
+      { afterSequence: params.afterSequence ?? 0, limit: params.limit ?? 100 },
+      params.citizenId,
+    );
+  }
+
+  /** Current authority-scoped actions for this citizen across Verified and Practice arenas. */
+  async listAgentTasks(citizenId: string): Promise<AgentTasksResult> {
+    return this.queryPost("/api/v1/agent/tasks/query", {}, citizenId);
+  }
+
+  /** Canonical context for an active task. A stale task ID returns TASK_NOT_FOUND. */
+  async getAgentTaskContext(citizenId: string, taskId: string): Promise<AgentTaskContext> {
+    return this.queryPost("/api/v1/agent/tasks/context", { taskId }, citizenId);
+  }
+
   // ── Request tracking ──────────────────────────────────────────────────────
 
   async getRequestStatus(requestId: string): Promise<{
@@ -565,7 +605,7 @@ export class GatewayClient {
     throw new Error(`Request ${requestId} did not finalize within ${timeout}ms`);
   }
 
-  // ── Internal ──────────────────────────────────────────────────────────────
+  // ── Request helpers ───────────────────────────────────────────────────────
 
   private async signRequest(
     method: string,
@@ -598,6 +638,7 @@ export class GatewayClient {
     path: string,
     body: Record<string, unknown>,
     citizenId = "pending",
+    options: { timeoutMs?: number } = {},
   ): Promise<T> {
     const headerNonce = crypto.randomUUID();
     const deadlineSec = Math.floor(Date.now() / 1000) + 300;
@@ -605,54 +646,99 @@ export class GatewayClient {
 
     const signature = await this.signRequest("POST", path, citizenId, headerNonce, deadlineSec, bodyStr);
 
-    const res = await fetch(`${this.base}${path}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-agent-address": this.wallet.address,
-        "x-agent-citizen-id": citizenId,
-        "x-agent-nonce": headerNonce,
-        "x-agent-deadline": String(deadlineSec),
-        "x-agent-signature": signature,
-      },
-      body: bodyStr,
-    });
+    const controller = options.timeoutMs != null ? new AbortController() : null;
+    const timer =
+      controller != null
+        ? setTimeout(() => controller.abort(), Math.max(1, options.timeoutMs!))
+        : null;
+    try {
+      const res = await fetch(`${this.base}${path}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-agent-address": this.wallet.address,
+          "x-agent-citizen-id": citizenId,
+          "x-agent-nonce": headerNonce,
+          "x-agent-deadline": String(deadlineSec),
+          "x-agent-signature": signature,
+        },
+        body: bodyStr,
+        ...(controller ? { signal: controller.signal } : {}),
+      });
+      const json = await res.json().catch(() => ({ ok: false, message: res.statusText })) as {
+        ok?: boolean;
+        data?: T;
+        error_code?: string;
+        message?: string;
+        [key: string]: unknown;
+      };
 
-    const json = await res.json().catch(() => ({ ok: false, message: res.statusText })) as {
-      ok?: boolean;
-      data?: T;
-      error_code?: string;
-      message?: string;
-      [key: string]: unknown;
-    };
+      if (!res.ok || json.ok === false) {
+        throw new GatewayError(res.status, path, json.error_code ?? "UNKNOWN", json.message ?? "Unknown error", json);
+      }
 
-    if (!res.ok || json.ok === false) {
-      throw new GatewayError(res.status, path, json.error_code ?? "UNKNOWN", json.message ?? "Unknown error", json);
+      if (json.data === undefined) {
+        throw new GatewayError(res.status, path, "MISSING_DATA", "Gateway response missing data envelope");
+      }
+
+      return json.data;
+    } finally {
+      if (timer != null) clearTimeout(timer);
     }
-
-    if (json.data === undefined) {
-      throw new GatewayError(res.status, path, "MISSING_DATA", "Gateway response missing data envelope");
-    }
-
-    return json.data;
   }
 
-  private async get<T>(path: string, citizenId = "pending"): Promise<T> {
+  private async queryPost<T>(
+    path: string,
+    body: Record<string, unknown>,
+    citizenId: string,
+  ): Promise<T> {
+    const { timeoutMs, maxAttempts, initialDelayMs, maxDelayMs } = this.queryRetry;
+    let lastError: unknown;
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        // Each retry is freshly signed and receives a new nonce.
+        return await this.post<T>(path, body, citizenId, { timeoutMs });
+      } catch (error) {
+        lastError = error;
+        const retryable =
+          !(error instanceof GatewayError) ||
+          [408, 425, 429, 500, 502, 503, 504].includes(error.statusCode);
+        if (!retryable || attempt === maxAttempts) throw error;
+        const backoff = Math.min(maxDelayMs, initialDelayMs * 2 ** (attempt - 1));
+        await sleep(Math.floor(backoff * (0.85 + Math.random() * 0.3)));
+      }
+    }
+    throw lastError instanceof Error ? lastError : new Error("Gateway query failed");
+  }
+
+  private async getOnce<T>(
+    path: string,
+    citizenId: string,
+    timeoutMs: number,
+  ): Promise<T> {
     const nonce = crypto.randomUUID();
     const deadlineSec = Math.floor(Date.now() / 1000) + 300;
     const bodyStr = "";
 
     const signature = await this.signRequest("GET", path, citizenId, nonce, deadlineSec, bodyStr);
 
-    const res = await fetch(`${this.base}${path}`, {
-      headers: {
-        "x-agent-address": this.wallet.address,
-        "x-agent-citizen-id": citizenId,
-        "x-agent-nonce": nonce,
-        "x-agent-deadline": String(deadlineSec),
-        "x-agent-signature": signature,
-      },
-    });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), Math.max(1, timeoutMs));
+    let res: Response;
+    try {
+      res = await fetch(`${this.base}${path}`, {
+        headers: {
+          "x-agent-address": this.wallet.address,
+          "x-agent-citizen-id": citizenId,
+          "x-agent-nonce": nonce,
+          "x-agent-deadline": String(deadlineSec),
+          "x-agent-signature": signature,
+        },
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timer);
+    }
 
     const json = await res.json().catch(() => ({ ok: false, message: res.statusText })) as {
       ok?: boolean;
@@ -667,6 +753,26 @@ export class GatewayClient {
     }
 
     return (json.data ?? json) as T;
+  }
+
+  private async get<T>(path: string, citizenId = "pending"): Promise<T> {
+    const { timeoutMs, maxAttempts, initialDelayMs, maxDelayMs } = this.queryRetry;
+    let lastError: unknown;
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        // Each retry is freshly signed, so a consumed nonce is never reused.
+        return await this.getOnce<T>(path, citizenId, timeoutMs);
+      } catch (error) {
+        lastError = error;
+        const retryable =
+          !(error instanceof GatewayError) ||
+          [408, 425, 429, 500, 502, 503, 504].includes(error.statusCode);
+        if (!retryable || attempt === maxAttempts) throw error;
+        const backoff = Math.min(maxDelayMs, initialDelayMs * 2 ** (attempt - 1));
+        await sleep(Math.floor(backoff * (0.85 + Math.random() * 0.3)));
+      }
+    }
+    throw lastError instanceof Error ? lastError : new Error("Gateway query failed");
   }
 }
 

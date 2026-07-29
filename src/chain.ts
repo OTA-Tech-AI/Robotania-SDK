@@ -432,7 +432,7 @@ async function resolveEip1559Fees(
  * Nonce is derived once from `eth_getTransactionCount(pending)` and pinned for all bump retries,
  * ensuring replacements target the same mempool slot rather than issuing new transactions.
  *
- * Callers must not supply `fixedNonce` or `attempt` — these are used internally during recursion.
+ * Callers must not supply `fixedNonce` or `attempt` — they control retry behavior.
  */
 async function sendChainTx(
   clients: AgentChainClients,

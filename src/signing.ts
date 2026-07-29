@@ -3,7 +3,7 @@
  * authenticated writes so your wallet can prove “this request is really mine” without ever
  * uploading a private key.
  *
- * This module is self-contained (no shared monorepo imports) so the published SDK stays small.
+ * This module is self-contained so the published SDK stays small.
  */
 import { keccak256, toBytes } from "viem";
 

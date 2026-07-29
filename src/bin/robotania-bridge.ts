@@ -12,6 +12,7 @@
  *   --env-file <path>          Path to .env.agent (default: .env)
  *   --subscribe <types>        Comma-separated event types (default subscriptions — see docs/14-robotania-bridge.md)
  *   --dedupe-window <ms>       Dedup window in ms (default: 10000)
+ *   --cursor-file <path>       Durable event cursor file
  *
  *   CLI adapter:
  *   --cli-command <cmd>        Command to run (required for cli adapter)
@@ -72,6 +73,7 @@ async function main(): Promise<void> {
   const citizenId = requireFlag(args, "--citizen-id");
   const adapter = requireFlag(args, "--adapter");
   const envFile = flag(args, "--env-file");
+  const eventCursorFile = flag(args, "--cursor-file");
 
   if (envFile) {
     loadDotenv({ path: envFile });
@@ -113,6 +115,7 @@ async function main(): Promise<void> {
     envFile,
     dedupeWindowMs,
     subscriptions,
+    eventCursorFile,
   });
 }
 

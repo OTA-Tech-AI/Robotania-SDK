@@ -1,9 +1,9 @@
 /**
  * Discriminated union of WebSocket push events from the agent gateway.
- * Matches `packages/gateway/src/ws/map-notification.ts` shipped `type` strings.
+ * Known Robotania agent event types.
  */
 
-export type AgentWsEvent =
+export type AgentWsEvent = (
   | { type: "CONNECTED"; citizenId: string }
   /** A game's lifecycle state changed (WAITLIST → ACTIVE → CLOSED etc.). `topicId` = on-chain game ID. */
   | { type: "GAME_STATE_CHANGE"; topicId: string }
@@ -46,10 +46,18 @@ export type AgentWsEvent =
   | { type: "PRACTICE_BOARD_STEP_SUBMITTED" | "PRACTICE_BOARD_STEP_ACCEPTED"; practiceMatchId: string; practiceArenaId?: string; stepId: string; turnNumber: number; actorCitizenId: string; challengeDeadlineAt?: string }
   | { type: "PRACTICE_BOARD_CHALLENGE_FILED"; practiceMatchId: string; practiceArenaId?: string; stepId: string; challengeId: string; turnNumber: number }
   | { type: "PRACTICE_BOARD_CHALLENGE_RULED"; practiceMatchId: string; practiceArenaId?: string; stepId: string; challengeId: string; turnNumber: number; ruling?: string }
-  | { type: "PRACTICE_JURY_ASSIGNED"; practiceJuryCaseId: string; practiceMatchId?: string; practiceArenaId?: string };
+  | { type: "PRACTICE_JURY_ASSIGNED"; practiceJuryCaseId: string; practiceMatchId?: string; practiceArenaId?: string }
+) & {
+  /** Present on durable Gateway events. */
+  eventId?: string;
+  sequence?: number;
+  arenaMode?: "VERIFIED" | "PRACTICE";
+  revision?: string;
+  createdAt?: string;
+};
 
 /** Parse raw JSON from the WebSocket into {@link AgentWsEvent} when `type` is known. */
-export function parseAgentWsEvent(raw: Record<string, unknown>): AgentWsEvent | null {
+function parseKnownAgentWsEvent(raw: Record<string, unknown>): AgentWsEvent | null {
   const t = raw.type;
   if (typeof t !== "string") return null;
   switch (t) {
@@ -237,4 +245,22 @@ export function parseAgentWsEvent(raw: Record<string, unknown>): AgentWsEvent | 
     default:
       return null;
   }
+}
+
+/** Parse a Gateway event and preserve its durable delivery identity when present. */
+export function parseAgentWsEvent(raw: Record<string, unknown>): AgentWsEvent | null {
+  const event = parseKnownAgentWsEvent(raw);
+  if (!event) return null;
+  return {
+    ...event,
+    ...(typeof raw.eventId === "string" ? { eventId: raw.eventId } : {}),
+    ...(typeof raw.sequence === "number" && Number.isSafeInteger(raw.sequence)
+      ? { sequence: raw.sequence }
+      : {}),
+    ...(raw.arenaMode === "VERIFIED" || raw.arenaMode === "PRACTICE"
+      ? { arenaMode: raw.arenaMode }
+      : {}),
+    ...(typeof raw.revision === "string" ? { revision: raw.revision } : {}),
+    ...(typeof raw.createdAt === "string" ? { createdAt: raw.createdAt } : {}),
+  };
 }

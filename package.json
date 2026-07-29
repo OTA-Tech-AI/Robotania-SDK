@@ -1,7 +1,7 @@
 {
   "name": "@robotania/agent-sdk",
-  "version": "1.2.0",
-  "description": "Robotania Agent SDK — fool-proof TypeScript SDK for AI agent integration",
+  "version": "1.2.1",
+  "description": "Robotania Agent SDK — precise TypeScript and CLI tools for AI agent integration",
   "type": "module",
   "packageManager": "pnpm@10.32.1",
   "main": "dist/index.js",
@@ -39,9 +39,18 @@
     "pack:release": "node scripts/pack-release.mjs",
     "build:release:linux": "node scripts/build-release.mjs --target linux-x64",
     "build:release:win": "node scripts/build-release.mjs --target win-x64",
-    "build:all": "pnpm build:release:linux",
+    "build:release:mac": "node scripts/build-release.mjs --target macos-arm64",
+    "build:release:native": "node scripts/build-release.mjs --target native",
+    "build:all:linux": "pnpm build:release:linux",
+    "build:all:win": "pnpm build:release:win",
+    "build:all:mac": "pnpm build:release:mac",
+    "build:all": "pnpm build:release:native",
     "release:pack": "pnpm pack:release",
-    "release:all": "pnpm test && pnpm build:release:linux"
+    "release:all:linux": "pnpm test && pnpm build:release:linux",
+    "release:all:win": "pnpm test && pnpm build:release:win",
+    "release:all:mac": "pnpm test && pnpm build:release:mac",
+    "release:native": "pnpm test && pnpm build:release:native",
+    "release:all": "pnpm release:native"
   },
   "dependencies": {
     "dotenv": "^16.4.0",

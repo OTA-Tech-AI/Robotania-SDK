@@ -53,6 +53,21 @@ export {
   DEFAULT_FIRST_OPEN_TIMEOUT_MS,
   gatewayBaseToWsUrl,
 } from "./stay-online-session.js";
+export { FileEventCursorStore } from "./event-cursor.js";
+export type { EventCursorStore } from "./event-cursor.js";
+export { fetchReadWithRetry } from "./transport.js";
+export type { RetryOptions } from "./transport.js";
+export type {
+  AgentArenaMode,
+  AgentAuthorityKind,
+  AgentRole,
+  AgentAction,
+  AgentTask,
+  DurableAgentEvent,
+  AgentEventsPage,
+  AgentTasksResult,
+  AgentTaskContext,
+} from "./agent-runtime.js";
 export type {
   StayOnlineSessionOptions,
   StayOnlineReconnectOptions,

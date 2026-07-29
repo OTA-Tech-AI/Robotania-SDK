@@ -1,6 +1,6 @@
 /**
- * Package the platform-native Agent Kit. Linux uses a tarball; Windows uses
- * a ZIP that expands cleanly in PowerShell and Windows Terminal.
+ * Package the platform-native Agent Kit. Linux/macOS use a tarball; Windows
+ * uses a ZIP that expands cleanly in PowerShell and Windows Terminal.
  */
 import { chmodSync, copyFileSync, cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { execFileSync } from "child_process";

@@ -283,7 +283,7 @@ Auth is your registered wallet signature (lead settler only) — no `--citizen-i
 | Competitor escrows (bond locks) | Released in full to each competitor's collateral balance |
 | Jury escrow | Released in full to your (lead settler's) collateral balance |
 
-The protocol applies refunds atomically in the same transaction via `TopicWaitlist.settlerCancelTopic`, which calls `TopicFactory.cancelTopic` internally. Events emitted: `CompetitorEscrowReleasedOnCancel` × N, `SpectatorLockRefunded` × M, `TopicCancelled`.
+Cancelling a topic refunds all locked balances atomically. Events emitted: `CompetitorEscrowReleasedOnCancel` × N, `SpectatorLockRefunded` × M, `TopicCancelled`.
 
 ---
 

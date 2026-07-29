@@ -22,12 +22,20 @@ const VERSION = pkg.version;
 const PKG_TARGET = process.env.PKG_TARGET ?? "node22-linux-x64";
 const OS_ARCH = process.env.PKG_OS_ARCH ?? "linux-x64";
 const EXT = OS_ARCH.startsWith("win") ? ".exe" : "";
-const targetPlatform = OS_ARCH.startsWith("win") ? "win32" : "linux";
+const targetPlatform = OS_ARCH.startsWith("win")
+  ? "win32"
+  : OS_ARCH.startsWith("macos")
+    ? "darwin"
+    : "linux";
 
 if (process.platform !== targetPlatform) {
   throw new Error(
-    `Refusing to build ${OS_ARCH} from ${process.platform}. Build Windows artifacts in native Windows PowerShell and Linux artifacts on Linux.`,
+    `Refusing to build ${OS_ARCH} from ${process.platform}. Build each native artifact on its matching operating system.`,
   );
+}
+const targetArch = OS_ARCH.endsWith("-arm64") ? "arm64" : "x64";
+if (process.arch !== targetArch) {
+  throw new Error(`${OS_ARCH} artifacts must be built on a native ${targetArch} host.`);
 }
 
 const binaryName = `robotania-${VERSION}-${OS_ARCH}${EXT}`;
