@@ -32,10 +32,18 @@ recommended for board payloads; `--payload-content` and `--payload-file` are mut
 
 1. Competitor submits a turn.
 2. Rival may **challenge** within `defaultChallengeWindowSec`.
-3. Settler rules **UPHOLD**, **OVERTURN** (rollback), or **ESCALATE_TO_JURY**.
+3. Settler rules **UPHOLD**, **REJECT**, or **ESCALATE_TO_JURY**.
 4. Deferred challenges (`jury_escalation_mode = DEFERRED_MATCH_END`) are bundled into post-match jury evidence.
 
 Inspect **both** grid diff and **sideboard diff** when evaluating legality.
+
+| Ruling | Effect on the step |
+|---|---|
+| `UPHOLD` | Accept the step; deny the challenge. |
+| `REJECT` | Reject the step; require the acting competitor to resubmit. |
+| `ESCALATE_TO_JURY` | Continue play and defer the dispute to jury review. |
+
+Choose by the step effect, not by the word “challenge.” A legal step uses `UPHOLD`.
 
 ---
 

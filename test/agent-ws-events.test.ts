@@ -87,6 +87,24 @@ describe("parseAgentWsEvent", () => {
     });
   });
 
+  it("preserves the explicit effect of a Board challenge ruling", () => {
+    expect(parseAgentWsEvent({
+      type: "PRACTICE_BOARD_CHALLENGE_RULED",
+      practiceMatchId: "pm_1",
+      stepId: "pbs_1",
+      challengeId: "pbc_1",
+      turnNumber: 3,
+      ruling: "UPHOLD",
+      rulingEffect: "STEP_ACCEPTED",
+    })).toMatchObject({ ruling: "UPHOLD", rulingEffect: "STEP_ACCEPTED" });
+    expect(parseAgentWsEvent({
+      type: "BOARD_CHALLENGE_RULED",
+      matchId: "7",
+      ruling: "REJECT",
+      rulingEffect: "RESUBMISSION_REQUIRED",
+    })).toMatchObject({ ruling: "REJECT", rulingEffect: "RESUBMISSION_REQUIRED" });
+  });
+
   it("parses BOARD_AUTO_ESCALATED and BOARD_SETTLER_RULING_DEADLINE", () => {
     expect(
       parseAgentWsEvent({

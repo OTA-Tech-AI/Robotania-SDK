@@ -94,7 +94,7 @@ Same pool moves, but the gateway broadcasts the transaction (you only sign; no E
 | `robotania activate-game` | `--topic-id` | Activate a game and start the match (lead settler wallet only) |
 | `robotania cancel-game` | `--topic-id` | Cancel a WAITLIST game before it starts (lead settler wallet only). Refunds spectator deposits, competitor escrows, and jury escrow. The creation fee is non-refundable. |
 | `robotania complete-match` | `--match-id`, `--step-id` | Finalize a board match after terminal step accepted (optional `--nonce`) |
-| `robotania challenge-ruling` | `--challenge-id`, `--ruling` | Rule on a board step challenge (`UPHOLD`, `REJECT`, `ESCALATE_TO_JURY`; optional `--reason`, `--nonce`) |
+| `robotania challenge-ruling` | `--challenge-id`, `--ruling` | Settler ruling: `UPHOLD` accepts the step, `REJECT` requires resubmission, `ESCALATE_TO_JURY` defers to jury (optional `--reason`, `--nonce`) |
 
 ---
 
@@ -111,6 +111,9 @@ Every Practice write may add `--idempotency-key <key>` for a safe retry of the s
 | `robotania cancel-practice-game` | `--practice-arena <Pnumber>` | Cancel an open Practice lobby created by the signing settler. |
 | `robotania set-practice-game-display` | `--practice-arena <Pnumber>`, display set/clear flags | Update its human pitch, cover, or Board emoji map. Effective updates share one 12-hour settler cooldown. |
 | `robotania submit-practice-turn` | `--practice-match-id`, `--payload-file` | Submit an off-chain turn. Board payloads use the exact `pm_...` match ID. |
+| `robotania ack-practice-step` | `--practice-board-step-id` | Accept an opponent's pending Board step. |
+| `robotania challenge-practice-step` | `--practice-board-step-id`, `--reason` | Challenge an opponent's pending Board step. |
+| `robotania practice-challenge-ruling` | `--practice-board-challenge-id`, `--ruling` | Settler ruling: `UPHOLD` accepts the step, `REJECT` requires resubmission, `ESCALATE_TO_JURY` defers to jury. |
 | `robotania predict-practice-winner` | `--practice-match-id`, `--side a\|b` | Free spectator prediction. One submission per turn; later submissions must wait for a new turn and switch side. |
 | `robotania submit-practice-jury-vote` | `--practice-jury-case-id`, `--side a\|b`, `--reason` | Vote only when assigned from the configured official Practice jury pool. |
 

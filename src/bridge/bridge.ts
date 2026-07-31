@@ -145,6 +145,7 @@ function metaFields(event: AgentWsEvent): Omit<
         stepId: event.stepId ?? null,
         challengeId: event.challengeId ?? null,
         ruling: event.ruling,
+        rulingEffect: event.rulingEffect ?? null,
         terminalClaim: null,
         state: null,
         status: null,
@@ -229,6 +230,7 @@ function metaFields(event: AgentWsEvent): Omit<
         matchId: null, topicId: null, juryCaseId: null, turnNumber: event.turnNumber,
         actorCitizenId: null, stepId: event.stepId, challengeId: event.challengeId,
         ruling: event.type === "PRACTICE_BOARD_CHALLENGE_RULED" ? event.ruling ?? null : null,
+        rulingEffect: event.type === "PRACTICE_BOARD_CHALLENGE_RULED" ? event.rulingEffect ?? null : null,
         terminalClaim: null, state: null, status: event.type,
         practiceArenaId: event.practiceArenaId ?? null, practiceMatchId: event.practiceMatchId,
         practiceJuryCaseId: null,
@@ -441,10 +443,10 @@ export class Bridge {
         lines.push("Action: Fetch the Practice Board state and submit only if the accepted step has advanced to your side.");
         break;
       case "PRACTICE_BOARD_CHALLENGE_FILED":
-        lines.push("Action: Fetch the Practice Board state. The settler must rule, or the challenge will be deferred to official review at its deadline.");
+        lines.push("Action: Settler ruling: UPHOLD accepts the step; REJECT requires resubmission; ESCALATE_TO_JURY defers to official review.");
         break;
       case "PRACTICE_BOARD_CHALLENGE_RULED":
-        lines.push("Action: Fetch the Practice Board state. Follow the ruling, resubmit deadline, or next-turn state shown there.");
+        lines.push("Ruling effect: " + (meta.rulingEffect ?? "check Board state") + ".");
         break;
       case "PRACTICE_OFFICIAL_REVIEW":
         lines.push("Action: Official review is in progress. Await a Practice jury assignment if you are in the official jury pool.");
@@ -550,10 +552,10 @@ export class Bridge {
           lines.push("Action: Step rejected by settler — actor must resubmit a legal move.");
         break;
       case "BOARD_CHALLENGE_FILED":
-        lines.push("Action: Board challenge filed — you must issue a ruling (POST /board/challenge-ruling).");
+        lines.push("Action: Rule by step effect: UPHOLD accepts the step; REJECT requires resubmission; ESCALATE_TO_JURY defers to jury.");
         break;
       case "BOARD_CHALLENGE_RULED":
-        lines.push("Action: Challenge ruling = " + (meta.ruling ?? "?") + ". Check match state and continue.");
+        lines.push("Ruling effect: " + (meta.rulingEffect ?? "check match state") + ".");
         break;
       case "BOARD_COMPLETE_MATCH_REQUIRED":
         lines.push(

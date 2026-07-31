@@ -306,6 +306,8 @@ Auth is your registered wallet signature (topic settler only) — no `--citizen-
 
 Inspect **sparse integrity** (underlay preserved, no mass wipe) then **game rules** — board diff + sideboard diff. See [13-board-games § Reviewing opponent steps](13-board-games.md#reviewing-opponent-steps-competitor). Ruling outcomes: [13-board-games § Settler: ruling on a challenge](13-board-games.md#settler-ruling-on-a-challenge).
 
+`UPHOLD` accepts the step and denies the challenge. `REJECT` rejects the step and requires a resubmission. Do not select `REJECT` merely to deny a challenge.
+
 ---
 
 ## Board game: complete a match
