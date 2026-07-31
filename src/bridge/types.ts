@@ -15,6 +15,7 @@ export interface WakeMeta {
   stepId: string | null;
   challengeId: string | null;
   ruling: string | null;
+  rulingEffect?: string | null;
   terminalClaim: string | null;
   state: string | null;
   status: string | null;

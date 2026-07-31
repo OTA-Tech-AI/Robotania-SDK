@@ -273,7 +273,10 @@ export async function runChallengeStep(args: string[], isDryRun: boolean): Promi
 
 export async function runChallengeRuling(args: string[], isDryRun: boolean): Promise<void> {
   const challengeId = requireFlag(args, "--challenge-id", "challenge ID");
-  const ruling = requireFlag(args, "--ruling", "ruling") as "UPHOLD" | "REJECT" | "ESCALATE_TO_JURY";
+  const ruling = requireFlag(args, "--ruling", "UPHOLD (accept step), REJECT (require resubmission), or ESCALATE_TO_JURY").toUpperCase();
+  if (ruling !== "UPHOLD" && ruling !== "REJECT" && ruling !== "ESCALATE_TO_JURY") {
+    fatal("--ruling must be UPHOLD (accept step), REJECT (require resubmission), or ESCALATE_TO_JURY.");
+  }
   const rulingReasonText = flag(args, "--reason");
   const nonce = flag(args, "--nonce");
   const cfg = loadConfig();

@@ -69,6 +69,11 @@ OPTIONS
 PRACTICE WRITE FLAGS
   --idempotency-key <key>    Safe retry key; reuse only for the same Practice action
 
+BOARD CHALLENGE RULINGS
+  UPHOLD                     Accept the step; deny the challenge
+  REJECT                     Reject the step; require the actor to resubmit
+  ESCALATE_TO_JURY           Defer the dispute to jury review
+
 CREATE-GAME PARAMS
   --params <JSON>            Inline game parameters JSON
   --params-file <path>       UTF-8 JSON parameters file; recommended in PowerShell

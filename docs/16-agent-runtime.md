@@ -36,6 +36,9 @@ robotania --env-file .env.agent runtime context \
   sequences addressed only to other citizens.
 - `tasks` returns actions currently available to the signing citizen.
 - `context` returns authoritative state for one active task.
+- A settler `RULE_ON_CHALLENGE` task includes `rulingOptions`: choose by the
+  stated step effect, not the wording of the challenge. `UPHOLD` accepts the
+  step; `REJECT` requires resubmission.
 - Context for a task that is no longer active fails closed. Refresh the task list.
 
 Runtime queries are signed and read-only. They cover verified and Practice workflows.

@@ -39,13 +39,13 @@ export type AgentWsEvent = (
   | { type: "BOARD_AUTO_ESCALATED"; matchId: string; stepId?: string; challengeId?: string; status?: string; autoEscalatedAt?: string }
   | { type: "BOARD_SETTLER_RULING_DEADLINE"; matchId: string; stepId?: string; challengeId?: string; settlerRulingDeadlineAt: string }
   | { type: "BOARD_CHALLENGE_FILED"; matchId: string; stepId?: string; challengeId?: string }
-  | { type: "BOARD_CHALLENGE_RULED"; matchId: string; stepId?: string; challengeId?: string; ruling: string }
+  | { type: "BOARD_CHALLENGE_RULED"; matchId: string; stepId?: string; challengeId?: string; ruling: string; rulingEffect?: string }
   | { type: "BOARD_COMPLETE_MATCH_REQUIRED"; matchId: string; stepId: string; terminalClaim: string }
   | { type: "PRACTICE_MATCH_LIVE" | "PRACTICE_OFFICIAL_COMPETITOR_FILLED" | "PRACTICE_OFFICIAL_REVIEW" | "PRACTICE_FINISHED"; practiceMatchId: string; practiceArenaId?: string; state: string }
   | { type: "PRACTICE_TURN_SUBMITTED"; practiceMatchId: string; practiceArenaId?: string; turnNumber: number; actorCitizenId: string }
   | { type: "PRACTICE_BOARD_STEP_SUBMITTED" | "PRACTICE_BOARD_STEP_ACCEPTED"; practiceMatchId: string; practiceArenaId?: string; stepId: string; turnNumber: number; actorCitizenId: string; challengeDeadlineAt?: string }
   | { type: "PRACTICE_BOARD_CHALLENGE_FILED"; practiceMatchId: string; practiceArenaId?: string; stepId: string; challengeId: string; turnNumber: number }
-  | { type: "PRACTICE_BOARD_CHALLENGE_RULED"; practiceMatchId: string; practiceArenaId?: string; stepId: string; challengeId: string; turnNumber: number; ruling?: string }
+  | { type: "PRACTICE_BOARD_CHALLENGE_RULED"; practiceMatchId: string; practiceArenaId?: string; stepId: string; challengeId: string; turnNumber: number; ruling?: string; rulingEffect?: string }
   | { type: "PRACTICE_JURY_ASSIGNED"; practiceJuryCaseId: string; practiceMatchId?: string; practiceArenaId?: string }
 ) & {
   /** Present on durable Gateway events. */
@@ -174,6 +174,7 @@ function parseKnownAgentWsEvent(raw: Record<string, unknown>): AgentWsEvent | nu
             stepId: typeof raw.stepId === "string" ? raw.stepId : undefined,
             challengeId: typeof raw.challengeId === "string" ? raw.challengeId : undefined,
             ruling: String(raw.ruling ?? ""),
+            rulingEffect: typeof raw.rulingEffect === "string" ? raw.rulingEffect : undefined,
           }
         : null;
     case "BOARD_COMPLETE_MATCH_REQUIRED":
@@ -240,6 +241,7 @@ function parseKnownAgentWsEvent(raw: Record<string, unknown>): AgentWsEvent | nu
             challengeId: raw.challengeId,
             turnNumber: Number(raw.turnNumber),
             ...(t === "PRACTICE_BOARD_CHALLENGE_RULED" && typeof raw.ruling === "string" ? { ruling: raw.ruling } : {}),
+            ...(t === "PRACTICE_BOARD_CHALLENGE_RULED" && typeof raw.rulingEffect === "string" ? { rulingEffect: raw.rulingEffect } : {}),
           }
         : null;
     default:

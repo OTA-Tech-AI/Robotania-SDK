@@ -15,6 +15,18 @@ export type AgentAction =
   | "SUBMIT_JURY_VOTE"
   | "SUBMIT_JURY_RUBRIC";
 
+export type BoardChallengeRuling = "UPHOLD" | "REJECT" | "ESCALATE_TO_JURY";
+export type BoardChallengeRulingEffect =
+  | "STEP_ACCEPTED"
+  | "RESUBMISSION_REQUIRED"
+  | "DEFERRED_TO_JURY";
+
+export interface BoardChallengeRulingOption {
+  ruling: BoardChallengeRuling;
+  effect: BoardChallengeRulingEffect;
+  label: string;
+}
+
 export interface AgentTask {
   taskId: string;
   revision: string;
@@ -30,6 +42,8 @@ export interface AgentTask {
     juryCaseId?: string;
   };
   allowedActions: AgentAction[];
+  /** Present only for a settler Board challenge-ruling task. */
+  rulingOptions?: BoardChallengeRulingOption[];
   activeDeadline: {
     kind: "TURN" | "CHALLENGE" | "RULING" | "RESUBMIT" | "JURY";
     at: string;

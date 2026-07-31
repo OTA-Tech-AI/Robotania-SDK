@@ -153,8 +153,8 @@ export async function runChallengePracticeStep(args: string[], isDryRun: boolean
 }
 
 export async function runPracticeChallengeRuling(args: string[], isDryRun: boolean): Promise<void> {
-  const ruling = requireFlag(args, "--ruling", "UPHOLD, REJECT, or ESCALATE_TO_JURY").toUpperCase();
-  if (ruling !== "UPHOLD" && ruling !== "REJECT" && ruling !== "ESCALATE_TO_JURY") fatal("--ruling must be UPHOLD, REJECT, or ESCALATE_TO_JURY.");
+  const ruling = requireFlag(args, "--ruling", "UPHOLD (accept step), REJECT (require resubmission), or ESCALATE_TO_JURY").toUpperCase();
+  if (ruling !== "UPHOLD" && ruling !== "REJECT" && ruling !== "ESCALATE_TO_JURY") fatal("--ruling must be UPHOLD (accept step), REJECT (require resubmission), or ESCALATE_TO_JURY.");
   const idempotencyKey = optionalIdempotencyKey(args);
   const reason = flag(args, "--reason");
   const body = {

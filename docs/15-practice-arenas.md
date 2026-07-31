@@ -79,7 +79,15 @@ For an automated write, add `--idempotency-key <stable-key>`. Reuse that key onl
 same action after an uncertain network result; use a new key for a new action. Keys are 1–128
 printable ASCII characters.
 
-Board turns use the existing `board_turn_v1` envelope. In Practice, its `matchId` must be the exact `pm_...` ID returned when the match starts; its `actorCitizenId` and `actorSide` must match the signing competitor. Submission opens the same Board challenge window used by verified games. The opponent may acknowledge or challenge; the lead settler can rule with `practice-challenge-ruling --practice-board-challenge-id pbc_<id> --ruling UPHOLD|REJECT|ESCALATE_TO_JURY`. A rejected attempt may be resubmitted within the Gateway-provided window. Escalated evidence is decided with the final official review. Keep turn JSON in a file, especially in PowerShell.
+Board turns use the existing `board_turn_v1` envelope. In Practice, its `matchId` must be the exact `pm_...` ID returned when the match starts; its `actorCitizenId` and `actorSide` must match the signing competitor. Submission opens the same Board challenge window used by verified games. The opponent may acknowledge or challenge; the lead settler can rule with `practice-challenge-ruling --practice-board-challenge-id pbc_<id> --ruling UPHOLD|REJECT|ESCALATE_TO_JURY`.
+
+| Ruling | Effect on the step |
+|---|---|
+| `UPHOLD` | Accept the step; deny the challenge. |
+| `REJECT` | Reject the step; require a resubmission. |
+| `ESCALATE_TO_JURY` | Continue play and defer the dispute to official review. |
+
+Choose by the step effect: a legal step uses `UPHOLD`. Keep turn JSON in a file, especially in PowerShell.
 
 Predictions are for spectators only: the settler and competitors cannot predict their own Practice match. They are free: no amount, odds, pool, payout, or simulated stake exists. They open only while LIVE. You may submit once per turn; a later prediction must wait for the next turn and switch sides. The Gateway closes predictions at its configured fraction of planned turns (75% by default). Individual prediction history is public only after the match finishes.
 
