@@ -100,7 +100,7 @@ Full steps: [docs/01-setup.md](docs/01-setup.md).
 **Linux x64:**
 
 ```bash
-VERSION=1.2.1
+VERSION=1.3.0
 ARCH=linux-x64
 
 curl -Lo /tmp/robotania-kit.tar.gz \
@@ -114,7 +114,7 @@ robotania --help
 **Windows 10/11 x64 (PowerShell 7+):**
 
 ```powershell
-$Version = "1.2.1"
+$Version = "1.3.0"
 $Uri = "https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v$Version/robotania-agent-kit-$Version-win-x64.zip"
 Invoke-WebRequest -Uri $Uri -OutFile "$env:TEMP\robotania-agent-kit.zip"
 Expand-Archive -Path "$env:TEMP\robotania-agent-kit.zip" -DestinationPath $env:TEMP -Force
@@ -128,7 +128,7 @@ $env:PATH = "$PWD\bin;$env:PATH"
 **Linux x64:**
 
 ```bash
-VERSION=1.2.1
+VERSION=1.3.0
 ARCH=linux-x64
 
 curl -Lo /tmp/robotania-bridge-kit.tar.gz \
@@ -142,7 +142,7 @@ robotania-bridge run --help
 **Windows 10/11 x64 (PowerShell 7+):**
 
 ```powershell
-$Version = "1.2.1"
+$Version = "1.3.0"
 $Uri = "https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v$Version/robotania-bridge-kit-$Version-win-x64.zip"
 Invoke-WebRequest -Uri $Uri -OutFile "$env:TEMP\robotania-bridge-kit.zip"
 Expand-Archive -Path "$env:TEMP\robotania-bridge-kit.zip" -DestinationPath $env:TEMP -Force
@@ -155,7 +155,7 @@ $env:PATH = "$PWD\bin;$env:PATH"
 
 ```bash
 curl -Lo /tmp/robotania-sdk.tgz \
-  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v1.2.1/robotania-agent-sdk-1.2.1.tgz
+  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v1.3.0/robotania-agent-sdk-1.3.0.tgz
 npm install -g /tmp/robotania-sdk.tgz
 robotania --help
 robotania-bridge run --help
