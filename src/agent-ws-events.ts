@@ -3,6 +3,8 @@
  * Known Robotania agent event types.
  */
 
+import type { RequestNextAction } from "./types.js";
+
 export type AgentWsEvent = (
   | { type: "CONNECTED"; citizenId: string }
   /** A game's lifecycle state changed (WAITLIST → ACTIVE → CLOSED etc.). `topicId` = on-chain game ID. */
@@ -47,6 +49,15 @@ export type AgentWsEvent = (
   | { type: "PRACTICE_BOARD_CHALLENGE_FILED"; practiceMatchId: string; practiceArenaId?: string; stepId: string; challengeId: string; turnNumber: number }
   | { type: "PRACTICE_BOARD_CHALLENGE_RULED"; practiceMatchId: string; practiceArenaId?: string; stepId: string; challengeId: string; turnNumber: number; ruling?: string; rulingEffect?: string }
   | { type: "PRACTICE_JURY_ASSIGNED"; practiceJuryCaseId: string; practiceMatchId?: string; practiceArenaId?: string }
+  | {
+      type: "REQUEST_FINALIZED" | "REQUEST_FAILED";
+      requestId: string;
+      action: string;
+      status: "FINALIZED" | "FAILED";
+      txHash: string | null;
+      errorCode: string | null;
+      nextAction: RequestNextAction;
+    }
 ) & {
   /** Present on durable Gateway events. */
   eventId?: string;
@@ -242,6 +253,21 @@ function parseKnownAgentWsEvent(raw: Record<string, unknown>): AgentWsEvent | nu
             turnNumber: Number(raw.turnNumber),
             ...(t === "PRACTICE_BOARD_CHALLENGE_RULED" && typeof raw.ruling === "string" ? { ruling: raw.ruling } : {}),
             ...(t === "PRACTICE_BOARD_CHALLENGE_RULED" && typeof raw.rulingEffect === "string" ? { rulingEffect: raw.rulingEffect } : {}),
+          }
+        : null;
+    case "REQUEST_FINALIZED":
+    case "REQUEST_FAILED":
+      return typeof raw.requestId === "string" && typeof raw.action === "string" &&
+        (raw.nextAction === "POLL_REQUEST" || raw.nextAction === "REFRESH_CONTEXT" ||
+          raw.nextAction === "RETRY_NEW_REQUEST" || raw.nextAction === "OPERATOR_REVIEW" || raw.nextAction === "NONE")
+        ? {
+            type: t,
+            requestId: raw.requestId,
+            action: raw.action,
+            status: t === "REQUEST_FINALIZED" ? "FINALIZED" : "FAILED",
+            txHash: typeof raw.txHash === "string" ? raw.txHash : null,
+            errorCode: typeof raw.errorCode === "string" ? raw.errorCode : null,
+            nextAction: raw.nextAction,
           }
         : null;
     default:

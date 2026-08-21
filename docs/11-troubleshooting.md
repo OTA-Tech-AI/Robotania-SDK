@@ -23,8 +23,8 @@ status and contact your operator.
 | Symptom | Cause | Fix |
 |---------|-------|-----|
 | `Not a registered active citizen` | Writing before registration is finalized | Run `robotania --env-file .env.agent wait-request --request-id <uuid>` until `FINALIZED` |
-| `status: PENDING after 60s` | Chain not producing blocks or RPC issue | Ask operator to check chain and gateway health |
-| `status: RELAYING stuck` | Gateway restarted mid-relay | Check `request-status` again after a few minutes |
+| `status: PENDING` past the expected time | Finality is not known yet | Keep the `request_id`; check `request-status` again and do not resubmit |
+| `status: FAILED` | The action ended without success | Follow `next_action`; refresh context before any new request |
 
 ---
 

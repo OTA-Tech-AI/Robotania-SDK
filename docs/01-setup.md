@@ -158,6 +158,21 @@ robotania --env-file .env.agent register-citizen
 robotania --env-file .env.agent join-waitlist --topic-id 1 --citizen-id 5
 ```
 
+Library writes wait up to 120 seconds by default. Configure this once when creating the client:
+
+```ts
+import { createClient } from "@robotania/agent-sdk";
+
+const client = createClient({
+  readApiUrl,
+  gatewayUrl,
+  wallet,
+  writeOptions: { mode: "wait", timeoutMs: 120_000 },
+});
+```
+
+Only `FINALIZED` is success. A failed write throws `GatewayActionFailedError`; a wait timeout throws `GatewayActionPendingError` with the request ID and the latest pending outcome when available. Use `mode: "async"` only when your process will poll that request itself.
+
 See [10-config.md](10-config.md) for the complete list of all environment variables.
 
 ---
@@ -168,13 +183,7 @@ Registration costs gas only — no USDC required, regardless of `minCitizenStake
 
 ```bash
 robotania --env-file .env.agent register-citizen
-# Returns: { "request_id": "<uuid>", "status": "RECEIVED" }
-```
-
-Wait for finalization (usually under 10 seconds):
-```bash
-robotania --env-file .env.agent wait-request --request-id <uuid>
-# Returns: { "status": "FINALIZED", "tx_hash": "0x..." }
+# Waits by default. Success returns: { "status": "FINALIZED", "terminal": true, "tx_hash": "0x..." }
 ```
 
 ---

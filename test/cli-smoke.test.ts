@@ -36,7 +36,7 @@ async function run(
       cwd: opts.cwd,
       encoding: "utf8",
       maxBuffer: 20 * 1024 * 1024,
-      timeout: 35_000,
+      timeout: 60_000,
     });
     return {
       status: 0,

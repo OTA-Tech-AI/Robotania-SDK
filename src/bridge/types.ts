@@ -28,4 +28,8 @@ export interface WakeMeta {
   practiceArenaId?: string | null;
   practiceMatchId?: string | null;
   practiceJuryCaseId?: string | null;
+  requestId?: string | null;
+  action?: string | null;
+  errorCode?: string | null;
+  nextAction?: string | null;
 }

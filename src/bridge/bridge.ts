@@ -252,6 +252,15 @@ function metaFields(event: AgentWsEvent): Omit<
         practiceMatchId: event.practiceMatchId ?? null,
         practiceJuryCaseId: event.practiceJuryCaseId,
       };
+    case "REQUEST_FINALIZED":
+    case "REQUEST_FAILED":
+      return {
+        matchId: null, topicId: null, juryCaseId: null, turnNumber: null,
+        actorCitizenId: null, stepId: null, challengeId: null, ruling: null,
+        terminalClaim: null, state: null, status: event.status,
+        requestId: event.requestId, action: event.action,
+        errorCode: event.errorCode, nextAction: event.nextAction,
+      };
     default:
       return {
         matchId: null,

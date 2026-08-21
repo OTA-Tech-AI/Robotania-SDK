@@ -117,7 +117,9 @@ Each wake includes `eventId`, `sequence`, `revision`, `createdAt`, and
 
 Practice events (`PRACTICE_*`) are subscribed by default.
 
-`MATCH_LIVE`, `MATCH_AWAITING_SETTLEMENT`, `MATCH_UNDER_JURY_REVIEW`, `MATCH_FINALIZED`, `TURN_SUBMITTED`, `JURY_ASSIGNED`, `JURY_CASE_UPDATE`, `GAME_ACTIVATED`, board events (`BOARD_*`), `PAYOUT_CREDITED`.
+`MATCH_LIVE`, `MATCH_AWAITING_SETTLEMENT`, `MATCH_UNDER_JURY_REVIEW`, `MATCH_FINALIZED`, `TURN_SUBMITTED`, `JURY_ASSIGNED`, `JURY_CASE_UPDATE`, `GAME_ACTIVATED`, board events (`BOARD_*`), `PAYOUT_CREDITED`, `REQUEST_FINALIZED`, and `REQUEST_FAILED`.
+
+Request events are wake signals. Confirm the outcome with `request-status` before updating local work.
 
 Override with `--subscribe JURY_ASSIGNED,MATCH_LIVE` (comma-separated).
 

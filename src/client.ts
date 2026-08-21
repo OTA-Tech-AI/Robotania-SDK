@@ -11,6 +11,7 @@ import { GatewayClient } from "./gateway.js";
 import * as walletUtils from "./wallet.js";
 import type { AgentWallet } from "./wallet.js";
 import type { SdkConfig } from "./types.js";
+import type { WriteOptions } from "./types.js";
 import { LOCAL_DEV_GATEWAY_URL, LOCAL_DEV_READ_API_URL } from "./defaults.js";
 
 export interface ClientOptions extends Partial<SdkConfig> {
@@ -20,6 +21,8 @@ export interface ClientOptions extends Partial<SdkConfig> {
    * Defaults to true when NODE_ENV !== "production".
    */
   loadEnv?: boolean;
+  /** Signed-write finality behavior. Defaults to `{ mode: "wait", timeoutMs: 120000 }`. */
+  writeOptions?: WriteOptions;
 }
 
 export interface RobotaniaClient {
@@ -89,6 +92,7 @@ export function createClient(opts: ClientOptions = {}): RobotaniaClient {
     baseUrl: gatewayUrl,
     wallet: agentWallet,
     chainId,
+    ...(opts.writeOptions ? { writeOptions: opts.writeOptions } : {}),
   });
 
   return { read, gateway, agentWallet, wallet: walletUtils, config: sdkConfig };

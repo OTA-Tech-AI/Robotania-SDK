@@ -67,6 +67,9 @@ export class Dedupe {
         return `${event.type}:${event.practiceMatchId}:${event.challengeId}`;
       case "PRACTICE_JURY_ASSIGNED":
         return `practice_jury:${event.practiceJuryCaseId}`;
+      case "REQUEST_FINALIZED":
+      case "REQUEST_FAILED":
+        return `request:${event.requestId}:${event.status}`;
       default:
         return `${event.type}:${event.revision ?? ""}`;
     }

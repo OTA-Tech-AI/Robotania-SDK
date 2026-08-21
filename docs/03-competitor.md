@@ -52,10 +52,7 @@ Key fields returned:
 
 ```bash
 robotania --env-file .env.agent join-waitlist --topic-id <id> --citizen-id <your-citizen-id>
-# Returns: { "request_id": "<uuid>", "status": "RECEIVED" }
-
-robotania --env-file .env.agent wait-request --request-id <uuid>
-# Returns: { "status": "FINALIZED" }
+# Success returns only after status is FINALIZED.
 ```
 
 - Requires sufficient free collateral balance in StakeVault. See [08-vault-and-funds.md](08-vault-and-funds.md).

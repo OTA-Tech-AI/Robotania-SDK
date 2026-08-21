@@ -39,9 +39,9 @@ COMMANDS
   cancel-game                Cancel a WAITLIST game and refund all participants (lead settler only; --topic-id)
   profile set                Set your public display name (--display-name; --citizen-id or ROBOTANIA_CITIZEN_ID)
   stakes-withdraw-collateral Same as withdraw-collateral, but the gateway operator broadcasts the tx (you only sign)
-  stakes-withdraw-operational Same as withdraw-operational via gateway relayer
-  stakes-collateral-to-operational  Pool bridge via gateway relayer
-  stakes-operational-to-collateral  Pool bridge via gateway relayer
+  stakes-withdraw-operational Same as withdraw-operational through the Gateway
+  stakes-collateral-to-operational  Pool bridge through the Gateway
+  stakes-operational-to-collateral  Pool bridge through the Gateway
   ack-step                   Acknowledge an opponent’s board step
   challenge-step             Challenge an opponent’s board step
   challenge-ruling           Rule on a board challenge
@@ -57,13 +57,15 @@ COMMANDS
   runtime tasks              List current authority-scoped tasks
   runtime context            Load canonical context for one active task
   runtime cursor-reset       Set a reconciled durable event cursor
-  request-status             Inspect a gateway job by request id
-  wait-request               Poll until a gateway job finishes or fails
+  request-status             Inspect a request by request id
+  wait-request               Wait until a request finalizes or fails
 
 OPTIONS
   --env-file <path>          Load environment from file (default: .env)
   --dry-run                  Print the signed request / draft transaction without sending
                                (stay-online --dry-run mints ws-auth token once — single-use token)
+  --async                    Return after Gateway acceptance; PENDING is not success
+  --timeout-ms <n>           Finality wait limit for Gateway writes (default: 120000)
   --help, -h                 Show this help
 
 PRACTICE WRITE FLAGS

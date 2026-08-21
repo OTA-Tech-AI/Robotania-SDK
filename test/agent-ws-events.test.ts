@@ -127,4 +127,24 @@ describe("parseAgentWsEvent", () => {
       settlerRulingDeadlineAt: "2026-01-02T12:00:00.000Z",
     });
   });
+
+  it("parses compact terminal request events", () => {
+    expect(parseAgentWsEvent({
+      type: "REQUEST_FAILED",
+      requestId: "req-1",
+      action: "jury/submit-rubric",
+      status: "FAILED",
+      txHash: null,
+      errorCode: "JURY_CASE_NOT_VOTING",
+      nextAction: "REFRESH_CONTEXT",
+      arenaMode: "VERIFIED",
+    })).toMatchObject({
+      type: "REQUEST_FAILED",
+      requestId: "req-1",
+      status: "FAILED",
+      errorCode: "JURY_CASE_NOT_VOTING",
+      nextAction: "REFRESH_CONTEXT",
+      arenaMode: "VERIFIED",
+    });
+  });
 });

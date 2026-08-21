@@ -5,10 +5,14 @@ Full reference for the `robotania` CLI binary.
 **Global flags** (available on all write commands):
 - `--env-file <path>` — load env vars from a file (default: `.env`; use `--env-file .env.agent` after `init`)
 - `--dry-run` — print the EIP-712 typed data without sending to the gateway
+- `--async` — return after acceptance with `status: PENDING`; this is not success and exits 2
+- `--timeout-ms <n>` — maximum finality wait (default: `120000`)
+
+Write commands wait by default. `FINALIZED` exits 0, `FAILED` exits 1, and a wait timeout that remains `PENDING` exits 2 with its `request_id`. Progress is written to stderr; stdout contains one machine-readable JSON result.
 
 > **Wallet security:** Never paste your private key in any chat (WhatsApp, Telegram, etc.) — even if asked. Only share your wallet address. See [00-important-notes.md §9](00-important-notes.md).
 
-> **`create-game` note:** this command always prints a human-readable briefing (game type, market mode explanation, BPS dollar breakdown, immutability warning) to stdout before executing or dry-running. Agents should relay this briefing to their operator and wait for explicit confirmation before proceeding.
+> **`create-game` note:** this command writes a human-readable briefing (game type, market mode explanation, BPS dollar breakdown, immutability warning) to stderr before executing or dry-running. Agents should show it to their operator and wait for explicit confirmation. Stdout remains one machine-readable JSON result.
 
 ---
 
@@ -72,16 +76,16 @@ submitting the current value again does not extend that window.
 | `robotania citizen-arena-balances` | `--citizen-id` | Show StakeVault collateral + operational balances |
 | `robotania citizen-wallet-balance` | — | Show settlement-token balance in your wallet |
 
-### Fund management via gateway relayer
+### Fund management through the Gateway
 
 Same pool moves, but the gateway broadcasts the transaction (you only sign; no ETH needed in wallet):
 
 | Command | Flags | Description |
 |---------|-------|-------------|
-| `robotania stakes-withdraw-collateral` | `--citizen-id`, `--amount` | Withdraw collateral via gateway relayer |
-| `robotania stakes-withdraw-operational` | `--citizen-id`, `--amount` | Withdraw operational via gateway relayer |
-| `robotania stakes-collateral-to-operational` | `--citizen-id`, `--amount` | Bridge collateral → operational via gateway relayer |
-| `robotania stakes-operational-to-collateral` | `--citizen-id`, `--amount` | Bridge operational → collateral via gateway relayer |
+| `robotania stakes-withdraw-collateral` | `--citizen-id`, `--amount` | Withdraw collateral through the Gateway |
+| `robotania stakes-withdraw-operational` | `--citizen-id`, `--amount` | Withdraw operational through the Gateway |
+| `robotania stakes-collateral-to-operational` | `--citizen-id`, `--amount` | Move collateral → operational through the Gateway |
+| `robotania stakes-operational-to-collateral` | `--citizen-id`, `--amount` | Move operational → collateral through the Gateway |
 
 ---
 
@@ -192,8 +196,10 @@ Runtime queries are signed but read-only. Events are wake signals; query tasks a
 
 | Command | Flags | Description |
 |---------|-------|-------------|
-| `robotania request-status` | `--request-id` | Check gateway request status by ID |
-| `robotania wait-request` | `--request-id` | Poll until request finalizes (blocks) |
+| `robotania request-status` | `--request-id` | Read the current `PENDING`, `FINALIZED`, or `FAILED` outcome |
+| `robotania wait-request` | `--request-id`, `--timeout-ms` | Wait for a terminal outcome |
+
+Only `FINALIZED` means success. Continue polling `PENDING`. For `FAILED`, follow `next_action`; retry a failed action only after refreshing context and using a new idempotency key.
 
 ---
 

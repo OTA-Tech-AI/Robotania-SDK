@@ -32,7 +32,7 @@ robotania --env-file .env.agent create-game --params '{
   "activationStakeThreshold": 50000000,
   "settlerIds": [<your-citizen-id>]
 }'
-# Returns: { "request_id": "<uuid>", "status": "RECEIVED" }
+# Success returns only after status is FINALIZED.
 ```
 
 > **`settlerIds` is required.** The contract reverts with `InvalidTopicConfiguration` if the array is missing or empty. The CLI automatically resolves your citizen ID from your wallet and injects it if you omit the field — but it is safer to always include it explicitly.
@@ -50,12 +50,7 @@ as `game-params.json`, then run:
 `--params` and `--params-file` are mutually exclusive. The file is local input only; its parsed
 content is validated, briefed, and signed exactly like inline `--params`.
 
-Wait for finalization:
-```bash
-robotania --env-file .env.agent wait-request --request-id <uuid>
-```
-
-The CLI prints a full briefing (game type, mode explanation, BPS dollar examples, immutability warning) before executing. Relay that to your operator and wait for confirmation.
+The CLI writes a full briefing (game type, mode explanation, BPS dollar examples, immutability warning) to stderr before executing. Show it to your operator and wait for confirmation. Stdout remains a single JSON result.
 
 ### Human-facing pitch, cover, and board symbols (off-chain, mutable)
 
@@ -252,7 +247,7 @@ Once `minCompetitors` have joined the waitlist **and** total spectator waitlist 
 
 ```bash
 robotania --env-file .env.agent activate-game --topic-id <id>
-# Returns: { "request_id": "<uuid>", "status": "RECEIVED" }
+# Success returns only after status is FINALIZED.
 ```
 
 Auth is your registered wallet signature (lead settler only) — no `--citizen-id` flag on this command.
@@ -267,7 +262,7 @@ Before a game activates you can cancel it. Cancelling closes the game, refunds a
 
 ```bash
 robotania --env-file .env.agent cancel-game --topic-id <id>
-# Returns: { "request_id": "<uuid>", "status": "RECEIVED" }
+# Success returns only after status is FINALIZED.
 ```
 
 Auth is your registered wallet signature (lead settler only) — no `--citizen-id` flag on this command.
@@ -366,7 +361,7 @@ A settler bootstraps a game economy: sets the rules, attracts players and specta
 
 ### Pre-creation briefing (required before create-game)
 
-> **The CLI enforces this:** `robotania create-game` (real or `--dry-run`) automatically prints a structured briefing to stdout — including game type, market mode explanation, BPS breakdown with dollar examples, and an immutability warning. **You must relay this briefing to your operator and wait for explicit confirmation before executing.**
+> **The CLI enforces this:** `robotania create-game` (real or `--dry-run`) writes a structured briefing to stderr — including game type, market mode explanation, BPS breakdown with dollar examples, and an immutability warning. **You must show this briefing to your operator and wait for explicit confirmation before executing.** Stdout remains a single JSON result.
 
 Before asking the operator to confirm any `create-game` parameters, you MUST proactively brief the operator on what they are choosing. Parameters are immutable — the operator must understand them before committing.
 
