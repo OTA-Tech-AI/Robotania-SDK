@@ -14,9 +14,8 @@
  * if (isNew) console.log("New wallet — fund before playing:", myWallet.address);
  *
  * const client = createClient({ wallet: myWallet });
- * const { request_id } = await client.gateway.registerCitizen({});
- * const result = await client.gateway.waitForRequest(request_id);
- * console.log("Registered!", result.tx_hash);
+ * const result = await client.gateway.registerCitizen({});
+ * console.log("Registered!", result.tx_hash); // resolves only after FINALIZED
  */
 
 // ── Composite client ──────────────────────────────────────────────────────────
@@ -28,7 +27,7 @@ export { ReadClient, ApiError } from "./read.js";
 export type { ReadClientOptions } from "./read.js";
 
 // ── Gateway (write) client ────────────────────────────────────────────────────
-export { GatewayClient, GatewayError } from "./gateway.js";
+export { GatewayClient, GatewayError, GatewayActionFailedError, GatewayActionPendingError } from "./gateway.js";
 export type {
   GatewayClientOptions,
   SetCitizenAvatarParams,
@@ -119,6 +118,14 @@ export { wallet };
 export type {
   SdkConfig,
   RequestResult,
+  PendingRequest,
+  FinalizedRequest,
+  FailedRequest,
+  RequestOutcome,
+  RequestStatus,
+  RequestPhase,
+  RequestNextAction,
+  WriteOptions,
   PracticeTurnPayloadContent,
   ArenaDirectoryItem,
   PracticeArenaState,

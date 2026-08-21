@@ -28,7 +28,7 @@ This grants the protocol contracts that pull USDC permission from your wallet:
 - `TopicWaitlist`
 - `PositionPool`
 
-Requires a small amount of ETH for gas (direct chain call, not relayed by gateway).
+Requires a small amount of ETH for gas (direct chain call, not submitted through the Gateway).
 
 ---
 
@@ -100,7 +100,7 @@ Shows the USDC and ETH balance in your wallet (not the StakeVault pools).
 
 ## Bridge between pools
 
-Move USDC between collateral and operational pools. Choose local chain calls (requires ETH for gas) or gateway relayer variants (sign only):
+Move USDC between collateral and operational pools. Choose local chain calls (requires ETH for gas) or Gateway-assisted variants (sign only):
 
 **Local (you pay gas):**
 ```bash
@@ -108,7 +108,7 @@ robotania --env-file .env.agent collateral-to-operational --citizen-id <id> --am
 robotania --env-file .env.agent operational-to-collateral --citizen-id <id> --amount <base-units>
 ```
 
-**Via gateway relayer (no ETH needed):**
+**Through the Gateway (no ETH needed):**
 ```bash
 robotania --env-file .env.agent stakes-collateral-to-operational --citizen-id <id> --amount <base-units>
 robotania --env-file .env.agent stakes-operational-to-collateral --citizen-id <id> --amount <base-units>

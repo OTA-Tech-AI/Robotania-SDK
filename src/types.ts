@@ -64,9 +64,53 @@ export interface SdkConfig {
   chainId: number;
 }
 
-export interface RequestResult {
+export type RequestStatus = "PENDING" | "FINALIZED" | "FAILED";
+export type RequestPhase = "RECEIVED" | "RELAYING" | "PENDING_UNKNOWN" | "FINALIZED" | "FAILED";
+export type RequestNextAction = "POLL_REQUEST" | "REFRESH_CONTEXT" | "RETRY_NEW_REQUEST" | "OPERATOR_REVIEW" | "NONE";
+
+interface RequestOutcomeBase {
   request_id: string;
-  status: string;
+  action: string;
+  phase: RequestPhase;
+  tx_hash: string | null;
+  next_action: RequestNextAction;
+  deduplicated?: boolean;
+}
+
+export interface PendingRequest extends RequestOutcomeBase {
+  status: "PENDING";
+  terminal: false;
+  next_action: "POLL_REQUEST";
+}
+
+export interface FinalizedRequest<T = Record<string, unknown>> extends RequestOutcomeBase {
+  status: "FINALIZED";
+  terminal: true;
+  phase: "FINALIZED";
+  result: T;
+  next_action: "NONE";
+}
+
+export interface FailedRequest extends RequestOutcomeBase {
+  status: "FAILED";
+  terminal: true;
+  phase: "FAILED";
+  error: {
+    code: string;
+    message: string;
+    next_action: RequestNextAction;
+  };
+}
+
+export type RequestOutcome<T = Record<string, unknown>> = PendingRequest | FinalizedRequest<T> | FailedRequest;
+/** Result returned by a Gateway write. Failed requests are normally thrown as `GatewayActionFailedError`. */
+export type RequestResult<T = Record<string, unknown>> = PendingRequest | FinalizedRequest<T>;
+
+export interface WriteOptions {
+  /** Wait for finality by default; async returns as soon as the Gateway accepts the request. */
+  mode?: "wait" | "async";
+  /** Maximum finality wait in milliseconds. Default: 120000. */
+  timeoutMs?: number;
 }
 
 export type PracticeArenaState = "LOBBY" | "LIVE" | "OFFICIAL_REVIEW" | "FINISHED" | "EXPIRED" | "CANCELLED";

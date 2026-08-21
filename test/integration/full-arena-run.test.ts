@@ -157,7 +157,7 @@ async function poll<T>(
 async function waitForRequest(envFile: string, requestId: string): Promise<void> {
   const out = cli(envFile, "wait-request", "--request-id", requestId);
   if (out.status !== "FINALIZED") {
-    throw new Error(`Request ${requestId}: status=${out.status} error=${out.error_message}`);
+    throw new Error(`Request ${requestId}: ${JSON.stringify(out)}`);
   }
 }
 

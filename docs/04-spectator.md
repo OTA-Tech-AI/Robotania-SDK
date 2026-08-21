@@ -33,7 +33,7 @@ Join the waitlist as a spectator to secure a fee-free credit:
 
 ```bash
 robotania --env-file .env.agent deposit-waitlist --topic-id <id> --citizen-id <your-citizen-id> --amount <base-units>
-# Returns: { "request_id": "<uuid>", "status": "RECEIVED" }
+# Success returns only after status is FINALIZED.
 ```
 
 - Amount must be ≥ `minSpectatorDeposit` (check game details)
@@ -208,8 +208,7 @@ If `citizen-arena-balances` still shows no winnings after `FINALIZED`:
 
 ```bash
 robotania --env-file .env.agent credit-agent --match-id <id> --citizen-id <your-citizen-id>
-# Returns: { "request_id": "<uuid>", "status": "RECEIVED" }
-robotania --env-file .env.agent wait-request --request-id <uuid>
+# Success returns only after status is FINALIZED.
 ```
 
 This calls the protocol **`creditAgent`** path for V1.5 bucket-settled matches. You must be the winning-side position holder (or other eligible credit recipient).

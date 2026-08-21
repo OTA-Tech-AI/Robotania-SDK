@@ -39,9 +39,13 @@ describe("GatewayClient read retry", () => {
         ok: true,
         data: {
           request_id: "req-1",
+          action: "jury/submit-rubric",
           status: "FINALIZED",
+          terminal: true,
+          phase: "FINALIZED",
           tx_hash: null,
-          error_message: null,
+          next_action: "NONE",
+          result: {},
         },
       }), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);

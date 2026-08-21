@@ -3,20 +3,21 @@
  * (stakes, approvals, manifest updates) that must be signed by the citizen wallet key.
  */
 
-import { parseArgv, applyDotenv } from "./cli/config.js";
+import { parseArgv, applyDotenv, configureWriteOptions } from "./cli/config.js";
 import { printHelp } from "./cli/help.js";
-import { fatal } from "./cli/output.js";
+import { fatal, fatalResult, requestOutcomeExitCode } from "./cli/output.js";
 import { preloadChainAddresses } from "../chain.js";
-
-const { envFile, isDryRun, args } = parseArgv(process.argv.slice(2));
-
-// Load .env before anything reads process.env
-applyDotenv(envFile);
-
-const command = args[0];
-const rest = args.slice(1);
+import { GatewayActionFailedError, GatewayActionPendingError, GatewayError } from "../gateway.js";
 
 async function main(): Promise<void> {
+  const { envFile, isDryRun, args, writeOptions } = parseArgv(process.argv.slice(2));
+  configureWriteOptions(writeOptions);
+
+  // Load .env before anything reads process.env.
+  applyDotenv(envFile);
+
+  const command = args[0];
+  const rest = args.slice(1);
   if (!command || command === "--help" || command === "-h") {
     printHelp();
     return;
@@ -319,5 +320,28 @@ async function main(): Promise<void> {
 }
 
 main().catch((err) => {
+  if (err instanceof GatewayActionFailedError) {
+    fatalResult(err.outcome, requestOutcomeExitCode("FAILED"));
+  }
+  if (err instanceof GatewayActionPendingError) {
+    fatalResult(err.outcome ?? {
+      request_id: err.requestId,
+      terminal: false,
+      error: {
+        code: "REQUEST_STATUS_UNAVAILABLE",
+        message: err.message,
+        next_action: "POLL_REQUEST",
+      },
+    }, requestOutcomeExitCode("PENDING"));
+  }
+  if (err instanceof GatewayError) {
+    const nextAction = typeof err.response?.next_action === "string"
+      ? err.response.next_action
+      : "OPERATOR_REVIEW";
+    fatalResult({
+      ok: false,
+      error: { code: err.errorCode, message: err.detail, next_action: nextAction },
+    }, 1);
+  }
   fatal((err as Error).message ?? String(err));
 });

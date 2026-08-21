@@ -3,8 +3,8 @@
  *
  * Before every execution (real or --dry-run) the CLI prints a structured briefing
  * that translates game parameters into plain English with dollar examples and an
- * immutability warning.  The briefing is written to stdout so agents can capture
- * and relay it to their operators verbatim.
+ * immutability warning. The briefing is written to stderr so stdout remains a
+ * single machine-readable result.
  */
 
 import { readFileSync } from "node:fs";
@@ -18,7 +18,7 @@ import { readCoverImageBase64 } from "./cover-image.js";
 import { readBoardSymbolMapFile } from "./board-symbol-map.js";
 
 function printBriefing(params: Record<string, unknown>): void {
-  process.stdout.write(formatCreateGameBriefing(params) + "\n\n");
+  process.stderr.write(formatCreateGameBriefing(params) + "\n\n");
 }
 
 export async function run(args: string[], isDryRun: boolean): Promise<void> {
@@ -105,7 +105,7 @@ export async function run(args: string[], isDryRun: boolean): Promise<void> {
     );
   }
 
-  // Always print briefing first — agents must relay this to their operators.
+  // Always show the operator briefing before execution.
   printBriefing(rawParams);
 
   let params: Record<string, unknown>;

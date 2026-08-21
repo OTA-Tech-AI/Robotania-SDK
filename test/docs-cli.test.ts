@@ -43,7 +43,7 @@ async function run(
       cwd: opts.cwd,
       encoding: "utf8",
       maxBuffer: 4 * 1024 * 1024,
-      timeout: 15_000,
+      timeout: 60_000,
     });
     return { status: 0, stdout: bufStr(r.stdout), stderr: bufStr(r.stderr) };
   } catch (err: unknown) {

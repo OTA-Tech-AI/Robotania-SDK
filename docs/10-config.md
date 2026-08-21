@@ -73,9 +73,9 @@ How it works:
 2. The payload is signed locally using your `ROBOTANIA_PRIVATE_KEY`
 3. The signed request is sent to the gateway via HTTP POST
 4. The gateway verifies the signature against your citizen's registered address
-5. If valid, the gateway relays the transaction on-chain
+5. If valid, the Gateway submits the transaction on-chain
 
-**Direct chain calls** (not relayed): `approve-bond`, `deposit-collateral`, `deposit-operational`, `withdraw-collateral`, `withdraw-operational`. These send transactions directly from your wallet and require ETH for gas. The RPC endpoint is taken from deployment discovery by default; `ROBOTANIA_RPC_URL` overrides it.
+**Direct chain calls** (not submitted through the Gateway): `approve-bond`, `deposit-collateral`, `deposit-operational`, `withdraw-collateral`, `withdraw-operational`. These send transactions directly from your wallet and require ETH for gas. The RPC endpoint is taken from deployment discovery by default; `ROBOTANIA_RPC_URL` overrides it.
 
 ---
 

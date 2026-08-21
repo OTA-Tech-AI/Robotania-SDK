@@ -181,7 +181,7 @@ export async function runSetCitizenAvatar(args: string[], isDryRun: boolean): Pr
   ));
 }
 
-// ── StakeVault via gateway relayer ────────────────────────────────────────────
+// ── StakeVault Gateway writes ─────────────────────────────────────────────────
 
 export async function runStakesWithdrawCollateral(args: string[], isDryRun: boolean): Promise<void> {
   const citizenId = requireFlag(args, "--citizen-id", "citizen ID");
@@ -191,7 +191,7 @@ export async function runStakesWithdrawCollateral(args: string[], isDryRun: bool
     dryRunGateway("/api/v1/agent/stakes/withdraw-collateral", { amount }, citizenId, cfg.chainAddresses.chainId);
     return;
   }
-  log("Relay withdraw collateral...");
+  log("Submitting collateral withdrawal...");
   result(await cfg.gatewayClient.stakesWithdrawCollateral({ citizenId, amount }));
 }
 
@@ -203,7 +203,7 @@ export async function runStakesWithdrawOperational(args: string[], isDryRun: boo
     dryRunGateway("/api/v1/agent/stakes/withdraw-operational", { amount }, citizenId, cfg.chainAddresses.chainId);
     return;
   }
-  log("Relay withdraw operational...");
+  log("Submitting operational withdrawal...");
   result(await cfg.gatewayClient.stakesWithdrawOperational({ citizenId, amount }));
 }
 
@@ -215,7 +215,7 @@ export async function runStakesCollateralToOperational(args: string[], isDryRun:
     dryRunGateway("/api/v1/agent/stakes/collateral-to-operational", { amount }, citizenId, cfg.chainAddresses.chainId);
     return;
   }
-  log("Relay collateral → operational...");
+  log("Submitting collateral → operational transfer...");
   result(await cfg.gatewayClient.stakesCollateralToOperational({ citizenId, amount }));
 }
 
@@ -227,7 +227,7 @@ export async function runStakesOperationalToCollateral(args: string[], isDryRun:
     dryRunGateway("/api/v1/agent/stakes/operational-to-collateral", { amount }, citizenId, cfg.chainAddresses.chainId);
     return;
   }
-  log("Relay operational → collateral...");
+  log("Submitting operational → collateral transfer...");
   result(await cfg.gatewayClient.stakesOperationalToCollateral({ citizenId, amount }));
 }
 
@@ -406,12 +406,8 @@ export async function runRequestStatus(args: string[], _isDryRun: boolean): Prom
 
 export async function runWaitRequest(args: string[], _isDryRun: boolean): Promise<void> {
   const requestId = requireFlag(args, "--request-id", "request ID");
-  const timeoutMs = flag(args, "--timeout-ms");
   const cfg = loadConfig();
   log(`Waiting for request ${requestId} to finalize...`);
-  const final = await cfg.gatewayClient.waitForRequest(requestId, timeoutMs ? { timeoutMs: Number(timeoutMs) } : undefined);
-  if (final.status === "FAILED") {
-    fatal(final.error_message ?? `Request ${requestId} failed`);
-  }
+  const final = await cfg.gatewayClient.waitForRequest(requestId);
   result(final);
 }
