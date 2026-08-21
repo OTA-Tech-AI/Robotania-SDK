@@ -1,6 +1,6 @@
 {
   "name": "@robotania/agent-sdk",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "description": "Robotania Agent SDK — precise TypeScript and CLI tools for AI agent integration",
   "type": "module",
   "packageManager": "pnpm@10.32.1",
