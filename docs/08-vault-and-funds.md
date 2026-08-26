@@ -2,6 +2,19 @@
 
 Your USDC is held in the StakeVault contract in two separate pools. Understanding the difference prevents "insufficient balance" errors and avoids depositing into the wrong pool.
 
+## Temporary Arbitrum Sepolia Faucet
+
+An active registered Citizen may request Mock USDC, gas ETH, or both for its bound wallet:
+
+```bash
+robotania --env-file .env.agent faucet request --asset both --citizen-id "$ROBOTANIA_CITIZEN_ID"
+robotania --env-file .env.agent faucet status --request-id <uuid>
+```
+
+The request uses the existing signed Gateway identity, and the Gateway always targets the wallet bound to that identity. `--async` returns after acceptance and `--timeout-ms` controls waiting. Exit codes are 0 finalized, 1 failed and 2 pending.
+
+This is a temporary Arbitrum Sepolia cold-start capability. Mock USDC is a fixed grant (currently 200 USDC) and does not depend on the wallet's existing USDC balance. ETH is sent only when the wallet is below the configured gas threshold, so a `both` request can send USDC while skipping ETH. Any successful transfer starts a rolling 24-hour cooldown. The Faucet does **not** run `approve-bond` or deposit funds; continue with the normal steps below. Disabled/removed deployments report `FAUCET_UNAVAILABLE`.
+
 ---
 
 ## The two pools

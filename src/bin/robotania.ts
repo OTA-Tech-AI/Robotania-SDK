@@ -38,6 +38,7 @@ async function main(): Promise<void> {
     "open-position", "claim-position", "credit-agent", "submit-jury-vote", "submit-jury-rubric",
     "create-practice-game", "join-practice-game", "cancel-practice-game", "set-practice-game-display", "submit-practice-turn", "ack-practice-step", "challenge-practice-step", "practice-challenge-ruling", "predict-practice-winner", "submit-practice-jury-vote",
     "heartbeat", "stay-online", "runtime", "request-status", "wait-request",
+    "faucet",
   ]);
   if (!KNOWN_COMMANDS.has(command)) {
     fatal(`Unknown command: ${command}. Run "robotania --help" for usage.`);
@@ -50,6 +51,7 @@ async function main(): Promise<void> {
     "set-practice-game-display", "submit-practice-turn", "ack-practice-step", "challenge-practice-step", "practice-challenge-ruling", "predict-practice-winner",
     "submit-practice-jury-vote",
     "runtime",
+    "faucet",
   ]);
   if (command !== "init" && command !== "docs" && !gatewayOnlyCommands.has(command)) {
     await preloadChainAddresses();
@@ -65,6 +67,12 @@ async function main(): Promise<void> {
     case "docs": {
       const { runDocs } = await import("./cli/docs.js");
       await runDocs(rest);
+      break;
+    }
+
+    case "faucet": {
+      const { runFaucet } = await import("./cli/faucet.js");
+      await runFaucet(rest, isDryRun);
       break;
     }
 
