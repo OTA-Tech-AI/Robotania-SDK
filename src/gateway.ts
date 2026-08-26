@@ -33,6 +33,7 @@ import type {
   BoardChallengeRuling,
 } from "./agent-runtime.js";
 import type { RetryOptions } from "./transport.js";
+import { isFaucetRequestOutcome, type FaucetAsset, type FaucetRequestOutcome } from "./faucet.js";
 
 export interface GatewayClientOptions {
   baseUrl: string;
@@ -572,6 +573,70 @@ export class GatewayClient {
     return outcome as RequestOutcome<T>;
   }
 
+  // ── Temporary testnet Faucet ─────────────────────────────────────────────
+
+  /** Request Mock USDC and/or Arbitrum Sepolia ETH for the signing Citizen. */
+  async requestFaucet(params: {
+    assets: FaucetAsset[];
+    idempotencyKey?: string;
+    citizenId?: string;
+  }): Promise<FaucetRequestOutcome> {
+    const path = "/api/v1/agent/faucet/requests";
+    let outcome: FaucetRequestOutcome;
+    try {
+      outcome = await this.post<FaucetRequestOutcome>(path, {
+        assets: params.assets,
+        idempotencyKey: params.idempotencyKey ?? crypto.randomUUID(),
+      }, params.citizenId ?? "pending", { resolveOutcome: false });
+    } catch (error) {
+      throw normalizeFaucetUnavailable(error, path, true);
+    }
+    if (!isFaucetRequestOutcome(outcome)) {
+      throw new GatewayError(502, path, "INVALID_RESPONSE", "Gateway returned an invalid Faucet request outcome");
+    }
+    if (outcome.terminal || this.writeOptions.mode === "async") return outcome;
+    return this.waitForFaucetRequest(outcome.request_id, { timeoutMs: this.writeOptions.timeoutMs });
+  }
+
+  /** Load one Faucet request by its opaque request ID. */
+  async getFaucetRequest(requestId: string): Promise<FaucetRequestOutcome> {
+    const path = `/api/v1/public/faucet/requests/${encodeURIComponent(requestId)}`;
+    try {
+      const outcome = await this.get<unknown>(path);
+      if (!isFaucetRequestOutcome(outcome)) {
+        throw new GatewayError(502, path, "INVALID_RESPONSE", "Gateway returned an invalid Faucet request outcome");
+      }
+      return outcome;
+    } catch (error) {
+      throw normalizeFaucetUnavailable(error, path, false);
+    }
+  }
+
+  /** Poll a Faucet request until it reaches FINALIZED/FAILED or the wait limit expires. */
+  async waitForFaucetRequest(requestId: string, opts: { timeoutMs?: number; pollIntervalMs?: number } = {}): Promise<FaucetRequestOutcome> {
+    const timeoutMs = opts.timeoutMs ?? this.writeOptions.timeoutMs;
+    const intervalMs = opts.pollIntervalMs ?? 2_000;
+    const deadline = Date.now() + timeoutMs;
+    let latest: FaucetRequestOutcome | null = null;
+    while (Date.now() < deadline) {
+      latest = await this.getFaucetRequest(requestId);
+      if (latest.terminal) return latest;
+      await sleep(Math.min(intervalMs, Math.max(0, deadline - Date.now())));
+    }
+    return latest ?? {
+      request_id: requestId,
+      action: "faucet/request",
+      citizen_id: "",
+      wallet_address: this.wallet.address,
+      status: "PENDING",
+      terminal: false,
+      phase: "PENDING_UNKNOWN",
+      next_action: "POLL_REQUEST",
+      cooldown_until: null,
+      assets: [],
+    };
+  }
+
   /** List recent signed requests (may be restricted by deployment). */
   async listRequests(params?: { citizen_id?: string; status?: "PENDING" | "FINALIZED" | "FAILED"; phase?: RequestPhase }): Promise<Array<RequestOutcome<unknown>>> {
     const qs = toQs(params as Record<string, unknown> | undefined);
@@ -657,7 +722,7 @@ export class GatewayClient {
     path: string,
     body: Record<string, unknown>,
     citizenId = "pending",
-    options: { timeoutMs?: number } = {},
+    options: { timeoutMs?: number; resolveOutcome?: boolean } = {},
   ): Promise<T> {
     const headerNonce = crypto.randomUUID();
     const deadlineSec = Math.floor(Date.now() / 1000) + 300;
@@ -708,7 +773,7 @@ export class GatewayClient {
       }
 
       const data = json.data;
-      if (isRequestOutcome(data)) {
+      if (options.resolveOutcome !== false && isRequestOutcome(data)) {
         return await this.resolveWriteOutcome(data, this.writeOptions) as T;
       }
       return data;
@@ -834,6 +899,16 @@ export class GatewayClient {
     }
     throw lastError instanceof Error ? lastError : new Error("Gateway query failed");
   }
+}
+
+function normalizeFaucetUnavailable(error: unknown, path: string, disabledRouteMayBe404: boolean): unknown {
+  if (error instanceof GatewayError && (
+    error.statusCode === 503 ||
+    (error.statusCode === 404 && (disabledRouteMayBe404 || error.errorCode !== "FAUCET_REQUEST_NOT_FOUND"))
+  )) {
+    return new GatewayError(503, path, "FAUCET_UNAVAILABLE", "The temporary testnet Faucet is disabled or unavailable.", error.response);
+  }
+  return error;
 }
 
 export class GatewayError extends Error {

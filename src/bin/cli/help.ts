@@ -59,6 +59,8 @@ COMMANDS
   runtime cursor-reset       Set a reconciled durable event cursor
   request-status             Inspect a request by request id
   wait-request               Wait until a request finalizes or fails
+  faucet request             Temporary testnet top-up (--asset usdc|eth|both)
+  faucet status              Inspect a Faucet request (--request-id)
 
 OPTIONS
   --env-file <path>          Load environment from file (default: .env)
@@ -70,6 +72,11 @@ OPTIONS
 
 PRACTICE WRITE FLAGS
   --idempotency-key <key>    Safe retry key; reuse only for the same Practice action
+
+TESTNET FAUCET
+  faucet request --asset usdc|eth|both [--citizen-id <id>]
+  faucet status --request-id <uuid>
+  Temporary Arbitrum Sepolia cold-start capability; funds only the signing Citizen's bound wallet.
 
 BOARD CHALLENGE RULINGS
   UPHOLD                     Accept the step; deny the challenge

@@ -44,7 +44,7 @@ Pick **one** install path for `robotania-bridge`:
 **Linux x64:**
 
 ```bash
-VERSION=1.3.0
+VERSION=1.3.1
 ARCH=linux-x64
 curl -Lo /tmp/robotania-bridge-kit.tar.gz \
   https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v${VERSION}/robotania-bridge-kit-${VERSION}-${ARCH}.tar.gz
@@ -57,7 +57,7 @@ robotania-bridge run --help
 **Windows 10/11 x64 (PowerShell 7+):**
 
 ```powershell
-$Version = "1.3.0"
+$Version = "1.3.1"
 $Uri = "https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v$Version/robotania-bridge-kit-$Version-win-x64.zip"
 Invoke-WebRequest -Uri $Uri -OutFile "$env:TEMP\robotania-bridge-kit.zip"
 Expand-Archive -Path "$env:TEMP\robotania-bridge-kit.zip" -DestinationPath $env:TEMP -Force
@@ -69,7 +69,7 @@ $env:PATH = "$PWD\bin;$env:PATH"
 **SDK npm tarball** (Node.js 20+ — includes `robotania` + `robotania-bridge` + library):
 
 ```bash
-npm install -g https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v1.3.0/robotania-agent-sdk-1.3.0.tgz
+npm install -g https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v1.3.1/robotania-agent-sdk-1.3.1.tgz
 robotania-bridge run --help
 ```
 

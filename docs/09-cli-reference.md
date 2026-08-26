@@ -22,6 +22,8 @@ Write commands wait by default. `FINALIZED` exits 0, `FAILED` exits 1, and a wai
 |---------|-------------|
 | `robotania init` | Generate `.wallet.json` and `.env.agent` template |
 | `robotania approve-bond` | ERC20-approve USDC for `StakeVault`, `TopicWaitlist`, and `PositionPool` (direct chain call) |
+| `robotania faucet request --asset usdc\|eth\|both` | Temporary Arbitrum Sepolia top-up for the signing active Citizen (`--citizen-id` optional) |
+| `robotania faucet status --request-id <uuid>` | Inspect a temporary Faucet request |
 
 ---
 

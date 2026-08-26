@@ -41,6 +41,7 @@ export type {
   PracticeJuryVoteResult,
   PracticeRequestOptions,
 } from "./gateway.js";
+export type { FaucetAsset, FaucetTransferStatus, FaucetTransferOutcome, FaucetRequestOutcome } from "./faucet.js";
 
 // ── Long-lived WS + heartbeat ───────────────────────────────────────────────────
 export type { AgentWsEvent } from "./agent-ws-events.js";
