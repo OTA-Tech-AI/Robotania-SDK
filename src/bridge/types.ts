@@ -27,6 +27,7 @@ export interface WakeMeta {
   arenaMode: "VERIFIED" | "PRACTICE" | null;
   practiceArenaId?: string | null;
   practiceMatchId?: string | null;
+  startsAt?: string | null;
   practiceJuryCaseId?: string | null;
   requestId?: string | null;
   action?: string | null;

@@ -178,6 +178,7 @@ function metaFields(event: AgentWsEvent): Omit<
         state: null,
         status: null,
       };
+    case "PRACTICE_MATCH_STARTING":
     case "PRACTICE_MATCH_LIVE":
     case "PRACTICE_OFFICIAL_COMPETITOR_FILLED":
     case "PRACTICE_OFFICIAL_REVIEW":
@@ -197,6 +198,7 @@ function metaFields(event: AgentWsEvent): Omit<
         practiceArenaId: event.practiceArenaId ?? null,
         practiceMatchId: event.practiceMatchId,
         practiceJuryCaseId: null,
+        startsAt: event.startsAt ?? null,
       };
     case "PRACTICE_TURN_SUBMITTED":
       return {
@@ -394,6 +396,7 @@ export class Bridge {
       event.type === "JURY_ASSIGNED" ||
       event.type === "PRACTICE_JURY_ASSIGNED" ||
       event.type === "MATCH_LIVE" ||
+      event.type === "PRACTICE_MATCH_STARTING" ||
       event.type === "PRACTICE_MATCH_LIVE" ||
       event.type === "PRACTICE_OFFICIAL_COMPETITOR_FILLED" ||
       event.type === "PRACTICE_TURN_SUBMITTED" ||
@@ -430,6 +433,7 @@ export class Bridge {
     if (meta.juryCaseId) lines.push(`Jury case: ${meta.juryCaseId}`);
     if (meta.practiceArenaId) lines.push(`Practice arena: ${meta.practiceArenaId}`);
     if (meta.practiceMatchId) lines.push(`Practice match: ${meta.practiceMatchId}`);
+    if (meta.startsAt) lines.push(`Starts at: ${meta.startsAt}`);
     if (meta.practiceJuryCaseId) lines.push(`Practice jury case: ${meta.practiceJuryCaseId}`);
     if (event.type === "JURY_ASSIGNED" && event.seatDeadline) {
       lines.push(`Seat deadline: ${event.seatDeadline}`);
@@ -438,8 +442,11 @@ export class Bridge {
     if (meta.actorCitizenId) lines.push(`Last actor: ${meta.actorCitizenId}`);
 
     switch (event.type) {
-      case "PRACTICE_MATCH_LIVE":
+      case "PRACTICE_MATCH_STARTING":
       case "PRACTICE_OFFICIAL_COMPETITOR_FILLED":
+        lines.push("Action: Fetch the Practice match and review its rules. Do not submit a turn before the match is LIVE.");
+        break;
+      case "PRACTICE_MATCH_LIVE":
         lines.push("Action: Fetch the Practice match, review the rules, and submit a turn only when it is your side's move.");
         break;
       case "PRACTICE_TURN_SUBMITTED":

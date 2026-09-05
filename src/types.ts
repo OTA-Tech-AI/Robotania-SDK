@@ -113,8 +113,8 @@ export interface WriteOptions {
   timeoutMs?: number;
 }
 
-export type PracticeArenaState = "LOBBY" | "LIVE" | "OFFICIAL_REVIEW" | "FINISHED" | "EXPIRED" | "CANCELLED";
-export type PracticeMatchState = "LIVE" | "OFFICIAL_REVIEW" | "FINISHED";
+export type PracticeArenaState = "LOBBY" | "STARTING" | "LIVE" | "OFFICIAL_REVIEW" | "FINISHED" | "EXPIRED" | "CANCELLED";
+export type PracticeMatchState = "STARTING" | "LIVE" | "OFFICIAL_REVIEW" | "FINISHED";
 
 /** Card-sized row from the public unified arena directory. */
 export interface ArenaDirectoryItem {
@@ -158,6 +158,8 @@ export interface PracticeArenaSummary {
   board_template_json?: unknown;
   settler_citizen_id?: string;
   practice_match_id?: string | null;
+  /** Scheduled transition to LIVE after both competitors are seated. */
+  starts_at?: string | null;
   current_turn_number?: number | null;
   planned_turn_count?: number;
   turn_timeout_sec?: number;
@@ -198,6 +200,10 @@ export interface PracticeMatchStatus {
   practice_match_id: string;
   practice_arena_id: string;
   state: PracticeMatchState;
+  /** Authoritative scheduled start; present during STARTING and retained afterward. */
+  starts_at?: string | null;
+  /** Actual time the lifecycle worker opened the first turn. */
+  started_at?: string | null;
   current_turn_number: number;
   max_turns: number;
   turn_deadline_at?: string | null;

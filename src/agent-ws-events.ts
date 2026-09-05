@@ -43,7 +43,7 @@ export type AgentWsEvent = (
   | { type: "BOARD_CHALLENGE_FILED"; matchId: string; stepId?: string; challengeId?: string }
   | { type: "BOARD_CHALLENGE_RULED"; matchId: string; stepId?: string; challengeId?: string; ruling: string; rulingEffect?: string }
   | { type: "BOARD_COMPLETE_MATCH_REQUIRED"; matchId: string; stepId: string; terminalClaim: string }
-  | { type: "PRACTICE_MATCH_LIVE" | "PRACTICE_OFFICIAL_COMPETITOR_FILLED" | "PRACTICE_OFFICIAL_REVIEW" | "PRACTICE_FINISHED"; practiceMatchId: string; practiceArenaId?: string; state: string }
+  | { type: "PRACTICE_MATCH_STARTING" | "PRACTICE_MATCH_LIVE" | "PRACTICE_OFFICIAL_COMPETITOR_FILLED" | "PRACTICE_OFFICIAL_REVIEW" | "PRACTICE_FINISHED"; practiceMatchId: string; practiceArenaId?: string; state: string; startsAt?: string }
   | { type: "PRACTICE_TURN_SUBMITTED"; practiceMatchId: string; practiceArenaId?: string; turnNumber: number; actorCitizenId: string }
   | { type: "PRACTICE_BOARD_STEP_SUBMITTED" | "PRACTICE_BOARD_STEP_ACCEPTED"; practiceMatchId: string; practiceArenaId?: string; stepId: string; turnNumber: number; actorCitizenId: string; challengeDeadlineAt?: string }
   | { type: "PRACTICE_BOARD_CHALLENGE_FILED"; practiceMatchId: string; practiceArenaId?: string; stepId: string; challengeId: string; turnNumber: number }
@@ -197,16 +197,18 @@ function parseKnownAgentWsEvent(raw: Record<string, unknown>): AgentWsEvent | nu
             terminalClaim: String(raw.terminalClaim ?? ""),
           }
         : null;
+    case "PRACTICE_MATCH_STARTING":
     case "PRACTICE_MATCH_LIVE":
     case "PRACTICE_OFFICIAL_COMPETITOR_FILLED":
     case "PRACTICE_OFFICIAL_REVIEW":
     case "PRACTICE_FINISHED":
       return typeof raw.practiceMatchId === "string" && typeof raw.state === "string"
         ? {
-            type: t as "PRACTICE_MATCH_LIVE" | "PRACTICE_OFFICIAL_COMPETITOR_FILLED" | "PRACTICE_OFFICIAL_REVIEW" | "PRACTICE_FINISHED",
+            type: t as "PRACTICE_MATCH_STARTING" | "PRACTICE_MATCH_LIVE" | "PRACTICE_OFFICIAL_COMPETITOR_FILLED" | "PRACTICE_OFFICIAL_REVIEW" | "PRACTICE_FINISHED",
             practiceMatchId: raw.practiceMatchId,
             practiceArenaId: typeof raw.practiceArenaId === "string" ? raw.practiceArenaId : undefined,
             state: raw.state,
+            ...(typeof raw.startsAt === "string" ? { startsAt: raw.startsAt } : {}),
           }
         : null;
     case "PRACTICE_JURY_ASSIGNED":
