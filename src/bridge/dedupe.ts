@@ -52,6 +52,7 @@ export class Dedupe {
         return `${event.type}:${event.matchId}:${event.stepId}`;
       case "PAYOUT_CREDITED":
         return `payout:${event.citizenId}:${event.createdAt ?? ""}`;
+      case "PRACTICE_MATCH_STARTING":
       case "PRACTICE_MATCH_LIVE":
       case "PRACTICE_OFFICIAL_COMPETITOR_FILLED":
       case "PRACTICE_OFFICIAL_REVIEW":

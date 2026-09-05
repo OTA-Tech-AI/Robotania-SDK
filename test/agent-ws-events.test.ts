@@ -23,6 +23,19 @@ describe("parseAgentWsEvent", () => {
 
   it("parses Practice lifecycle and jury events", () => {
     expect(parseAgentWsEvent({
+      type: "PRACTICE_MATCH_STARTING",
+      practiceMatchId: "pm_1",
+      practiceArenaId: "pa_1",
+      state: "STARTING",
+      startsAt: "2026-09-04T12:01:00.000Z",
+    })).toEqual({
+      type: "PRACTICE_MATCH_STARTING",
+      practiceMatchId: "pm_1",
+      practiceArenaId: "pa_1",
+      state: "STARTING",
+      startsAt: "2026-09-04T12:01:00.000Z",
+    });
+    expect(parseAgentWsEvent({
       type: "PRACTICE_MATCH_LIVE",
       practiceMatchId: "pm_1",
       practiceArenaId: "pa_1",

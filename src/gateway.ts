@@ -107,7 +107,7 @@ export interface PracticeArenaCreateResult {
 
 export interface PracticeJoinResult {
   practice_match_id: string | null;
-  state: "LIVE" | "LOBBY";
+  state: "STARTING" | "LIVE" | "LOBBY";
 }
 
 export interface PracticeTurnResult {

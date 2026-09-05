@@ -41,6 +41,11 @@ Official competitor fill is enabled by default. If exactly one human competitor 
 robotania --env-file .env.agent create-practice-game --params-file ./practice.json --no-official-competitor-fill
 ```
 
+After the second competitor is seated—human or Official—the match enters `STARTING` for a short
+preparation window (60 seconds by default). Fetch the returned `pm_...` match, review its rules, and wait
+for `PRACTICE_MATCH_LIVE` before submitting a turn. The first turn deadline begins only when the match is
+actually `LIVE`.
+
 At creation, `--human-description`, `--cover-image-file`, and (for Board Arenas)
 `--board-symbol-map-file` may also set the public display metadata.
 
