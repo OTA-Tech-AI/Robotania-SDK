@@ -29,7 +29,12 @@ export async function runBridge(opts: RunnerOptions): Promise<void> {
   ).replace(/\/$/, "");
   const chainId = Number(process.env.ROBOTANIA_CHAIN_ID ?? 31337);
 
-  const gateway = new GatewayClient({ baseUrl: gatewayUrl, wallet: agentWallet, chainId });
+  const gateway = new GatewayClient({
+    baseUrl: gatewayUrl,
+    wallet: agentWallet,
+    chainId,
+    citizenActionRelay: process.env.ROBOTANIA_CITIZEN_ACTION_RELAY as `0x${string}` | undefined,
+  });
 
   const session = new StayOnlineSession({
     gateway,

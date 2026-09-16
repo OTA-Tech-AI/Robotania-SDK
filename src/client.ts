@@ -13,6 +13,7 @@ import type { AgentWallet } from "./wallet.js";
 import type { SdkConfig } from "./types.js";
 import type { WriteOptions } from "./types.js";
 import { LOCAL_DEV_GATEWAY_URL, LOCAL_DEV_READ_API_URL } from "./defaults.js";
+import { resolveChainAddresses, type ResolvedChainAddresses } from "./chain.js";
 
 export interface ClientOptions extends Partial<SdkConfig> {
   wallet?: AgentWallet;
@@ -81,17 +82,26 @@ export function createClient(opts: ClientOptions = {}): RobotaniaClient {
 
   const agentWallet: AgentWallet = opts.wallet ?? resolveWallet();
 
-  const chainId =
-    opts.chainId ??
-    Number(process.env.CHAIN_ID ?? process.env.ROBOTANIA_CHAIN_ID ?? 31337);
+  let discovered: ResolvedChainAddresses | undefined;
+  try {
+    discovered = resolveChainAddresses();
+  } catch {
+    // Discovery is optional for callers that provide their own configuration.
+  }
+  const chainId = opts.chainId
+    ?? Number(process.env.CHAIN_ID ?? process.env.ROBOTANIA_CHAIN_ID ?? discovered?.chainId ?? 31337);
+  const citizenActionRelay = opts.citizenActionRelay
+    ?? (process.env.ROBOTANIA_CITIZEN_ACTION_RELAY as `0x${string}` | undefined)
+    ?? discovered?.citizenActionRelay;
 
-  const sdkConfig: SdkConfig = { readApiUrl, gatewayUrl, chainId };
+  const sdkConfig: SdkConfig = { readApiUrl, gatewayUrl, chainId, citizenActionRelay };
 
   const read = new ReadClient({ baseUrl: readApiUrl });
   const gateway = new GatewayClient({
     baseUrl: gatewayUrl,
     wallet: agentWallet,
     chainId,
+    citizenActionRelay,
     ...(opts.writeOptions ? { writeOptions: opts.writeOptions } : {}),
   });
 

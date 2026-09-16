@@ -127,6 +127,7 @@ const updateManifestAbi = [
 export interface ResolvedChainAddresses {
   protocolConfig: `0x${string}`;
   citizenRegistry: `0x${string}`;
+  citizenActionRelay: `0x${string}` | undefined;
   settlementToken: `0x${string}`;
   stakeVault: `0x${string}` | undefined;
   topicWaitlist: `0x${string}` | undefined;
@@ -167,11 +168,13 @@ export async function preloadChainAddresses(): Promise<void> {
   // 1. Explicit env vars (manual override / offline)
   const pe = process.env.ROBOTANIA_PROTOCOL_CONFIG as `0x${string}` | undefined;
   const ce = process.env.ROBOTANIA_CITIZEN_REGISTRY as `0x${string}` | undefined;
+  const ae = process.env.ROBOTANIA_CITIZEN_ACTION_RELAY as `0x${string}` | undefined;
   const te = process.env.ROBOTANIA_SETTLEMENT_TOKEN as `0x${string}` | undefined;
-  if (pe && ce && te) {
+  if (pe && ce && ae && te) {
     _cachedAddresses = {
       protocolConfig:  pe,
       citizenRegistry: ce,
+      citizenActionRelay: ae,
       settlementToken: te,
       stakeVault:      process.env.ROBOTANIA_STAKE_VAULT as `0x${string}` | undefined,
       topicWaitlist:   process.env.ROBOTANIA_TOPIC_WAITLIST as `0x${string}` | undefined,
@@ -193,15 +196,17 @@ export async function preloadChainAddresses(): Promise<void> {
     const c = raw.contracts ?? {};
     const protocolConfig = c.ProtocolConfig as `0x${string}` | undefined;
     const citizenRegistry = c.CitizenRegistry as `0x${string}` | undefined;
+    const citizenActionRelay = c.CitizenActionRelay as `0x${string}` | undefined;
     const settlementToken = c.SettlementToken as `0x${string}` | undefined;
-    if (!protocolConfig || !citizenRegistry || !settlementToken) {
+    if (!protocolConfig || !citizenRegistry || !citizenActionRelay || !settlementToken) {
       throw new Error(
-        `deployed-addresses.json at ${jsonPath} is missing ProtocolConfig, CitizenRegistry, or SettlementToken`,
+        `deployed-addresses.json at ${jsonPath} is missing ProtocolConfig, CitizenRegistry, CitizenActionRelay, or SettlementToken`,
       );
     }
     _cachedAddresses = {
       protocolConfig,
       citizenRegistry,
+      citizenActionRelay: (process.env.ROBOTANIA_CITIZEN_ACTION_RELAY ?? citizenActionRelay) as `0x${string}`,
       settlementToken,
       stakeVault:    (process.env.ROBOTANIA_STAKE_VAULT ?? c.StakeVault) as `0x${string}` | undefined,
       topicWaitlist: (process.env.ROBOTANIA_TOPIC_WAITLIST ?? c.TopicWaitlist) as `0x${string}` | undefined,
@@ -237,7 +242,7 @@ export async function preloadChainAddresses(): Promise<void> {
   const c = data.contracts ?? {};
 
   // Validate required fields before caching — fail fast with actionable error
-  const missing = (["ProtocolConfig", "CitizenRegistry", "SettlementToken"] as const).filter(
+  const missing = (["ProtocolConfig", "CitizenRegistry", "CitizenActionRelay", "SettlementToken"] as const).filter(
     (k) => !c[k] || !/^0x[0-9a-fA-F]{40}$/.test(c[k]),
   );
   if (missing.length > 0 || !data.chain_id) {
@@ -251,6 +256,7 @@ export async function preloadChainAddresses(): Promise<void> {
   _cachedAddresses = {
     protocolConfig:  c.ProtocolConfig as `0x${string}`,
     citizenRegistry: c.CitizenRegistry as `0x${string}`,
+    citizenActionRelay: c.CitizenActionRelay as `0x${string}`,
     settlementToken: c.SettlementToken as `0x${string}`,
     stakeVault:      c.StakeVault as `0x${string}` | undefined,
     topicWaitlist:   c.TopicWaitlist as `0x${string}` | undefined,
@@ -275,10 +281,12 @@ export function resolveChainAddresses(): ResolvedChainAddresses {
   const sve = process.env.ROBOTANIA_STAKE_VAULT as `0x${string}` | undefined;
   const twe = process.env.ROBOTANIA_TOPIC_WAITLIST as `0x${string}` | undefined;
   const ppe = process.env.ROBOTANIA_POSITION_POOL as `0x${string}` | undefined;
-  if (pe && ce && te) {
+  const are = process.env.ROBOTANIA_CITIZEN_ACTION_RELAY as `0x${string}` | undefined;
+  if (pe && ce && te && are) {
     return {
       protocolConfig:  pe,
       citizenRegistry: ce,
+      citizenActionRelay: are,
       settlementToken: te,
       stakeVault:      sve,
       topicWaitlist:   twe,
@@ -295,7 +303,8 @@ export function resolveChainAddresses(): ResolvedChainAddresses {
   if (!existsSync(path)) {
     throw new Error(
       "Missing chain addresses: set ROBOTANIA_PROTOCOL_CONFIG, ROBOTANIA_CITIZEN_REGISTRY, " +
-        "ROBOTANIA_SETTLEMENT_TOKEN, or ROBOTANIA_READ_API_URL (for HTTP discovery via preloadChainAddresses).",
+        "ROBOTANIA_CITIZEN_ACTION_RELAY, ROBOTANIA_SETTLEMENT_TOKEN, or ROBOTANIA_READ_API_URL " +
+        "(for HTTP discovery via preloadChainAddresses).",
     );
   }
 
@@ -306,15 +315,17 @@ export function resolveChainAddresses(): ResolvedChainAddresses {
   const c = raw.contracts ?? {};
   const protocolConfig = c.ProtocolConfig as `0x${string}` | undefined;
   const citizenRegistry = c.CitizenRegistry as `0x${string}` | undefined;
+  const citizenActionRelay = c.CitizenActionRelay as `0x${string}` | undefined;
   const settlementToken = c.SettlementToken as `0x${string}` | undefined;
 
-  if (!protocolConfig || !citizenRegistry || !settlementToken) {
-    throw new Error(`deployed-addresses.json at ${path} missing ProtocolConfig, CitizenRegistry, or SettlementToken`);
+  if (!protocolConfig || !citizenRegistry || !citizenActionRelay || !settlementToken) {
+    throw new Error(`deployed-addresses.json at ${path} missing ProtocolConfig, CitizenRegistry, CitizenActionRelay, or SettlementToken`);
   }
 
   return {
     protocolConfig,
     citizenRegistry,
+    citizenActionRelay: (are ?? citizenActionRelay) as `0x${string}`,
     settlementToken,
     stakeVault:    (sve ?? c.StakeVault) as `0x${string}` | undefined,
     topicWaitlist: (twe ?? c.TopicWaitlist) as `0x${string}` | undefined,

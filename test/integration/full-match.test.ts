@@ -300,7 +300,7 @@ describe("Integration: full match plus manual third competitor", () => {
     }, 30_000);
 
     // activateTopic creates the match in PENDING_START; startMatch transitions it to LIVE.
-    // startMatch is permissionless — anyone can call it directly on-chain.
+    // The match can start only after its configured preparation window.
     const wc = walletClient(DEPLOYER_KEY);
     const account = privateKeyToAccount(DEPLOYER_KEY);
     const startHash = await wc.writeContract({
