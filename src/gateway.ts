@@ -6,7 +6,7 @@
  */
 
 import { privateKeyToAccount } from "viem/accounts";
-import { keccak256, toBytes } from "viem";
+import { keccak256, toBytes, type Address } from "viem";
 import {
   buildRobotaniaDomain,
   AGENT_REQUEST_TYPES,
@@ -34,12 +34,15 @@ import type {
 } from "./agent-runtime.js";
 import type { RetryOptions } from "./transport.js";
 import { isFaucetRequestOutcome, type FaucetAsset, type FaucetRequestOutcome } from "./faucet.js";
+import { signPreparedCitizenAction, type PreparedCitizenAction } from "./action-signing.js";
 
 export interface GatewayClientOptions {
   baseUrl: string;
   wallet: AgentWallet;
   /** Chain ID of the network where citizens are registered. Defaults to 31337 (local Anvil). */
   chainId?: number;
+  /** Trusted action-signing address, normally discovered automatically. */
+  citizenActionRelay?: Address;
   /** Retry bounds used only by read-only Gateway query endpoints. */
   queryRetry?: RetryOptions;
   /** Default behavior for signed writes. Defaults to waiting up to 120 seconds. */
@@ -123,6 +126,7 @@ export class GatewayClient {
   private readonly base: string;
   private readonly wallet: AgentWallet;
   private readonly chainId: number;
+  private readonly citizenActionRelay?: Address;
   private readonly queryRetry: Required<
     Pick<RetryOptions, "timeoutMs" | "maxAttempts" | "initialDelayMs" | "maxDelayMs">
   >;
@@ -132,6 +136,7 @@ export class GatewayClient {
     this.base = opts.baseUrl.replace(/\/$/, "");
     this.wallet = opts.wallet;
     this.chainId = opts.chainId ?? 31337;
+    this.citizenActionRelay = opts.citizenActionRelay;
     this.queryRetry = {
       timeoutMs: opts.queryRetry?.timeoutMs ?? 15_000,
       maxAttempts: opts.queryRetry?.maxAttempts ?? 3,
@@ -724,32 +729,65 @@ export class GatewayClient {
     citizenId = "pending",
     options: { timeoutMs?: number; resolveOutcome?: boolean } = {},
   ): Promise<T> {
-    const headerNonce = crypto.randomUUID();
-    const deadlineSec = Math.floor(Date.now() / 1000) + 300;
     const bodyStr = JSON.stringify(body);
-
-    const signature = await this.signRequest("POST", path, citizenId, headerNonce, deadlineSec, bodyStr);
-
     const controller = options.timeoutMs != null ? new AbortController() : null;
     const timer =
       controller != null
         ? setTimeout(() => controller.abort(), Math.max(1, options.timeoutMs!))
         : null;
     try {
-      const res = await fetch(`${this.base}${path}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-agent-address": this.wallet.address,
-          "x-agent-citizen-id": citizenId,
-          "x-agent-nonce": headerNonce,
-          "x-agent-deadline": String(deadlineSec),
-          "x-agent-signature": signature,
-        },
-        body: bodyStr,
-        ...(controller ? { signal: controller.signal } : {}),
-      });
-      const json = await res.json().catch(() => ({ ok: false, message: res.statusText })) as {
+      const send = async (actionHeaders: Record<string, string> = {}) => {
+        const headerNonce = crypto.randomUUID();
+        const deadlineSec = Math.floor(Date.now() / 1000) + 300;
+        const signature = await this.signRequest("POST", path, citizenId, headerNonce, deadlineSec, bodyStr);
+        const res = await fetch(`${this.base}${path}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-agent-address": this.wallet.address,
+            "x-agent-citizen-id": citizenId,
+            "x-agent-nonce": headerNonce,
+            "x-agent-deadline": String(deadlineSec),
+            "x-agent-signature": signature,
+            ...actionHeaders,
+          },
+          body: bodyStr,
+          ...(controller ? { signal: controller.signal } : {}),
+        });
+        const json = await res.json().catch(() => ({ ok: false, message: res.statusText })) as {
+          ok?: boolean;
+          data?: T;
+          error?: { code?: string; message?: string; next_action?: string; preparation?: PreparedCitizenAction };
+          error_code?: string;
+          message?: string;
+          preparation?: PreparedCitizenAction;
+          [key: string]: unknown;
+        };
+        return { res, json };
+      };
+
+      let { res, json } = await send();
+      const errorCode = json.error?.code ?? json.error_code;
+      if (res.status === 428 && errorCode === "CITIZEN_ACTION_AUTHORIZATION_REQUIRED") {
+        if (!this.citizenActionRelay) {
+          throw new GatewayError(
+            500,
+            path,
+            "ACTION_SIGNING_UNAVAILABLE",
+            "Action signing is not configured for this network",
+          );
+        }
+        const preparation = json.error?.preparation ?? json.preparation;
+        if (!preparation) {
+          throw new GatewayError(502, path, "ACTION_SIGNING_UNAVAILABLE", "Action approval is unavailable");
+        }
+        const actionHeaders = await signPreparedCitizenAction(
+          this.wallet, this.chainId, this.citizenActionRelay, citizenId, path, body, preparation,
+        );
+        ({ res, json } = await send(actionHeaders));
+      }
+
+      const response = json as {
         ok?: boolean;
         data?: T;
         error?: { code?: string; message?: string; next_action?: string };
@@ -758,21 +796,21 @@ export class GatewayClient {
         [key: string]: unknown;
       };
 
-      if (!res.ok || json.ok === false) {
+      if (!res.ok || response.ok === false) {
         throw new GatewayError(
           res.status,
           path,
-          json.error?.code ?? json.error_code ?? "UNKNOWN",
-          json.error?.message ?? json.message ?? "Unknown error",
-          json.error ?? json,
+          response.error?.code ?? response.error_code ?? "UNKNOWN",
+          response.error?.message ?? response.message ?? "Unknown error",
+          response.error ?? response,
         );
       }
 
-      if (json.data === undefined) {
+      if (response.data === undefined) {
         throw new GatewayError(res.status, path, "MISSING_DATA", "Gateway response missing data envelope");
       }
 
-      const data = json.data;
+      const data = response.data;
       if (options.resolveOutcome !== false && isRequestOutcome(data)) {
         return await this.resolveWriteOutcome(data, this.writeOptions) as T;
       }
@@ -788,7 +826,11 @@ export class GatewayClient {
     body: Record<string, unknown>,
     citizenId = "pending",
   ): Promise<RequestResult<T>> {
-    const outcome = await this.post<unknown>(path, body, citizenId);
+    // Reuse one logical key if signing requires a retry, preventing duplicates.
+    const keyedBody = body.idempotencyKey === undefined
+      ? { ...body, idempotencyKey: crypto.randomUUID() }
+      : body;
+    const outcome = await this.post<unknown>(path, keyedBody, citizenId);
     if (!isRequestOutcome(outcome)) {
       throw new GatewayError(502, path, "INVALID_RESPONSE", "Gateway returned an invalid request outcome");
     }

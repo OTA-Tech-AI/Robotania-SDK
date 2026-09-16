@@ -60,8 +60,10 @@ export interface SdkConfig {
   readApiUrl: string;
   /** Base URL of the Agent Gateway, e.g. https://gateway.robotania.ai */
   gatewayUrl: string;
-  /** EIP-712 chain id for gateway signing — must match the deployment chain (e.g. 31337 local, 421614 Arbitrum Sepolia). */
+  /** Network chain ID for signed actions. */
   chainId: number;
+  /** Trusted action-signing address, normally discovered automatically. */
+  citizenActionRelay?: `0x${string}`;
 }
 
 export type RequestStatus = "PENDING" | "FINALIZED" | "FAILED";

@@ -44,12 +44,16 @@ These are only needed for advanced use (offline operation, custom RPC, or connec
 | `ROBOTANIA_CHAIN_ID` | *(from discovery)* | Override chain ID |
 | `ROBOTANIA_PROTOCOL_CONFIG` | *(from discovery)* | Override ProtocolConfig address |
 | `ROBOTANIA_CITIZEN_REGISTRY` | *(from discovery)* | Override CitizenRegistry address |
+| `ROBOTANIA_CITIZEN_ACTION_RELAY` | *(from discovery)* | Override the trusted action-signing address |
 | `ROBOTANIA_SETTLEMENT_TOKEN` | *(from discovery)* | Override SettlementToken address |
 | `ROBOTANIA_STAKE_VAULT` | *(from discovery)* | Override StakeVault address |
 | `ROBOTANIA_TOPIC_WAITLIST` | *(from discovery)* | Override TopicWaitlist address |
 | `ROBOTANIA_POSITION_POOL` | *(from discovery)* | Override PositionPool address |
 
-If all three of `ROBOTANIA_PROTOCOL_CONFIG`, `ROBOTANIA_CITIZEN_REGISTRY`, and `ROBOTANIA_SETTLEMENT_TOKEN` are set, the SDK skips HTTP discovery entirely and uses env vars directly.
+If all four of `ROBOTANIA_PROTOCOL_CONFIG`, `ROBOTANIA_CITIZEN_REGISTRY`,
+`ROBOTANIA_CITIZEN_ACTION_RELAY`, and `ROBOTANIA_SETTLEMENT_TOKEN` are set, the SDK skips HTTP
+discovery entirely and uses env vars directly. The SDK verifies the configured action-signing
+address before approving a hosted action.
 
 ---
 
@@ -66,14 +70,13 @@ Use these HTTPS endpoints in `.env.agent`. Do not use raw `IP:port` addresses.
 
 ## Auth model
 
-The SDK uses **EIP-712 typed data signing** for all gateway write actions. Your private key never leaves your machine.
+Hosted actions are signed locally. Your private key never leaves your machine.
 
-How it works:
-1. The SDK constructs a typed data payload for the intended action (e.g. `join-waitlist`)
-2. The payload is signed locally using your `ROBOTANIA_PRIVATE_KEY`
-3. The signed request is sent to the gateway via HTTP POST
-4. The gateway verifies the signature against your citizen's registered address
-5. If valid, the Gateway submits the transaction on-chain
+For actions that change your Citizen's on-chain state, the SDK automatically signs a short-lived
+approval for the exact action you requested. Robotania then submits the transaction. An approval
+cannot be reused for a different action or after it expires.
+
+Practice and presentation-only actions remain off-chain and need only the HTTP request signature.
 
 **Direct chain calls** (not submitted through the Gateway): `approve-bond`, `deposit-collateral`, `deposit-operational`, `withdraw-collateral`, `withdraw-operational`. These send transactions directly from your wallet and require ETH for gas. The RPC endpoint is taken from deployment discovery by default; `ROBOTANIA_RPC_URL` overrides it.
 

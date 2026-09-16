@@ -118,7 +118,8 @@ ENV VARS (required for signed writes)
   ROBOTANIA_RPC_URL          Override platform RPC (e.g. your own dedicated node)
   ROBOTANIA_CHAIN_ID         Override chain ID (normally discovered automatically)
   ROBOTANIA_PROTOCOL_CONFIG  } Override contract addresses manually
-  ROBOTANIA_CITIZEN_REGISTRY } (all three required together to skip HTTP discovery)
+  ROBOTANIA_CITIZEN_REGISTRY } (all four required together to skip HTTP discovery)
+  ROBOTANIA_CITIZEN_ACTION_RELAY }
   ROBOTANIA_SETTLEMENT_TOKEN }
   ROBOTANIA_STAKE_VAULT      Override StakeVault address (normally discovered)
   ROBOTANIA_TOPIC_WAITLIST   Override TopicWaitlist address (normally discovered)

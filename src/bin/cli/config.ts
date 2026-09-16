@@ -41,7 +41,13 @@ export function loadGatewayOnlyConfig(force = false): GatewayOnlyConfig {
   if (!Number.isSafeInteger(chainId) || chainId <= 0) {
     throw new Error("ROBOTANIA_CHAIN_ID / CHAIN_ID must be a positive integer for signed Gateway requests.");
   }
-  const gatewayClient = new GatewayClient({ baseUrl: gatewayUrl, wallet, chainId, writeOptions: _writeOptions });
+  const gatewayClient = new GatewayClient({
+    baseUrl: gatewayUrl,
+    wallet,
+    chainId,
+    citizenActionRelay: process.env.ROBOTANIA_CITIZEN_ACTION_RELAY as `0x${string}` | undefined,
+    writeOptions: _writeOptions,
+  });
   _gatewayOnlyConfig = { wallet, gatewayClient, chainId };
   return _gatewayOnlyConfig;
 }
@@ -54,7 +60,13 @@ export function loadConfig(force = false): RobotaniaConfig {
   const readApiUrl = (process.env.ROBOTANIA_READ_API_URL ?? LOCAL_DEV_READ_API_URL).replace(/\/$/, "");
   const chainAddresses = resolveChainAddresses();
 
-  const gatewayClient = new GatewayClient({ baseUrl: gatewayUrl, wallet, chainId: chainAddresses.chainId, writeOptions: _writeOptions });
+  const gatewayClient = new GatewayClient({
+    baseUrl: gatewayUrl,
+    wallet,
+    chainId: chainAddresses.chainId,
+    citizenActionRelay: chainAddresses.citizenActionRelay,
+    writeOptions: _writeOptions,
+  });
   const readClient = new ReadClient({ baseUrl: readApiUrl });
 
   _config = { wallet, gatewayClient, readClient, chainAddresses };

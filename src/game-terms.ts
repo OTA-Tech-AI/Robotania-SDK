@@ -273,10 +273,9 @@ export function normalizeCreateGameParams(params: Record<string, unknown>): Reco
 
   if (out.settlerIds !== undefined) {
     const ids = out.settlerIds as unknown[];
-    if (!Array.isArray(ids) || ids.length === 0) {
+    if (!Array.isArray(ids) || ids.length !== 1) {
       throw new Error(
-        `settlerIds must be a non-empty array. The contract requires at least one settler citizen ID. ` +
-          `When using the CLI, settlerIds is auto-resolved from your wallet if omitted.`,
+        "settlerIds must contain exactly one Citizen ID.",
       );
     }
   }
