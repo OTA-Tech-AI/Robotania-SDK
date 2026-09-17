@@ -12,10 +12,11 @@ const VALID_ADDR = "0xaAbBcCdDeEfF0011223344556677889900aAbBcC";
 const VALID_CONTRACTS = {
   ProtocolConfig:   "0x1111111111111111111111111111111111111111",
   CitizenRegistry:  "0x2222222222222222222222222222222222222222",
-  SettlementToken:  "0x3333333333333333333333333333333333333333",
-  StakeVault:       "0x4444444444444444444444444444444444444444",
-  TopicWaitlist:    "0x5555555555555555555555555555555555555555",
-  PositionPool:     "0x6666666666666666666666666666666666666666",
+  CitizenActionRelay: "0x3333333333333333333333333333333333333333",
+  SettlementToken:     "0x4444444444444444444444444444444444444444",
+  StakeVault:          "0x5555555555555555555555555555555555555555",
+  TopicWaitlist:       "0x6666666666666666666666666666666666666666",
+  PositionPool:        "0x7777777777777777777777777777777777777777",
 };
 
 function makeDeploymentJson(overrides?: Record<string, unknown>) {
@@ -63,6 +64,7 @@ describe("chain-discovery: env vars override (no fetch)", () => {
     vi.resetModules();
     process.env.ROBOTANIA_PROTOCOL_CONFIG   = VALID_CONTRACTS.ProtocolConfig;
     process.env.ROBOTANIA_CITIZEN_REGISTRY  = VALID_CONTRACTS.CitizenRegistry;
+    process.env.ROBOTANIA_CITIZEN_ACTION_RELAY = VALID_CONTRACTS.CitizenActionRelay;
     process.env.ROBOTANIA_SETTLEMENT_TOKEN  = VALID_CONTRACTS.SettlementToken;
     process.env.ROBOTANIA_CHAIN_ID          = "999";
   });
@@ -70,6 +72,7 @@ describe("chain-discovery: env vars override (no fetch)", () => {
   afterEach(() => {
     delete process.env.ROBOTANIA_PROTOCOL_CONFIG;
     delete process.env.ROBOTANIA_CITIZEN_REGISTRY;
+    delete process.env.ROBOTANIA_CITIZEN_ACTION_RELAY;
     delete process.env.ROBOTANIA_SETTLEMENT_TOKEN;
     delete process.env.ROBOTANIA_CHAIN_ID;
     vi.unstubAllGlobals();
@@ -86,6 +89,7 @@ describe("chain-discovery: env vars override (no fetch)", () => {
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(addrs.protocolConfig).toBe(VALID_CONTRACTS.ProtocolConfig);
     expect(addrs.citizenRegistry).toBe(VALID_CONTRACTS.CitizenRegistry);
+    expect(addrs.citizenActionRelay).toBe(VALID_CONTRACTS.CitizenActionRelay);
     expect(addrs.chainId).toBe(999);
   });
 });
@@ -97,6 +101,7 @@ describe("chain-discovery: local JSON fallback (no fetch)", () => {
     vi.resetModules();
     delete process.env.ROBOTANIA_PROTOCOL_CONFIG;
     delete process.env.ROBOTANIA_CITIZEN_REGISTRY;
+    delete process.env.ROBOTANIA_CITIZEN_ACTION_RELAY;
     delete process.env.ROBOTANIA_SETTLEMENT_TOKEN;
 
     const dir = join(tmpdir(), `chain-test-${Date.now()}`);
@@ -121,6 +126,7 @@ describe("chain-discovery: local JSON fallback (no fetch)", () => {
 
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(addrs.protocolConfig).toBe(VALID_CONTRACTS.ProtocolConfig);
+    expect(addrs.citizenActionRelay).toBe(VALID_CONTRACTS.CitizenActionRelay);
     expect(addrs.chainId).toBe(421614);
   });
 });
@@ -130,6 +136,7 @@ describe("chain-discovery: HTTP discovery", () => {
     vi.resetModules();
     delete process.env.ROBOTANIA_PROTOCOL_CONFIG;
     delete process.env.ROBOTANIA_CITIZEN_REGISTRY;
+    delete process.env.ROBOTANIA_CITIZEN_ACTION_RELAY;
     delete process.env.ROBOTANIA_SETTLEMENT_TOKEN;
     delete process.env.ROBOTANIA_DEPLOYED_ADDRESSES_PATH;
     process.env.ROBOTANIA_READ_API_URL = "http://test-api.example";
@@ -148,6 +155,7 @@ describe("chain-discovery: HTTP discovery", () => {
     const addrs = resolveChainAddresses();
 
     expect(addrs.protocolConfig).toBe(VALID_CONTRACTS.ProtocolConfig);
+    expect(addrs.citizenActionRelay).toBe(VALID_CONTRACTS.CitizenActionRelay);
     expect(addrs.chainId).toBe(421614);
     expect(addrs.rpcUrl).toBe("https://custom-rpc.example/rpc");
   });
@@ -182,6 +190,7 @@ describe("chain-discovery: no READ_API_URL and no fallbacks", () => {
     vi.resetModules();
     delete process.env.ROBOTANIA_PROTOCOL_CONFIG;
     delete process.env.ROBOTANIA_CITIZEN_REGISTRY;
+    delete process.env.ROBOTANIA_CITIZEN_ACTION_RELAY;
     delete process.env.ROBOTANIA_SETTLEMENT_TOKEN;
     // Point at a guaranteed non-existent path so the local JSON fallback is
     // deterministically skipped regardless of repo state on this machine.
@@ -210,6 +219,7 @@ describe("chain-discovery: getRpcUrl priority", () => {
     delete process.env.ROBOTANIA_RPC_URL;
     delete process.env.ROBOTANIA_PROTOCOL_CONFIG;
     delete process.env.ROBOTANIA_CITIZEN_REGISTRY;
+    delete process.env.ROBOTANIA_CITIZEN_ACTION_RELAY;
     delete process.env.ROBOTANIA_SETTLEMENT_TOKEN;
     delete process.env.ROBOTANIA_READ_API_URL;
     delete process.env.ROBOTANIA_DEPLOYED_ADDRESSES_PATH;

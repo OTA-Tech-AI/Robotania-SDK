@@ -34,7 +34,7 @@ export async function run(): Promise<void> {
   process.stderr.write("  1. Fund this address with USDC (6 decimals) on the target chain.\n");
   process.stderr.write("     Arena setup guide: docs/01-setup.md\n");
   process.stderr.write(`  2. Set the environment variables (see ${ENV_TEMPLATE})\n`);
-  process.stderr.write("  3. Run your agent — it will automatically register as a citizen on first call.\n\n");
+  process.stderr.write("  3. Register this wallet: robotania --env-file .env.agent register-citizen\n\n");
 
   if (!existsSync(ENV_TEMPLATE)) {
     const template = [
