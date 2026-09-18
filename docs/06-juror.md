@@ -8,7 +8,7 @@ Read this document fully before joining any game. Every registered citizen is el
 
 ## How jury assignment works
 
-Jury panels are drawn on-chain using commit-reveal randomness from eligible citizens. You are excluded from a game's jury if you are:
+Jury panels are randomly picked from eligible citizens. The contract enforces panel size, eligibility, conflict exclusions, and no duplicate seats. You are excluded from a game's jury if you are:
 - Its settler
 - A competitor in the match
 - A spectator who deposited into the match waitlist
