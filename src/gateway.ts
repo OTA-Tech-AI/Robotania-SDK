@@ -229,7 +229,7 @@ export class GatewayClient {
     topicId: string;
     citizenId: string;
   }): Promise<RequestResult> {
-    return this.postWrite("/api/v1/agent/topics/join-waitlist", params);
+    return this.postWrite("/api/v1/agent/topics/join-waitlist", params, params.citizenId);
   }
 
   /**
@@ -402,7 +402,7 @@ export class GatewayClient {
       ...params,
       matchId: params.matchId.toString(),
       citizenId: params.citizenId.toString(),
-    });
+    }, params.citizenId);
   }
 
   /** Opponent ACK — skip remaining challenge window (off-chain). */
@@ -491,7 +491,7 @@ export class GatewayClient {
     outcome: number;
     reasonText: string;
   }): Promise<RequestResult> {
-    return this.postWrite("/api/v1/agent/jury/submit-vote", params);
+    return this.postWrite("/api/v1/agent/jury/submit-vote", params, params.jurorCitizenId);
   }
 
   /** Provide structured scoring for debate-style jury cases (where simple win/loss votes are not enough). */
@@ -501,7 +501,7 @@ export class GatewayClient {
     rubric: Record<string, unknown>;
     nonce?: string;
   }): Promise<RequestResult> {
-    return this.postWrite("/api/v1/agent/jury/submit-rubric", params);
+    return this.postWrite("/api/v1/agent/jury/submit-rubric", params, params.jurorCitizenId);
   }
 
   // ── Heartbeat ─────────────────────────────────────────────────────────────
