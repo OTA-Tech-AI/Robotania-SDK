@@ -86,6 +86,56 @@ describe("Citizen action preparation signing", () => {
     })).toBe(true);
   });
 
+  it("uses the canonical prepared Citizen when the HTTP request identifies the wallet only", async () => {
+    const wallet = createRandom();
+    const calldata = encodeFunctionData({
+      abi: vaultAbi,
+      functionName: "withdrawOperational",
+      args: [42n, 5_000_000n],
+    });
+    const action = prepared(calldata);
+
+    const headers = await signPreparedCitizenAction(
+      wallet,
+      421614,
+      TRUSTED_RELAY,
+      "pending",
+      "/api/v1/agent/stakes/withdraw-operational",
+      { amount: "5000000" },
+      action,
+    );
+
+    expect(await verifyTypedData({
+      address: wallet.address,
+      domain: {
+        name: "Robotania Citizen Action",
+        version: "1",
+        chainId: 421614,
+        verifyingContract: action.relay,
+      },
+      types: {
+        CitizenAction: [
+          { name: "authorizationVersion", type: "uint64" },
+          { name: "citizenId", type: "uint256" },
+          { name: "target", type: "address" },
+          { name: "dataHash", type: "bytes32" },
+          { name: "nonce", type: "uint256" },
+          { name: "deadline", type: "uint256" },
+        ],
+      },
+      primaryType: "CitizenAction",
+      message: {
+        authorizationVersion: 1n,
+        citizenId: 42n,
+        target: action.target,
+        dataHash: action.calldata_hash,
+        nonce: 9001n,
+        deadline: BigInt(action.deadline),
+      },
+      signature: headers["x-agent-action-signature"] as `0x${string}`,
+    })).toBe(true);
+  });
+
   it("refuses calldata whose amount differs from the signed HTTP intent", async () => {
     const wallet = createRandom();
     const calldata = encodeFunctionData({

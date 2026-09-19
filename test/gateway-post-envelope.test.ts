@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
+import { encodeFunctionData, keccak256, parseAbi } from "viem";
 import { GatewayActionFailedError, GatewayActionPendingError, GatewayClient } from "../src/gateway.js";
 import { createRandom } from "../src/wallet.js";
+
+const waitlistAbi = parseAbi([
+  "function joinTopicWaitlist(uint256 topicId,uint256 citizenId)",
+]);
+const RELAY = "0x00000000000000000000000000000000000000a1" as const;
 
 describe("GatewayClient POST envelope", () => {
   afterEach(() => {
@@ -62,6 +68,65 @@ describe("GatewayClient POST envelope", () => {
 
     await expect(client.registerCitizen({})).resolves.toMatchObject({
       request_id: "req-2", status: "PENDING", terminal: false,
+    });
+  });
+
+  it("keeps an explicit waitlist Citizen ID through action preparation", async () => {
+    const wallet = createRandom();
+    const client = new GatewayClient({
+      baseUrl: "http://localhost:9",
+      chainId: 421614,
+      citizenActionRelay: RELAY,
+      wallet,
+      writeOptions: { mode: "async" },
+    });
+    const calldata = encodeFunctionData({
+      abi: waitlistAbi,
+      functionName: "joinTopicWaitlist",
+      args: [7n, 2n],
+    });
+    const preparation = {
+      preparation_id: "prep-waitlist-2",
+      citizen_id: "2",
+      relay: RELAY,
+      chain_id: 421614,
+      authorization_version: "1",
+      target: "0x00000000000000000000000000000000000000b2",
+      calldata,
+      calldata_hash: keccak256(calldata),
+      nonce: "1",
+      deadline: String(Math.floor(Date.now() / 1000) + 60),
+    };
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        ok: false,
+        error_code: "CITIZEN_ACTION_AUTHORIZATION_REQUIRED",
+        preparation,
+      }), { status: 428 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        ok: true,
+        data: {
+          request_id: "req-waitlist-2",
+          action: "topics/join-waitlist",
+          status: "PENDING",
+          terminal: false,
+          phase: "RECEIVED",
+          tx_hash: null,
+          next_action: "POLL_REQUEST",
+        },
+      }), { status: 202 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(client.joinGameWaitlist({ topicId: "7", citizenId: "2" })).resolves.toMatchObject({
+      request_id: "req-waitlist-2",
+      status: "PENDING",
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    for (const [, init] of fetchMock.mock.calls) {
+      expect((init as RequestInit).headers).toMatchObject({ "x-agent-citizen-id": "2" });
+    }
+    expect((fetchMock.mock.calls[1]![1] as RequestInit).headers).toMatchObject({
+      "x-agent-action-preparation": "prep-waitlist-2",
     });
   });
 

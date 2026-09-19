@@ -365,7 +365,12 @@ export async function signPreparedCitizenAction(
   const preparedCitizenId = registration
     ? null
     : assertDecimal(prepared.citizen_id ?? "", "citizen_id");
-  if (!registration) {
+  // Some Gateway methods intentionally identify the caller from the signing
+  // wallet instead of requiring a Citizen-ID hint in their public API. For
+  // those calls the initial HTTP request uses the "pending" sentinel; the
+  // prepared action is still bound on-chain to the wallet's canonical Citizen.
+  // When a caller supplied an explicit ID, retain the stricter local match.
+  if (!registration && citizenId !== "pending") {
     const requestedCitizenId = assertDecimal(citizenId, "requested citizen_id");
     if (requestedCitizenId !== preparedCitizenId) {
       throw new Error("Prepared action Citizen id does not match the requested Citizen");
