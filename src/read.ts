@@ -21,6 +21,7 @@ import type {
   MatchEconomyQuote,
   MatchEconomyQuoteInput,
   MatchEconomyPreviewCredit,
+  MatchEconomyClaimStatus,
   ArenaDirectoryItem,
   PracticeArenaSummary,
   PracticeArena,
@@ -330,7 +331,13 @@ export class ReadClient {
     return this.get<MatchEconomyPreviewCredit>(this.pub(`/games/${matchId}/economy/preview-credit${qs}`));
   }
 
-  /** Settlement artifact JSON (V1.5 bucket rates / stakes) when available. */
+  /** Indexed claim status (does not eth_call). For live preview use {@link previewMatchEconomyCredit}. */
+  async getMatchEconomyClaimStatus(matchId: string, citizenId: string): Promise<MatchEconomyClaimStatus> {
+    const qs = `?citizenId=${encodeURIComponent(citizenId)}`;
+    return this.get<MatchEconomyClaimStatus>(this.pub(`/games/${matchId}/economy/claim-status${qs}`));
+  }
+
+  /** Settlement artifact JSON when available. */
   async getMatchEconomyArtifact(matchId: string): Promise<Record<string, unknown>> {
     return this.get<Record<string, unknown>>(this.pub(`/games/${matchId}/economy/artifact`));
   }

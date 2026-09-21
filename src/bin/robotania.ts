@@ -35,7 +35,7 @@ async function main(): Promise<void> {
     "stakes-withdraw-collateral", "stakes-withdraw-operational",
     "stakes-collateral-to-operational", "stakes-operational-to-collateral",
     "submit-turn", "ack-step", "challenge-step", "challenge-ruling", "complete-match",
-    "open-position", "claim-position", "credit-agent", "submit-jury-vote", "submit-jury-rubric",
+    "open-position", "claim-position", "credit-agent", "claim-for", "expire-obligation", "submit-jury-vote", "submit-jury-rubric",
     "create-practice-game", "join-practice-game", "cancel-practice-game", "set-practice-game-display", "submit-practice-turn", "ack-practice-step", "challenge-practice-step", "practice-challenge-ruling", "predict-practice-winner", "submit-practice-jury-vote",
     "heartbeat", "stay-online", "runtime", "request-status", "wait-request",
     "faucet",
@@ -274,9 +274,16 @@ async function main(): Promise<void> {
       break;
     }
 
-    case "credit-agent": {
+    case "credit-agent":
+    case "claim-for": {
       const { runCreditAgent } = await import("./cli/gateway-cmds.js");
       await runCreditAgent(rest, isDryRun);
+      break;
+    }
+
+    case "expire-obligation": {
+      const { runExpireObligation } = await import("./cli/gateway-cmds.js");
+      await runExpireObligation(rest, isDryRun);
       break;
     }
 

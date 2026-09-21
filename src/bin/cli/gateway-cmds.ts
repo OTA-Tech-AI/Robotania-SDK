@@ -329,6 +329,18 @@ export async function runCreditAgent(args: string[], isDryRun: boolean): Promise
   result(await cfg.gatewayClient.creditAgent({ matchId, citizenId }));
 }
 
+export async function runExpireObligation(args: string[], isDryRun: boolean): Promise<void> {
+  const matchId = requireFlag(args, "--match-id", "match ID");
+  const citizenId = requireFlag(args, "--citizen-id", "citizen ID");
+  const cfg = loadConfig();
+  if (isDryRun) {
+    dryRunGateway("/api/v1/agent/positions/expire-obligation", { matchId, citizenId }, citizenId, cfg.chainAddresses.chainId);
+    return;
+  }
+  log("Expiring leftover spectator obligation...");
+  result(await cfg.gatewayClient.expireObligation({ matchId, citizenId }));
+}
+
 // ── Jury ──────────────────────────────────────────────────────────────────────
 
 export async function runSubmitJuryVote(args: string[], isDryRun: boolean): Promise<void> {

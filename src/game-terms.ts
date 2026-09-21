@@ -343,5 +343,9 @@ export function normalizeCreateGameParams(params: Record<string, unknown>): Reco
     process.stderr.write(`[warn] ${w.message}\n`);
   }
 
+  if (out.settlementVersion === undefined || out.settlementVersion === null) {
+    out.settlementVersion = 2;
+  }
+
   return out;
 }

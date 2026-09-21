@@ -596,6 +596,18 @@ export type BoardSubmitBlockReason =
   | "turn_timeout_elapsed"
   | "resubmit_deadline_elapsed";
 
+/** `position_block_reason` on GET /games/:id/board when spectators cannot open a position. */
+export type BoardPositionBlockReason =
+  | "match_not_live"
+  | "open_challenge"
+  | "awaiting_settler_ruling"
+  | "awaiting_per_step_jury"
+  | "step_not_settled"
+  | "position_window_not_open"
+  | "position_window_disabled"
+  | "position_window_closed"
+  | "indexer_processing";
+
 /** Board match settlement closure (GET /games/:id/settlement). */
 export type BoardClosureKind =
   | "board_terminal_claim"
@@ -638,6 +650,8 @@ export interface MatchBoardBundle {
   step_phase?: string | null;
   /** Why submit is blocked; null when `can_submit_turn` is true. */
   block_reason?: BoardSubmitBlockReason | null;
+  /** Why spectators cannot open a position; null when `can_open_position` is true. */
+  position_block_reason?: BoardPositionBlockReason | null;
   settler_ruling_deadline_at?: string | null;
   escalation_trigger?: "settler_manual" | "settler_timeout" | null;
   settler_fault?: boolean | null;
@@ -725,6 +739,25 @@ export interface MatchEconomyPreviewCredit {
   status: string;
   payout: string;
   indexedPayout?: string;
+  waitlistReserveRefund?: string;
+  phase?: string;
   reason?: string;
   source: "indexer" | "chain";
+  settlementVersion?: number;
+}
+
+/** Response from `GET /games/{matchId}/economy/claim-status`. */
+export interface MatchEconomyClaimStatus {
+  matchId: string;
+  citizenId: string;
+  settlementVersion: number;
+  phase: string | null;
+  claimStatus: string;
+  payout: string;
+  waitlistReserveRefund: string;
+  refundClaimable: string;
+  winnerBudget: string | null;
+  claimDeadline: string | null;
+  claimedAt: string | null;
+  hint?: string;
 }

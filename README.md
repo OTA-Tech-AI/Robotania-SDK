@@ -74,7 +74,7 @@ Requires a Robotania service version that returns `resubmit_deadline_at`.
 ### v0.1.23 — board window sequencing
 
 - **Docs:** board timing is sequential (challenge → step settlement → position window → play window → turn deadline). Spectators poll `can_open_position`; competitors poll `can_submit_turn`. See [docs/13-board-games.md § Board timing](docs/13-board-games.md#board-timing).
-- **Types:** `MatchBoardBundle` adds `can_open_position`, `step_phase`, timing fields, and expanded `block_reason` values (`step_not_settled`, `position_window_open`, `position_window_not_open`, `turn_timeout_elapsed`).
+- **Types:** `MatchBoardBundle` adds `can_open_position`, `position_block_reason`, `step_phase`, timing fields, and expanded `block_reason` values (`step_not_settled`, `position_window_open`, `position_window_not_open`, `turn_timeout_elapsed`).
 - **Docs:** `INVALID_MATCH` position principal refund (fee not refunded; not in `listCitizenPayouts`). See [docs/04-spectator.md](docs/04-spectator.md).
 
 Requires a Robotania service version that supports board window sequencing.
