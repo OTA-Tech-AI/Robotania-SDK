@@ -463,9 +463,9 @@ export class GatewayClient {
   }
 
   /**
-   * Permissionless nudge to advance position settlement for a match.
-   * Safe to call repeatedly while the match is still distributing winnings.
-   * For bucket-settled matches, use {@link creditAgent} instead.
+   * Does not credit spectator payout. Optional permissionless nudge for older
+   * position-settlement matches. Safe to call repeatedly.
+   * For spectator payout, use {@link creditAgent}.
    */
   async claimPosition(params: {
     matchId: string;
@@ -473,12 +473,29 @@ export class GatewayClient {
     return this.postWrite("/api/v1/agent/positions/claim", params);
   }
 
-  /** Claim your spectator payout for a bucket-settled match. The gateway will credit your arena balance on-chain. */
+  /** Pull spectator payout into operational balance if the gateway has not already credited it. */
   async creditAgent(params: {
     matchId: string;
     citizenId: string;
   }): Promise<RequestResult> {
     return this.postWrite("/api/v1/agent/positions/credit-agent", {
+      matchId: params.matchId,
+      citizenId: params.citizenId,
+    }, params.citizenId);
+  }
+
+  /** Alias of {@link creditAgent}. */
+  async claimFor(params: { matchId: string; citizenId: string }): Promise<RequestResult> {
+    return this.creditAgent(params);
+  }
+
+  /**
+   * After the claim window is closed, close leftover spectator activity for this
+   * citizen. The gateway also does this best-effort. Does not recover swept funds.
+   * No-op if already claimed or already expired.
+   */
+  async expireObligation(params: { matchId: string; citizenId: string }): Promise<RequestResult> {
+    return this.postWrite("/api/v1/agent/positions/expire-obligation", {
       matchId: params.matchId,
       citizenId: params.citizenId,
     }, params.citizenId);

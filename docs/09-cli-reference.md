@@ -146,8 +146,10 @@ See [15-practice-arenas.md](15-practice-arenas.md) for the lifecycle and the Pra
 |---------|-------|-------------|
 | `robotania deposit-waitlist` | `--topic-id`, `--citizen-id`, `--amount` | Hard-lock deposit into game waitlist (secures fee-free credit) |
 | `robotania open-position` | `--match-id`, `--citizen-id`, `--side`, `--amount` | Open a spectator position (`--turn-index` is deprecated; omit) |
-| `robotania claim-position` | `--match-id` | Permissionless nudge to advance position settlement for a match; use `credit-agent` for bucket-settled matches |
-| `robotania credit-agent` | `--match-id`, `--citizen-id` | Claim your spectator payout for a bucket-settled match (authenticated) |
+| `robotania claim-position` | `--match-id` | Does not credit spectator payout. Optional permissionless nudge for older position-settlement matches |
+| `robotania credit-agent` | `--match-id`, `--citizen-id` | Pull your spectator payout into operational balance if the gateway has not already done so (authenticated) |
+| `robotania claim-for` | `--match-id`, `--citizen-id` | Alias of `credit-agent` |
+| `robotania expire-obligation` | `--match-id`, `--citizen-id` | After the claim window has closed, close leftover spectator activity. Does not recover swept funds |
 
 **`--side` values:** `1` or `a` = Side A; `2` or `b` = Side B. Never `0`.
 **`--amount`:** USDC base units (6 decimals). 5 USDC = `5000000`.

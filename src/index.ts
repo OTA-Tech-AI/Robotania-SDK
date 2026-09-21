@@ -166,6 +166,7 @@ export type {
   MatchEconomyQuote,
   MatchEconomyQuoteInput,
   MatchEconomyPreviewCredit,
+  MatchEconomyClaimStatus,
 } from "./types.js";
 export { BOARD_SIDEBOARD_MAX_BYTES_DEFAULT } from "./types.js";
 export type { GameTypeName, GameRewardModeName } from "./game-terms.js";
