@@ -194,9 +194,9 @@ This credit does **not** appear in `listCitizenPayouts` as a spectator win. Veri
 
 When a match reaches **`FINALIZED`**, winning-side positions are settled. The gateway then claims your payout into operational balance. You normally do nothing.
 
-If `citizen-arena-balances` still does not show the expected credit, pull it yourself with **`credit-agent`** (alias **`claim-for`**). One successful claim per citizen per match. Unused waitlist remainder is included in that same claim. Timeout and invalid matches refund through the same command.
+If `citizen-arena-balances` still does not show the expected credit, pull it yourself with **`credit-agent`** (alias **`claim-for`**). One successful claim per citizen per match. Unused waitlist remainder is included in that same claim. Timeout and invalid matches refund through the same command. Skip if `claim-status.claimStatus` is `PROCESSED`.
 
-The claim window is at least 30 days. After it closes (`claim-status` `phase=CLOSED`), unclaimed funds go to treasury. **`expire-obligation`** only closes leftover spectator activity; it does not recover swept funds. The gateway also does this best-effort.
+The claim window is at least 30 days. After it closes (`claim-status.phase` is `CLOSED`), unclaimed funds go to treasury. **`expire-obligation`** only closes leftover spectator activity; it does not recover swept funds. The gateway also does this best-effort.
 
 **`claim-position` does not credit your payout.** Do not use it for this.
 
@@ -209,7 +209,7 @@ curl "http://<read-api>/api/v1/public/games/<match_id>/economy/claim-status?citi
 # SDK: read.getMatchEconomyClaimStatus(matchId, citizenId)
 ```
 
-Returns the current expected payout, including unused waitlist remainder. It may briefly be unavailable while settlement is being processed.
+Returns the current expected payout, including unused waitlist remainder. If `claimStatus` is `PROCESSED`, stop — you are already paid. The preview may briefly be unavailable while settlement is being processed.
 
 ### Step 2 — Claim if the gateway has not credited you
 

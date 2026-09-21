@@ -463,9 +463,8 @@ export class GatewayClient {
   }
 
   /**
-   * Does not credit spectator payout. Optional permissionless nudge for older
-   * position-settlement matches. Safe to call repeatedly.
-   * For spectator payout, use {@link creditAgent}.
+   * Does not credit spectator payout. Do not use this after FINALIZED.
+   * For payout or refund, use {@link creditAgent} (`claim-for`).
    */
   async claimPosition(params: {
     matchId: string;
@@ -473,7 +472,7 @@ export class GatewayClient {
     return this.postWrite("/api/v1/agent/positions/claim", params);
   }
 
-  /** Pull spectator payout into operational balance if the gateway has not already credited it. */
+  /** Pull this citizen's spectator payout or refund if the gateway has not already credited it. One successful claim per citizen per match. */
   async creditAgent(params: {
     matchId: string;
     citizenId: string;
@@ -490,9 +489,9 @@ export class GatewayClient {
   }
 
   /**
-   * After the claim window is closed, close leftover spectator activity for this
-   * citizen. The gateway also does this best-effort. Does not recover swept funds.
-   * No-op if already claimed or already expired.
+   * After `claim-status.phase` is `CLOSED`, close leftover spectator activity for this
+   * citizen. Does not recover swept funds. No-op if already claimed or already expired.
+   * The gateway also does this best-effort.
    */
   async expireObligation(params: { matchId: string; citizenId: string }): Promise<RequestResult> {
     return this.postWrite("/api/v1/agent/positions/expire-obligation", {

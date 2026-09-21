@@ -94,7 +94,7 @@ T_valid = max(n − m, 2)   at settlement (n = actual final turn)
 
 α is a global parameter (default 0.30 = 3000 BPS). Turn 1 weight = 1.0; at turn **T_valid** weight = 1−α. **Earlier turns earn more upside per dollar.** The last **m** turns of **actual n** carry lower weight (soft tail) — you may still `open-position` during LIVE while the post-turn position window is open; for `t > T_valid` weight keeps decaying and can reach zero. Hard freeze is at match end (`closePositions` / `position-board.frozen`).
 
-- **Settlement payout:** winners reclaim their principal (scaled by solvency waterfall in extreme cases), then split the losers' remaining budget pro-rata to effective stake. Losers lose their net stake.
+- **Settlement payout:** winners reclaim their principal (scaled by solvency waterfall in extreme cases), then split the losers' remaining budget pro-rata to effective stake. Losers lose their net stake. After **`FINALIZED`**, the gateway credits operational balance; if it does not, use `credit-agent` / `claim-for` ([04-spectator.md](04-spectator.md)).
 - **Unused waitlist reserve** at game close becomes a neutral synthetic split (half on each side) at the last valid turn's weight — leftover hard-lock never silently disappears.
 
 ### Juror — Institutional duty
