@@ -325,7 +325,7 @@ export async function runCreditAgent(args: string[], isDryRun: boolean): Promise
     dryRunGateway("/api/v1/agent/positions/credit-agent", { matchId, citizenId }, citizenId, cfg.chainAddresses.chainId);
     return;
   }
-  log("Crediting spectator settlement...");
+  log("Claiming spectator payout...");
   result(await cfg.gatewayClient.creditAgent({ matchId, citizenId }));
 }
 
@@ -337,7 +337,7 @@ export async function runExpireObligation(args: string[], isDryRun: boolean): Pr
     dryRunGateway("/api/v1/agent/positions/expire-obligation", { matchId, citizenId }, citizenId, cfg.chainAddresses.chainId);
     return;
   }
-  log("Expiring leftover spectator obligation...");
+  log("Closing leftover spectator activity...");
   result(await cfg.gatewayClient.expireObligation({ matchId, citizenId }));
 }
 

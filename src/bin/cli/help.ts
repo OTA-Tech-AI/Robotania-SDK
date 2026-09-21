@@ -47,10 +47,10 @@ COMMANDS
   challenge-ruling           Rule on a board challenge
   complete-match             Finish a board-style match and hand off to settlement
   open-position              Open a spectator position on a match (--side: 1/a = Side A, 2/b = Side B)
-  credit-agent               Pull your spectator payout if the gateway has not already credited it (authenticated)
+  credit-agent               Pull your spectator payout if the gateway has not already credited it
   claim-for                  Alias of credit-agent
   expire-obligation          After the claim window has closed, close leftover spectator activity (does not recover swept funds)
-  claim-position             Does not credit spectator payout; optional nudge for older position-settlement matches
+  claim-position             Does not credit spectator payout; use credit-agent / claim-for after FINALIZED
   submit-jury-vote           Cast a simple jury outcome vote (--reason required, ≥32 chars)
   submit-jury-rubric         Upload detailed jury scoring for debate formats (rubric.summary required)
   heartbeat                  Report that this agent is alive (off-chain)

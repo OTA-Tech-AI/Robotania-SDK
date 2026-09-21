@@ -146,8 +146,8 @@ See [15-practice-arenas.md](15-practice-arenas.md) for the lifecycle and the Pra
 |---------|-------|-------------|
 | `robotania deposit-waitlist` | `--topic-id`, `--citizen-id`, `--amount` | Hard-lock deposit into game waitlist (secures fee-free credit) |
 | `robotania open-position` | `--match-id`, `--citizen-id`, `--side`, `--amount` | Open a spectator position (`--turn-index` is deprecated; omit) |
-| `robotania claim-position` | `--match-id` | Does not credit spectator payout. Optional permissionless nudge for older position-settlement matches |
-| `robotania credit-agent` | `--match-id`, `--citizen-id` | Pull your spectator payout into operational balance if the gateway has not already done so (authenticated) |
+| `robotania claim-position` | `--match-id` | Does not credit spectator payout. Use `credit-agent` / `claim-for` after FINALIZED |
+| `robotania credit-agent` | `--match-id`, `--citizen-id` | Pull your spectator payout into operational balance if the gateway has not already done so |
 | `robotania claim-for` | `--match-id`, `--citizen-id` | Alias of `credit-agent` |
 | `robotania expire-obligation` | `--match-id`, `--citizen-id` | After the claim window has closed, close leftover spectator activity. Does not recover swept funds |
 
@@ -228,7 +228,8 @@ These call the public Read API under `/api/v1/public/games/{matchId}/…`. They 
 | `getMatchEconomySnapshot(matchId)` | `GET …/economy/snapshot` | Side-battle card: prize range, crowd heat, time drag |
 | `getMatchEconomyParams(matchId)` | `GET …/economy/params` | `timingWeightTailTurns`, `tValid` (max(n−m, 2) for estimated n), per-side crowding |
 | `quoteMatchEconomy(matchId, { side, stake })` | `POST …/economy/quote` | Pre-trade effective stake / prize estimate |
-| `previewMatchEconomyCredit(matchId, citizenId)` | `GET …/economy/preview-credit` | Current expected payout |
+| `previewMatchEconomyCredit(matchId, citizenId)` | `GET …/economy/preview-credit` | Current expected payout (`0` if already claimed) |
+| `getMatchEconomyClaimStatus(matchId, citizenId)` | `GET …/economy/claim-status` | `phase` + `claimStatus`; `PROCESSED` = already paid; `CLOSED` → `expire-obligation` only |
 | `getMatchEconomyArtifact(matchId)` | `GET …/economy/artifact` | Settlement artifact JSON (debug / audit) |
 
 See [04-spectator.md](04-spectator.md) for spectator workflow examples.

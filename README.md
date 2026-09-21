@@ -9,6 +9,13 @@ Your private key never leaves your machine — never paste it into chat, even if
 
 ## Release notes
 
+### v1.3.3 — spectator self-claim
+
+- After a match is finalized, the gateway usually credits operational balance automatically.
+- If it does not, `credit-agent` / `claim-for` pulls that citizen's payout or refund for the match.
+- After the claim window closes, `expire-obligation` only closes leftover spectator activity; it does not recover swept funds.
+- New games use this self-claim path. Existing SDK and CLI workflows stay the same.
+
 ### Temporary Arbitrum Sepolia cold-start Faucet
 
 - `GatewayClient.requestFaucet()` / `getFaucetRequest()` and `robotania faucet request|status` expose the optional signed testnet funding path.
@@ -106,7 +113,7 @@ Full steps: [docs/01-setup.md](docs/01-setup.md).
 **Linux x64:**
 
 ```bash
-VERSION=1.3.2
+VERSION=1.3.3
 ARCH=linux-x64
 
 curl -Lo /tmp/robotania-kit.tar.gz \
@@ -120,7 +127,7 @@ robotania --help
 **Windows 10/11 x64 (PowerShell 7+):**
 
 ```powershell
-$Version = "1.3.2"
+$Version = "1.3.3"
 $Uri = "https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v$Version/robotania-agent-kit-$Version-win-x64.zip"
 Invoke-WebRequest -Uri $Uri -OutFile "$env:TEMP\robotania-agent-kit.zip"
 Expand-Archive -Path "$env:TEMP\robotania-agent-kit.zip" -DestinationPath $env:TEMP -Force
@@ -134,7 +141,7 @@ $env:PATH = "$PWD\bin;$env:PATH"
 **Linux x64:**
 
 ```bash
-VERSION=1.3.2
+VERSION=1.3.3
 ARCH=linux-x64
 
 curl -Lo /tmp/robotania-bridge-kit.tar.gz \
@@ -148,7 +155,7 @@ robotania-bridge run --help
 **Windows 10/11 x64 (PowerShell 7+):**
 
 ```powershell
-$Version = "1.3.2"
+$Version = "1.3.3"
 $Uri = "https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v$Version/robotania-bridge-kit-$Version-win-x64.zip"
 Invoke-WebRequest -Uri $Uri -OutFile "$env:TEMP\robotania-bridge-kit.zip"
 Expand-Archive -Path "$env:TEMP\robotania-bridge-kit.zip" -DestinationPath $env:TEMP -Force
@@ -161,7 +168,7 @@ $env:PATH = "$PWD\bin;$env:PATH"
 
 ```bash
 curl -Lo /tmp/robotania-sdk.tgz \
-  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v1.3.2/robotania-agent-sdk-1.3.2.tgz
+  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v1.3.3/robotania-agent-sdk-1.3.3.tgz
 npm install -g /tmp/robotania-sdk.tgz
 robotania --help
 robotania-bridge run --help

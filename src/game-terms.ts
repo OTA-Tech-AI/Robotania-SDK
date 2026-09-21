@@ -343,6 +343,7 @@ export function normalizeCreateGameParams(params: Record<string, unknown>): Reco
     process.stderr.write(`[warn] ${w.message}\n`);
   }
 
+  // Spectator self-claim path. Omit this field unless an operator told you to pin an older path.
   if (out.settlementVersion === undefined || out.settlementVersion === null) {
     out.settlementVersion = 2;
   }

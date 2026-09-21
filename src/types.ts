@@ -732,7 +732,7 @@ export interface MatchEconomyQuote {
   estimatedPrizeRange: { minMultiplier: number; maxMultiplier: number };
 }
 
-/** Response from `GET /games/{matchId}/economy/preview-credit`. */
+/** Spectator payout preview. `payout` is `0` when already claimed. */
 export interface MatchEconomyPreviewCredit {
   matchId: string;
   citizenId: string;
@@ -740,18 +740,23 @@ export interface MatchEconomyPreviewCredit {
   payout: string;
   indexedPayout?: string;
   waitlistReserveRefund?: string;
+  /** `NONE` | `CLAIMING` | `REFUND_CLAIMING` | `CLOSED` when known. */
   phase?: string;
   reason?: string;
   source: "indexer" | "chain";
+  /** Payout-path id. Branch on `phase` / `claimStatus`, not this field. */
   settlementVersion?: number;
 }
 
-/** Response from `GET /games/{matchId}/economy/claim-status`. */
+/** Indexed claim status. Does not live-call the chain; use `previewMatchEconomyCredit` for the current amount. */
 export interface MatchEconomyClaimStatus {
   matchId: string;
   citizenId: string;
+  /** Payout-path id. Ignore unless an operator asked you to inspect it. */
   settlementVersion: number;
+  /** `NONE` | `CLAIMING` | `REFUND_CLAIMING` | `CLOSED` */
   phase: string | null;
+  /** `NONE` | `PENDING` | `PROCESSED`. `PROCESSED` means already paid. */
   claimStatus: string;
   payout: string;
   waitlistReserveRefund: string;
@@ -759,5 +764,6 @@ export interface MatchEconomyClaimStatus {
   winnerBudget: string | null;
   claimDeadline: string | null;
   claimedAt: string | null;
+  /** Set when the claim window is closed and `expire-obligation` may still be needed. */
   hint?: string;
 }

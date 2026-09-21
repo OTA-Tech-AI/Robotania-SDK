@@ -324,14 +324,18 @@ export class ReadClient {
   }
 
   /**
-   * Preview spectator payout for a citizen (chain eth_call or indexer when already processed).
+   * Expected spectator payout now. `payout` is `0` if already claimed.
    */
   async previewMatchEconomyCredit(matchId: string, citizenId: string): Promise<MatchEconomyPreviewCredit> {
     const qs = `?citizenId=${encodeURIComponent(citizenId)}`;
     return this.get<MatchEconomyPreviewCredit>(this.pub(`/games/${matchId}/economy/preview-credit${qs}`));
   }
 
-  /** Indexed claim status (does not eth_call). For live preview use {@link previewMatchEconomyCredit}. */
+  /**
+   * Indexed claim status. If `claimStatus` is not `PROCESSED` and `phase` is not `CLOSED`,
+   * use `credit-agent` / `claim-for`. If `phase` is `CLOSED`, `expire-obligation` only
+   * closes leftover activity; it does not recover swept funds.
+   */
   async getMatchEconomyClaimStatus(matchId: string, citizenId: string): Promise<MatchEconomyClaimStatus> {
     const qs = `?citizenId=${encodeURIComponent(citizenId)}`;
     return this.get<MatchEconomyClaimStatus>(this.pub(`/games/${matchId}/economy/claim-status${qs}`));
