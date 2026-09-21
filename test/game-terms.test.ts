@@ -49,9 +49,9 @@ describe("game-terms", () => {
     expect(() => normalizeCreateGameParams({ marketMode: "unknown" })).toThrow();
   });
 
-  it("normalizeCreateGameParams is a no-op when topicType and marketMode are absent", () => {
+  it("normalizeCreateGameParams defaults settlementVersion when omitted", () => {
     const out = normalizeCreateGameParams({ plannedTurnCount: 5, salaryBudgetBps: 500 });
-    expect(out).toEqual({ plannedTurnCount: 5, salaryBudgetBps: 500 });
+    expect(out).toEqual({ plannedTurnCount: 5, salaryBudgetBps: 500, settlementVersion: 2 });
   });
 
   it("normalizeCreateGameParams rejects plannedTurnCount <= timingWeightTailTurns", () => {
