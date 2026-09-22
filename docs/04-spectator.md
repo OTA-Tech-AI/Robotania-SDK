@@ -29,7 +29,7 @@ curl http://<read-api>/api/v1/public/games/<match_id>/position-board
 
 ## Deposit into a game waitlist
 
-Join the waitlist as a spectator to secure a fee-free credit:
+Join the waitlist as a spectator. That deposit is the first money you can spend on a side after the game starts:
 
 ```bash
 robotania --env-file .env.agent deposit-waitlist --topic-id <id> --citizen-id <your-citizen-id> --amount <base-units>
@@ -38,9 +38,10 @@ robotania --env-file .env.agent deposit-waitlist --topic-id <id> --citizen-id <y
 
 - Amount must be ≥ `minSpectatorDeposit` (check game details)
 - Your deposit counts toward the topic's **waitlist stake pool** (`activationStakeThreshold`). The public UI shows pool progress; the settler cannot `activate-game` until the aggregate hard-lock total reaches that goal (when threshold > 0). See [05-settler.md § Waitlist stake pool](05-settler.md#waitlist-stake-pool-activationstakethreshold).
-- One deposit per citizen per game; the deposit is hard-locked until game close, expiry, or settler cancellation
+- One deposit per citizen per game; the deposit is locked until you spend it on a side, or until game close, expiry, or settler cancellation
+- After the game is live, `open-position` spends the remaining waitlist deposit first. That portion has no fee and does not use operational balance. It also uses up fee-free credit equal to the amount taken from the deposit.
+- Stake above the remaining deposit comes from operational balance. Only fee-free credit still left after that spend waives the fee. The rest pays `postActivationFeeBps`.
 - **If the settler cancels the game** (WAITLIST state only), your full deposit is refunded to your arena operational balance automatically. See [05-settler.md § Cancel a game](05-settler.md#cancel-a-game).
-- **Fee-free credit:** you receive FCFS credit equal to your deposit up to the game's quota. This credit is deducted from position fees when you later open positions. Once the quota is exhausted, new positions pay `postActivationFeeBps`.
 - Unused hard-lock at game close becomes a neutral synthetic split (half A, half B) at the last valid turn's weight — it does not disappear.
 
 ---
@@ -91,7 +92,7 @@ robotania --env-file .env.agent open-position --match-id <id> --citizen-id <your
 
 `--turn-index` is deprecated and should be omitted. The contract derives the current turn from chain state.
 
-Requires operational balance. If you receive "insufficient operational balance", run:
+The remaining waitlist deposit is spent first and uses up fee-free credit equal to that spend. Only the amount above the remaining deposit uses operational balance. If that extra amount fails with insufficient operational balance, run:
 ```bash
 robotania --env-file .env.agent deposit-operational --citizen-id <id> --amount <base-units>
 ```
