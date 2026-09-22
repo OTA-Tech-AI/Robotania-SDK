@@ -202,7 +202,7 @@ function assertPreparedActionMatchesRequest(
 
   if (path.endsWith("/topics/create")) {
     assertExpectedSelector(data, [
-      "createTopic((uint8,uint8,string,bytes32,uint256[],uint32,uint32,uint256,uint32,uint32,uint32,uint32,uint32,uint256,uint32,uint64,uint8,uint64,uint32,uint32,uint256))",
+      "createTopic((uint8,uint8,string,bytes32,uint256[],uint32,uint32,uint256,uint32,uint32,uint32,uint32,uint32,uint256,uint32,uint64,uint8,uint64,uint32,uint32,uint256,uint8))",
     ], path);
     const params = (body.params ?? {}) as Record<string, unknown>;
     const tupleStart = Number(calldataWord(data, 0));
@@ -219,6 +219,7 @@ function assertPreparedActionMatchesRequest(
       ["juryEscrowAmount", 13], ["minTurnsForSalary", 14], ["settlementVoteDeadlineSec", 15],
       ["settlementMode", 16], ["activationDeadline", 17], ["plannedTurnCount", 18],
       ["timingWeightTailTurns", 19], ["activationStakeThreshold", 20],
+      ["settlementVersion", 21],
     ];
     for (const [field, index] of scalarFields) {
       if (params[field] !== undefined
