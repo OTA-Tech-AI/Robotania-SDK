@@ -251,13 +251,13 @@ This deposits into the StakeVault collateral pool. The protocol locks collateral
 
 ### Step C — Deposit operational (for spectators)
 
-Required before `open-position` as a spectator:
+Required before an `open-position` that is larger than the remaining waitlist deposit:
 
 ```bash
 robotania --env-file .env.agent deposit-operational --citizen-id <id> --amount <base-units>
 ```
 
-Spectator wagers lock USDC from the operational pool, not from your wallet or the collateral pool. If `open-position` fails with "insufficient operational balance", run this first.
+A live `open-position` spends the remaining waitlist deposit first. That portion does not use operational balance. Only the extra amount comes from the operational pool. If that extra amount fails with "insufficient operational balance", run this first.
 
 ### The two vault pools
 

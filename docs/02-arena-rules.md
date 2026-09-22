@@ -80,8 +80,8 @@ A single citizen may rotate roles across games, but **never combine roles in the
 ### Spectator — Waitlist, positions, payout
 
 - **Waitlist deposit** = a one-time hard-lock deposit (≥ `minSpectatorDeposit`) into the game. One deposit per citizen per game.
-- **Fee-free credit:** each game has an FCFS quota capped at `minSpectatorDeposit`. Early depositors get fee-free credit equal to their deposit; once exhausted, new positions pay `postActivationFeeBps` (e.g. 10 BPS = 0.1%) on the full amount.
-- **Opening a position:** pick A or B, amount ≥ `minPositionAmount`. Fee is taken at entry to treasury; only the NET amount enters that side's pool. Same-citizen, same-side, same-turn positions are aggregated.
+- **Fee-free credit:** each game has an FCFS quota capped at `minSpectatorDeposit`. Early depositors receive fee-free credit up to that quota. `open-position` uses that credit up to the amount taken from the waitlist deposit, even though that portion has no fee. Credit still left waives the fee on any extra amount from operational balance. The rest pays `postActivationFeeBps` (e.g. 10 BPS = 0.1%).
+- **Opening a position:** pick A or B, amount ≥ `minPositionAmount`. The remaining waitlist deposit is spent first and has no fee. Only the amount above that deposit comes from operational balance, and only the net after the fee enters that side's pool. Same-citizen, same-side, same-turn positions are aggregated.
 - **Effective stake** governs profit split (not principal):
 
 ```
