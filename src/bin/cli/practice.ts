@@ -35,8 +35,8 @@ function practiceArenaReference(args: string[]): string {
   return reference;
 }
 
-function practiceDryRun(path: string, body: Record<string, unknown>, citizenId?: string): void {
-  const cfg = loadGatewayOnlyConfig();
+async function practiceDryRun(path: string, body: Record<string, unknown>, citizenId?: string): Promise<void> {
+  const cfg = await loadGatewayOnlyConfig();
   dryRunGateway(path, body, citizenId?.trim() || "pending", cfg.chainId);
 }
 
@@ -58,7 +58,7 @@ export async function runCreatePractice(args: string[], isDryRun: boolean): Prom
   const citizenId = optionalCitizenId(args);
   if (isDryRun) return practiceDryRun("/api/v1/agent/practice/arenas/create", body, citizenId);
   log("Creating Practice Arena (off-chain; no USDC or transaction)...");
-  result(await loadGatewayOnlyConfig().gatewayClient.createPracticeArena({ ...body, citizenId } as CreatePracticeArenaParams));
+  result(await (await loadGatewayOnlyConfig()).gatewayClient.createPracticeArena({ ...body, citizenId } as CreatePracticeArenaParams));
 }
 
 export async function runJoinPractice(args: string[], isDryRun: boolean): Promise<void> {
@@ -67,7 +67,7 @@ export async function runJoinPractice(args: string[], isDryRun: boolean): Promis
   const citizenId = optionalCitizenId(args);
   if (isDryRun) return practiceDryRun("/api/v1/agent/practice/arenas/join", body, citizenId);
   log("Joining Practice Arena...");
-  result(await loadGatewayOnlyConfig().gatewayClient.joinPracticeArena({ ...body, citizenId }));
+  result(await (await loadGatewayOnlyConfig()).gatewayClient.joinPracticeArena({ ...body, citizenId }));
 }
 
 export async function runCancelPractice(args: string[], isDryRun: boolean): Promise<void> {
@@ -75,7 +75,7 @@ export async function runCancelPractice(args: string[], isDryRun: boolean): Prom
   const body = { practiceArenaId: practiceArenaReference(args), ...(idempotencyKey !== undefined ? { idempotencyKey } : {}) };
   const citizenId = optionalCitizenId(args);
   if (isDryRun) return practiceDryRun("/api/v1/agent/practice/arenas/cancel", body, citizenId);
-  result(await loadGatewayOnlyConfig().gatewayClient.cancelPracticeArena({ ...body, citizenId }));
+  result(await (await loadGatewayOnlyConfig()).gatewayClient.cancelPracticeArena({ ...body, citizenId }));
 }
 
 export async function runSetPracticeGameDisplay(args: string[], isDryRun: boolean): Promise<void> {
@@ -112,7 +112,7 @@ export async function runSetPracticeGameDisplay(args: string[], isDryRun: boolea
     );
   }
   log("Updating Practice Arena display metadata...");
-  result(await loadGatewayOnlyConfig().gatewayClient.setPracticeGameDisplay({ ...body, citizenId }));
+  result(await (await loadGatewayOnlyConfig()).gatewayClient.setPracticeGameDisplay({ ...body, citizenId }));
 }
 
 export async function runSubmitPracticeTurn(args: string[], isDryRun: boolean): Promise<void> {
@@ -127,7 +127,7 @@ export async function runSubmitPracticeTurn(args: string[], isDryRun: boolean): 
   };
   const citizenId = optionalCitizenId(args);
   if (isDryRun) return practiceDryRun("/api/v1/agent/practice/matches/submit-turn", body, citizenId);
-  result(await loadGatewayOnlyConfig().gatewayClient.submitPracticeTurn({ ...body, citizenId }));
+  result(await (await loadGatewayOnlyConfig()).gatewayClient.submitPracticeTurn({ ...body, citizenId }));
 }
 
 export async function runAckPracticeStep(args: string[], isDryRun: boolean): Promise<void> {
@@ -135,7 +135,7 @@ export async function runAckPracticeStep(args: string[], isDryRun: boolean): Pro
   const body = { practiceBoardStepId: requireFlag(args, "--practice-board-step-id", "Practice Board step ID"), ...(idempotencyKey !== undefined ? { idempotencyKey } : {}) };
   const citizenId = optionalCitizenId(args);
   if (isDryRun) return practiceDryRun("/api/v1/agent/practice/board/step-ack", body, citizenId);
-  result(await loadGatewayOnlyConfig().gatewayClient.acknowledgePracticeStep({ ...body, citizenId }));
+  result(await (await loadGatewayOnlyConfig()).gatewayClient.acknowledgePracticeStep({ ...body, citizenId }));
 }
 
 export async function runChallengePracticeStep(args: string[], isDryRun: boolean): Promise<void> {
@@ -149,7 +149,7 @@ export async function runChallengePracticeStep(args: string[], isDryRun: boolean
   };
   const citizenId = optionalCitizenId(args);
   if (isDryRun) return practiceDryRun("/api/v1/agent/practice/board/step-challenge", body, citizenId);
-  result(await loadGatewayOnlyConfig().gatewayClient.challengePracticeStep({ ...body, citizenId }));
+  result(await (await loadGatewayOnlyConfig()).gatewayClient.challengePracticeStep({ ...body, citizenId }));
 }
 
 export async function runPracticeChallengeRuling(args: string[], isDryRun: boolean): Promise<void> {
@@ -165,7 +165,7 @@ export async function runPracticeChallengeRuling(args: string[], isDryRun: boole
   };
   const citizenId = optionalCitizenId(args);
   if (isDryRun) return practiceDryRun("/api/v1/agent/practice/board/challenge-ruling", body, citizenId);
-  result(await loadGatewayOnlyConfig().gatewayClient.rulePracticeChallenge({ ...body, citizenId }));
+  result(await (await loadGatewayOnlyConfig()).gatewayClient.rulePracticeChallenge({ ...body, citizenId }));
 }
 
 export async function runPredictPractice(args: string[], isDryRun: boolean): Promise<void> {
@@ -173,7 +173,7 @@ export async function runPredictPractice(args: string[], isDryRun: boolean): Pro
   const body = { practiceMatchId: requireFlag(args, "--practice-match-id", "Practice match ID"), side: parseMatchSideFlag(requireFlag(args, "--side", "Side A/B")), ...(idempotencyKey !== undefined ? { idempotencyKey } : {}) };
   const citizenId = optionalCitizenId(args);
   if (isDryRun) return practiceDryRun("/api/v1/agent/practice/matches/predict", body, citizenId);
-  result(await loadGatewayOnlyConfig().gatewayClient.predictPracticeWinner({ ...body, citizenId, side: body.side === 1 ? 1 : 2 }));
+  result(await (await loadGatewayOnlyConfig()).gatewayClient.predictPracticeWinner({ ...body, citizenId, side: body.side === 1 ? 1 : 2 }));
 }
 
 export async function runPracticeJuryVote(args: string[], isDryRun: boolean): Promise<void> {
@@ -181,5 +181,5 @@ export async function runPracticeJuryVote(args: string[], isDryRun: boolean): Pr
   const body = { practiceJuryCaseId: requireFlag(args, "--practice-jury-case-id", "Practice jury case ID"), outcomeSide: parseMatchSideFlag(requireFlag(args, "--side", "Side A/B")), reasonText: requireFlag(args, "--reason", "jury reason"), ...(idempotencyKey !== undefined ? { idempotencyKey } : {}) };
   const citizenId = optionalCitizenId(args);
   if (isDryRun) return practiceDryRun("/api/v1/agent/practice/jury/vote", body, citizenId);
-  result(await loadGatewayOnlyConfig().gatewayClient.submitPracticeJuryVote({ ...body, citizenId, outcomeSide: body.outcomeSide === 1 ? 1 : 2 }));
+  result(await (await loadGatewayOnlyConfig()).gatewayClient.submitPracticeJuryVote({ ...body, citizenId, outcomeSide: body.outcomeSide === 1 ? 1 : 2 }));
 }

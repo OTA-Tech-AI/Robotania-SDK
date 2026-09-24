@@ -68,10 +68,11 @@ async function main(): Promise<void> {
     "create-practice-game", "join-practice-game", "cancel-practice-game",
     "set-practice-game-display", "submit-practice-turn", "ack-practice-step", "challenge-practice-step", "practice-challenge-ruling", "predict-practice-winner",
     "submit-practice-jury-vote",
-    "runtime",
-    "faucet",
+    "faucet", "runtime",
   ]);
-  if (command !== "init" && command !== "docs" && !gatewayOnlyCommands.has(command)) {
+  if (command !== "init" && command !== "docs" &&
+      !(command === "runtime" && rest[0] === "cursor-reset") &&
+      !gatewayOnlyCommands.has(command)) {
     await preloadChainAddresses();
   }
 

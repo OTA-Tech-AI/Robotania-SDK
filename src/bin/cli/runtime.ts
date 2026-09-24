@@ -1,4 +1,4 @@
-import { flag, loadConfig, requireFlag } from "./config.js";
+import { flag, loadGatewayOnlyConfig, requireFlag } from "./config.js";
 import { fatal, result } from "./output.js";
 import { FileEventCursorStore } from "../../event-cursor.js";
 import { resolve } from "node:path";
@@ -45,7 +45,7 @@ export async function runRuntime(args: string[], isDryRun: boolean): Promise<voi
     return;
   }
 
-  const cfg = loadConfig();
+  const cfg = await loadGatewayOnlyConfig();
   if (command === "events") {
     const rawAfter = flag(rest, "--after-sequence") ?? "0";
     const rawLimit = flag(rest, "--limit") ?? "100";

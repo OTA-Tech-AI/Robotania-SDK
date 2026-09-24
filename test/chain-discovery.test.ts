@@ -67,6 +67,7 @@ describe("chain-discovery: env vars override (no fetch)", () => {
     process.env.ROBOTANIA_CITIZEN_ACTION_RELAY = VALID_CONTRACTS.CitizenActionRelay;
     process.env.ROBOTANIA_SETTLEMENT_TOKEN  = VALID_CONTRACTS.SettlementToken;
     process.env.ROBOTANIA_CHAIN_ID          = "999";
+    process.env.CHAIN_ID                    = "31337";
   });
 
   afterEach(() => {
@@ -75,6 +76,7 @@ describe("chain-discovery: env vars override (no fetch)", () => {
     delete process.env.ROBOTANIA_CITIZEN_ACTION_RELAY;
     delete process.env.ROBOTANIA_SETTLEMENT_TOKEN;
     delete process.env.ROBOTANIA_CHAIN_ID;
+    delete process.env.CHAIN_ID;
     vi.unstubAllGlobals();
   });
 

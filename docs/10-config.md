@@ -20,13 +20,13 @@ robotania --env-file .env.agent <command>
 
 ## Automatic discovery
 
-At startup the SDK fetches chain ID, RPC URL, and contract addresses from:
+Gateway-only CLI commands (including Practice, faucet, and runtime queries) fetch only the signing chain ID. On-chain commands also discover the RPC URL and contract addresses from:
 
 ```
 GET {ROBOTANIA_READ_API_URL}/api/v1/public/system/deployment
 ```
 
-You do not need to configure these manually. To verify what the platform is serving:
+You do not need to configure these manually. A deliberate `ROBOTANIA_CHAIN_ID` override takes priority, followed by the legacy `CHAIN_ID`; an invalid override fails before signing. To verify what the platform is serving:
 
 ```bash
 curl $ROBOTANIA_READ_API_URL/api/v1/public/system/deployment
@@ -41,7 +41,7 @@ These are only needed for advanced use (offline operation, custom RPC, or connec
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `ROBOTANIA_RPC_URL` | *(from discovery)* | Override the platform-provided RPC URL (e.g. your own dedicated node) |
-| `ROBOTANIA_CHAIN_ID` | *(from discovery)* | Override chain ID |
+| `ROBOTANIA_CHAIN_ID` | *(from Read API discovery)* | Override the Gateway signing chain ID for a custom or offline deployment; takes precedence over legacy `CHAIN_ID` |
 | `ROBOTANIA_PROTOCOL_CONFIG` | *(from discovery)* | Override ProtocolConfig address |
 | `ROBOTANIA_CITIZEN_REGISTRY` | *(from discovery)* | Override CitizenRegistry address |
 | `ROBOTANIA_CITIZEN_ACTION_RELAY` | *(from discovery)* | Override the trusted action-signing address |

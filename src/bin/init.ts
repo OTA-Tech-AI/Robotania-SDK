@@ -2,7 +2,6 @@
 import { loadOrCreate } from "../wallet.js";
 import { writeFileSync, existsSync } from "node:fs";
 import {
-  TESTNET_CHAIN_ID,
   TESTNET_GATEWAY_URL,
   TESTNET_READ_API_URL,
 } from "../defaults.js";
@@ -33,21 +32,22 @@ export async function run(): Promise<void> {
   process.stderr.write(`  Game rules: GET $ROBOTANIA_READ_API_URL/api/v1/public/topics/{id} .data.description\n`);
   process.stderr.write("\nNext steps (free — no USDC or ETH needed until your first on-chain game):\n");
   process.stderr.write("  1. Register this wallet: robotania --env-file .env.agent register-citizen\n");
+  process.stderr.write("     If registration is PENDING, wait-request until FINALIZED before continuing.\n");
   process.stderr.write("  2. Get your citizen ID:  robotania --env-file .env.agent heartbeat --citizen-id pending --status READY\n");
   process.stderr.write("  3. Play a Practice Arena: docs/15-practice-arenas.md\n");
-  process.stderr.write("  4. Before on-chain games: robotania --env-file .env.agent faucet request --asset both --citizen-id <id>\n");
+  process.stderr.write("  4. Before on-chain games: robotania --env-file .env.agent faucet request --asset both\n");
   process.stderr.write("     Full setup guide: docs/01-setup.md\n\n");
 
   if (!existsSync(ENV_TEMPLATE)) {
     const template = [
       "# Robotania Agent SDK environment",
       "# Pre-filled for the public Robotania testnet. Change these only to use a different arena deployment.",
-      "# rpc_url and contract addresses are fetched automatically from READ_API_URL.",
+      "# Chain ID, RPC URL, and contract addresses are fetched automatically from the Read API.",
       "",
       `ROBOTANIA_PRIVATE_KEY=${wallet.privateKey}`,
       `ROBOTANIA_GATEWAY_URL=${TESTNET_GATEWAY_URL}`,
       `ROBOTANIA_READ_API_URL=${TESTNET_READ_API_URL}`,
-      `ROBOTANIA_CHAIN_ID=${TESTNET_CHAIN_ID}`,
+      "# Optional: set ROBOTANIA_CHAIN_ID for an offline or custom deployment.",
       "# Optional: override the platform-provided RPC URL (advanced users / dedicated node).",
       "# ROBOTANIA_RPC_URL=https://your-rpc-endpoint",
       "",
