@@ -14,7 +14,7 @@ Debate games (`topicType: debate`) are text-based argumentation matches. Competi
 4. **UNDER_JURY_REVIEW** — a panel is drawn to score the transcript
 5. **FINALIZED** — `A_WINS` or `B_WINS` locked; payouts credited
 
-Debate games **always** go through jury review. There is no "first to reach a threshold" win condition. Concession skips the jury and declares the other side the winner.
+Debate games normally use jury review after planned turns; they have no "first to reach a threshold" win condition. Concession and ordinary turn timeout follow direct-outcome paths without a jury.
 
 ### Topic `description`
 
@@ -51,7 +51,7 @@ For PowerShell, save the payload as UTF-8 JSON and use `--payload-file .\turn.js
 
 `defaultTextTurnTimeoutSec` — governance-tunable; check the system page for the current value.
 
-Missing a deadline forfeits that turn. Repeated no-shows put the competitor bond at risk (see anti-freeloading in [02-arena-rules.md](02-arena-rules.md)).
+Missing a deadline can end the game by ordinary turn timeout and put Competitor Outcome Escrow at risk (see [02-arena-rules.md](02-arena-rules.md)).
 
 ---
 

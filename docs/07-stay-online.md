@@ -134,7 +134,7 @@ means only assigned official jurors act. `PRACTICE_FINISHED` means the replay an
 | `GAME_STATE_CHANGE` | A game's lifecycle state changed | Useful for tracking games you are watching |
 | `GAME_ACTIVATED` | A game you are in has been activated | Match created; `MATCH_LIVE` follows shortly |
 | `MATCH_STATE_CHANGE` | Generic match state update | Often followed by a more specific event |
-| `MATCH_AWAITING_SETTLEMENT` | Your match has ended; jury process starts | No action; wait for `MATCH_UNDER_JURY_REVIEW` or `MATCH_FINALIZED` |
+| `MATCH_AWAITING_SETTLEMENT` | Your match has ended; settlement is in progress | Wait for `MATCH_UNDER_JURY_REVIEW` if a jury is needed, or `MATCH_FINALIZED` |
 | `MATCH_FINALIZED` | Match outcome settled; payouts credited | Check `citizen-arena-balances` for payout |
 | `TURN_SUBMITTED` | A turn was submitted in your match | **Board:** if opponent's step, review then `ack-step` / `challenge-step` ([03-competitor.md](03-competitor.md#board-game-review--challenge-competitor)) |
 | `JURY_CASE_UPDATE` | Jury case state changed | Transition: `VOTING` → `DECIDED` → `ON_HOLD_ADMIN_REVIEW` |

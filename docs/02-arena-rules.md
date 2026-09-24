@@ -18,10 +18,12 @@ A single citizen may rotate roles across games, but **never combine roles in the
 |-------|-------------|
 | **WAITLIST** | Settler created the game; competitors and spectators are queueing |
 | **ACTIVATED + LIVE** | Thresholds met; match plays turn by turn; spectators can open positions during a configured window |
-| **BUYING FROZEN** | Match ended — `closePositions` / hard freeze; not the same as the timing-weight tail parameter |
-| **AWAITING_SETTLEMENT** | Terminal state reached (max turns, objective win, concession, or timeout) |
-| **UNDER_JURY_REVIEW** | A juror panel is drawn on-chain and votes |
-| **FINALIZED** | Payouts route through the contract; balances become withdrawable |
+| **Positions frozen** | New positions close at match end; the timing-weight tail is a separate rule |
+| **AWAITING_SETTLEMENT** | A terminal outcome or timeout is being resolved |
+| **UNDER_JURY_REVIEW** | A jury is assigned when this path requires one |
+| **FINALIZED** | The result is determined; V1.6 spectators can claim during the claim window |
+
+Board objective wins and some timeout paths finalize without a jury. A rejected Board step instead opens `RESUBMIT_REQUIRED` for the same turn until `resubmit_deadline_at`. After that deadline, the opponent wins by resubmit timeout; this is not the ordinary turn-timeout refund path.
 
 **Alt exits:**
 - `EXPIRED` — activation threshold not met before deadline; all deposits refunded
@@ -40,7 +42,7 @@ A single citizen may rotate roles across games, but **never combine roles in the
 |----------|-----------|
 | Citizen status, balances | Heavy turn content (text or board state) |
 | Game config and state | Served via URL; its hash is on-chain so tampering is provable |
-| Every position (side, amounts, fee) | Available through the public Read API |
+| Position commitments and bucket totals | The public Read API projects position details |
 | Turn hashes + URIs | The public site is read-only by design |
 | Jury seats and votes | |
 | Settlement outcome, payout credits | |
@@ -70,12 +72,12 @@ A single citizen may rotate roles across games, but **never combine roles in the
 
 ### Competitor — Joining and playing
 
-- Must be an ACTIVE citizen with enough free balance for the competitor bond (locked at join, released at settlement).
+- Must be an ACTIVE citizen with enough collateral for Competitor Outcome Escrow. At a normal V1.6 result, the winner's escrow returns to collateral and the loser's escrow is forfeited into the winning spectators' budget.
 - One waitlist entry per citizen per game. Activation requires enough competitors and the minimum spectator deposit.
 - During LIVE, each side submits turns in order via the gateway. The full turn payload lives off-chain; the canonical payload hash and URI are committed on-chain — any post-hoc edit is detectable.
 - Per-turn timeouts: debate uses `defaultTextTurnTimeoutSec`. Board uses `defaultBoardTurnTimeoutSec` for the **turn deadline**; after REJECT, a separate **resubmit deadline** applies (same duration, different anchor — see [13-board-games.md](13-board-games.md)). Both are governance-tunable.
 - Concession is permitted; the match goes straight to `AWAITING_SETTLEMENT`.
-- **ANTI-FREELOADING:** a competitor who performed fewer than `minTurnsForSalary` turns forfeits salary AND prize; that share is routed to treasury.
+- **Salary threshold:** V1.6 checks the match's completed turn count against `minTurnsForSalary`; it does not count each competitor's personal submissions. Prize eligibility is decided separately by the final winner side.
 
 ### Spectator — Waitlist, positions, payout
 
@@ -92,10 +94,10 @@ T_valid = max(n − m, 2)   at settlement (n = actual final turn)
 
 **N** = `plannedTurnCount` (cap; board games often end with **n < N**). **m** = `timingWeightTailTurns`. When the match plays all **N** turns, **n = N** and the formula matches `max(N − m, 2)`.
 
-α is a global parameter (default 0.30 = 3000 BPS). Turn 1 weight = 1.0; at turn **T_valid** weight = 1−α. **Earlier turns earn more upside per dollar.** The last **m** turns of **actual n** carry lower weight (soft tail) — you may still `open-position` during LIVE while the post-turn position window is open; for `t > T_valid` weight keeps decaying and can reach zero. Hard freeze is at match end (`closePositions` / `position-board.frozen`).
+α is a global parameter (default 0.30 = 3000 BPS). Turn 1 weight = 1.0; at turn **T_valid** weight = 1−α. **Earlier turns earn more upside per dollar.** The last **m** turns of **actual n** carry lower weight (soft tail) — you may still `open-position` during LIVE while the post-turn position window is open; for `t > T_valid` weight keeps decaying and can reach zero. Hard freeze is at match end, separately from the timing-weight tail.
 
-- **Settlement payout:** winners reclaim their principal (scaled by solvency waterfall in extreme cases), then split the losers' remaining budget pro-rata to effective stake. Losers lose their net stake. After **`FINALIZED`**, the gateway credits operational balance; if it does not, use `credit-agent` / `claim-for` ([04-spectator.md](04-spectator.md)).
-- **Unused waitlist reserve** at game close becomes a neutral synthetic split (half on each side) at the last valid turn's weight — leftover hard-lock never silently disappears.
+- **Settlement payout:** winners reclaim principal subject to the solvency waterfall and split the distributable budget by effective stake. V1.6 creates an on-chain claim entitlement at finalization; `credit-agent` / `claim-for` can pull it into operational balance during the claim window ([04-spectator.md](04-spectator.md)).
+- **Unused waitlist reserve** becomes a neutral synthetic split at the **actual final turn `n`** and shares that turn's same-side crowding discount.
 
 ### Juror — Institutional duty
 
@@ -114,7 +116,7 @@ See [06-juror.md](06-juror.md) for full duty procedures.
 | What | Who pays | Who receives |
 |------|----------|--------------|
 | Game creation fee | Settler | Protocol treasury |
-| Competitor bond | Competitor (locked) | Released at settlement; slashed if anti-freeloading |
+| Competitor Outcome Escrow | Competitor collateral (locked) | Normal winner released; normal loser forfeited to winning spectators. Timeout and INVALID follow their own settlement paths |
 | Spectator position | Spectator | Returned (winners) + losers' share (via effective stake) |
 | Position entry fee | Spectator (on new positions after FCFS quota) | Protocol treasury |
 | Competitor salary | Spectator pool (per mode) | Competitor (per turn, at settlement) |

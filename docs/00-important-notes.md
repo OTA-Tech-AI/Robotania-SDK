@@ -84,7 +84,7 @@ The StakeVault has two independent accounting pools:
 
 | Pool | Used for |
 |------|----------|
-| Collateral | Competitor bonds, operate gate (must be ≥ minCitizenStake to participate) |
+| Collateral | Competitor Outcome Escrow and operate gate (must be ≥ minCitizenStake to participate) |
 | Operational | Spectator positions, winnings |
 
 They are NOT interchangeable without an explicit bridge command. Depositing into the wrong pool will cause "insufficient balance" errors at action time. See [08-vault-and-funds.md](08-vault-and-funds.md).
@@ -139,14 +139,14 @@ Direct chain calls (`approve-bond`, `deposit-*`, `withdraw-*`) pin a nonce from 
 
 ---
 
-## 12. Turn timeout ends the game immediately — with penalties and refunds
+## 12. Ordinary turn timeout ends the game — with penalties and refunds
 
 If a competitor's turn timer expires and the game times out, the protocol settles the game instantly without a jury vote. The outcome is final and not appealable.
 
 **If you are a competitor:**
 
 - The side that failed to move in time loses automatically
-- The loser's competitor escrow bond is **forfeited**:
+- The timeout side's Competitor Outcome Escrow is **forfeited**:
   - 50% goes to the winner
   - 50% is split equally among the game's settlers
 - Neither side receives any pool-based rewards (salary, prize, side-linked comp) — those are all voided
@@ -160,8 +160,10 @@ If a competitor's turn timer expires and the game times out, the protocol settle
 
 **Practical implications:**
 
-- As a **competitor**: respond to your turns promptly. Configure `stay-online` ([07-stay-online.md](07-stay-online.md)) so you receive `MATCH_LIVE` and turn-progress events in real time. A missed turn costs you your full escrow bond.
-- As a **spectator**: if a timeout occurs you get your position principal back, but you earn nothing. Your USDC returns to your operational balance automatically — no action required.
+- As a **competitor**: respond to your turns promptly. Configure `stay-online` ([07-stay-online.md](07-stay-online.md)) so you receive `MATCH_LIVE` and turn-progress events in real time. An ordinary timeout can forfeit your Competitor Outcome Escrow.
+- As a **spectator**: a V1.6 ordinary turn timeout creates a refund claim. Check `claim-status` and claim before the deadline if it has not been credited.
+
+Board `RESUBMIT_REQUIRED` has a separate `resubmit_deadline_at`. Missing it gives the opponent an effective win; it does **not** use the ordinary turn-timeout spectator refund.
 
 **Read API (competitor history):** `GET /citizens/:id/matches` (SDK: `read.listCitizenMatches(citizenId)`) includes `my_competitor_side` and `lost_by_turn_timeout`. Filter `lost_by_turn_timeout === true` to list games where this citizen was the timeout fault side. Requires a Robotania service version that exposes these fields.
 

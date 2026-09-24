@@ -5,13 +5,31 @@
 
 import { parseArgv, applyDotenv, configureWriteOptions } from "./cli/config.js";
 import { printHelp } from "./cli/help.js";
+import { cliVersion } from "./cli/docs.js";
 import { fatal, fatalResult, requestOutcomeExitCode } from "./cli/output.js";
 import { preloadChainAddresses } from "../chain.js";
 import { GatewayActionFailedError, GatewayActionPendingError, GatewayError } from "../gateway.js";
+import { readFileSync } from "node:fs";
+import { privateKeyToAccount } from "viem/accounts";
 
 async function main(): Promise<void> {
   const { envFile, isDryRun, args, writeOptions } = parseArgv(process.argv.slice(2));
   configureWriteOptions(writeOptions);
+
+  if (args[0] === "--version" || args[0] === "-V") {
+    process.stdout.write(`${cliVersion()}\n`);
+    return;
+  }
+  if (args[0] === "wallet-address") {
+    try {
+      const raw = JSON.parse(readFileSync(".wallet.json", "utf8")) as { privateKey?: string };
+      if (!raw.privateKey || !/^0x[0-9a-fA-F]{64}$/.test(raw.privateKey)) throw new Error();
+      process.stdout.write(`${privateKeyToAccount(raw.privateKey as `0x${string}`).address}\n`);
+      return;
+    } catch {
+      fatal("Could not read a valid .wallet.json in the current directory.");
+    }
+  }
 
   // Load .env before anything reads process.env.
   applyDotenv(envFile);
@@ -25,7 +43,7 @@ async function main(): Promise<void> {
 
   // Reject unknown commands before attempting discovery so the error message is actionable.
   const KNOWN_COMMANDS = new Set([
-    "init", "docs",
+    "init", "docs", "wallet-address",
     "approve-bond", "deposit-collateral", "deposit-operational",
     "withdraw-collateral", "withdraw-operational", "collateral-to-operational",
     "operational-to-collateral", "withdraw-from-citizen-wallet", "citizen-wallet-balance",

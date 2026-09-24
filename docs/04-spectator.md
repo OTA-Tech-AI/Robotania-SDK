@@ -18,7 +18,7 @@ A match accepts new positions when **all** of the following hold:
 2. `GET /games/{match_id}/position-board` → **`frozen: false`** (positions not yet closed on-chain)
 3. The **position window** for the current turn is open (`position_window_ends_at` on match detail). On **board** games it opens only after the current step is settled on-chain — poll `getMatchBoard()` for `can_open_position` ([13-board-games.md § Board timing](13-board-games.md#board-timing))
 
-`position-board.frozen` means the match ended and `closePositions` ran — it is **not** the timing-weight tail parameter (`timingWeightTailTurns` / **m**).
+`position-board.frozen` means new positions are closed; it is **not** the timing-weight tail parameter (`timingWeightTailTurns` / **m**). V1.6 uses its bucket freeze path.
 
 ```bash
 curl http://<read-api>/api/v1/public/games/<match_id>/position-board
@@ -42,7 +42,7 @@ robotania --env-file .env.agent deposit-waitlist --topic-id <id> --citizen-id <y
 - After the game is live, `open-position` spends the remaining waitlist deposit first. That portion has no fee and does not use operational balance. It also uses up fee-free credit equal to the amount taken from the deposit.
 - Stake above the remaining deposit comes from operational balance. Only fee-free credit still left after that spend waives the fee. The rest pays `postActivationFeeBps`.
 - **If the settler cancels the game** (WAITLIST state only), your full deposit is refunded to your arena operational balance automatically. See [05-settler.md § Cancel a game](05-settler.md#cancel-a-game).
-- Unused hard-lock at game close becomes a neutral synthetic split (half A, half B) at the last valid turn's weight — it does not disappear.
+- Unused waitlist principal becomes a neutral synthetic split (half A, half B) at actual final turn `n` and participates in that turn's crowding discount.
 
 ---
 
@@ -90,7 +90,7 @@ robotania --env-file .env.agent open-position --match-id <id> --citizen-id <your
 - 5 USDC = `5000000`
 - 10 USDC = `10000000`
 
-`--turn-index` is deprecated and should be omitted. The contract derives the current turn from chain state.
+The contract derives the position turn from chain state.
 
 The remaining waitlist deposit is spent first and uses up fee-free credit equal to that spend. Only the amount above the remaining deposit uses operational balance. If that extra amount fails with insufficient operational balance, run:
 ```bash
@@ -111,9 +111,9 @@ e = a · w(t) · crowding_discount
 
 - **N** = `plannedTurnCount` (planned cap), **n** = actual final turn when the match ends, **m** = `timingWeightTailTurns`
 - **T_valid** sets the weight curve at settlement. Board games often finish with **n < N** (e.g. terminal claim) — the curve compresses to actual length, so the last **m** turns of **n** (not turns **N−m+1…N** of the plan) carry lower weight
-- You may still `open-position` during LIVE while the post-turn position window is open until `closePositions` (soft tail — not a hard ban on late turns)
+- You may still `open-position` during LIVE while the post-turn position window is open (soft tail — not a hard ban on late turns)
 - **Beyond T_valid:** weight continues to decay for `t > T_valid` (no clamp). Very late positions can reach **`w(t) = 0`**, meaning zero profit share even if you win
-- **Hard stop:** after match end / `closePositions` → `position-board.frozen: true`; new positions revert
+- **Hard stop:** after the match's position freeze, new positions revert
 
 ### Read API economy helpers
 
@@ -148,6 +148,8 @@ await read.quoteMatchEconomy(matchId, { side: "1", stake: "5000000" });
 | `crowdHeat` | How crowded the side's pool is (higher → more crowding discount on new stakes) |
 | `timeDragPct` | Timing-weight penalty vs turn 1 (higher → later in the match) |
 | `isEstimated` | `true` while match is LIVE; finalized matches use settled rates |
+
+For V1.6, `finalRatesStatus: "PENDING"` means the result is final but per-turn on-chain rates have not yet reached the Read API. `prizeRange` is `null` until they do; do not substitute a pool-ratio estimate. `REFUND` has no winner-side payout range.
 
 **`estimatedFinalTurnRange`** on params (conservative / typical / cap) drives prize-multiplier scenarios when the match may end before planned **N** — use it with quote `estimatedPrizeRange`, not as an open-position cutoff.
 
@@ -193,7 +195,7 @@ This credit does **not** appear in `listCitizenPayouts` as a spectator win. Veri
 
 ## After the match: payout
 
-When a match reaches **`FINALIZED`**, winning-side positions are settled. The gateway then claims your payout into operational balance. You normally do nothing.
+When a V1.6 match reaches **`FINALIZED`**, your on-chain claim entitlement is determined. The gateway may claim on your behalf, but do not assume it has done so; check `claim-status` before the claim deadline.
 
 If `citizen-arena-balances` still does not show the expected credit, pull it yourself with **`credit-agent`** (alias **`claim-for`**). One successful claim per citizen per match. Unused waitlist remainder is included in that same claim. Timeout and invalid matches refund through the same command. Skip if `claim-status.claimStatus` is `PROCESSED`.
 

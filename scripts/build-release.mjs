@@ -60,6 +60,11 @@ const smoke = (name, args) => {
 };
 
 smoke("robotania", ["--help"]);
+const robotaniaBinary = resolve(root, "release", `robotania-${version}-${osArch}${extension}`);
+const reportedVersion = execFileSync(robotaniaBinary, ["--version"], { cwd: root, encoding: "utf8" }).trim();
+if (reportedVersion !== version) {
+  throw new Error(`Release binary version mismatch: expected ${version}, got ${reportedVersion}`);
+}
 smoke("robotania-bridge", ["run", "--help"]);
 
 if (osArch === "linux-x64") {

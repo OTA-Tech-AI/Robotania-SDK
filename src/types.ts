@@ -665,7 +665,8 @@ export interface MatchBoardBundle {
 
 /** Side payout estimate from `GET /games/{matchId}/economy/snapshot`. */
 export interface EconomySideSnapshot {
-  prizeRange: { minMultiplier: number; maxMultiplier: number };
+  /** Null when final rates are pending or the match ended in a refund. */
+  prizeRange: { minMultiplier: number; maxMultiplier: number } | null;
   crowdHeat: number;
   timeDragPct: number;
   isEstimated: boolean;
@@ -689,6 +690,8 @@ export interface MatchEconomySnapshot {
   currentTurn: number;
   plannedTurnCount: number;
   finalized: boolean;
+  winnerSide?: "A" | "B" | null;
+  finalRatesStatus?: "LIVE" | "PENDING" | "READY" | "REFUND";
   sides: { A: EconomySideSnapshot; B: EconomySideSnapshot };
 }
 

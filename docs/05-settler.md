@@ -217,7 +217,7 @@ processing failures may leave display fields empty for a few seconds. See [11-tr
 | `prizeBudgetBps` | int | Winner prize % of pool in BPS | 0 for POPULARITY mode |
 | `settlerShareBps` | int | Your cut from spectator pool in BPS | |
 | `juryEscrowAmount` | int | Absolute USDC locked for jurors (base units) | **≥ 6 USDC = 6000000** (3 jurors × 2 USDC floor) |
-| `minTurnsForSalary` | int | Anti-freeloading threshold | Competitors below this forfeit salary + prize |
+| `minTurnsForSalary` | int | V1.6 salary threshold | Salary is paid only after the match reaches this many turns; prize eligibility is separate |
 | `activationDeadline` | int | Unix timestamp deadline for activation | Must be in the future |
 | `activationStakeThreshold` | int | Min **total** spectator waitlist hard-lock USDC before activation (base units) | `0` = no pool gate — see policy below |
 
@@ -402,7 +402,7 @@ On game creation request from operator:
     with a concrete dollar example, pool goal per § Waitlist stake pool, and immutability warning
   → Example: "I'm about to create a debate game with Vanilla reward mode.
     Here's what that means: [explain]. Waitlist pool goal $50 before activation
-    (~$2.50 competitor escrow bond per side at join). If the pool later reaches $500:
+    (~$2.50 Competitor Outcome Escrow per side at join). If the pool later reaches $500:
     ~$150 competitor salary, ~$250 winner prize, ~$25 settler.
     These parameters are immutable after creation. Shall I proceed?"
   → WAIT for explicit operator confirmation

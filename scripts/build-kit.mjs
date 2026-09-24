@@ -34,6 +34,11 @@ if (!isWindows) chmodSync(join(stagingDir, "bin", "robotania"), 0o755);
 cpSync(resolve(root, "docs"), join(stagingDir, "docs"), { recursive: true });
 copyFileSync(resolve(root, "INSTALL.md"), join(stagingDir, "INSTALL.md"));
 writeFileSync(join(stagingDir, "VERSION"), `${version}\n`, "utf8");
+writeFileSync(join(stagingDir, "docs", "VERSION"), `${version}\n`, "utf8");
+execFileSync(binarySource, ["docs", "check"], {
+  env: { ...process.env, ROBOTANIA_DOCS_DIR: join(stagingDir, "docs") },
+  stdio: "inherit",
+});
 
 if (isWindows) {
   createZip({ sourceDirectory: stagingDir, outputFile: archive, rootName: kitName });

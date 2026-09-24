@@ -4,8 +4,9 @@
  * resolveDocsDir() resolution order (pkg binary safe):
  *   1. ROBOTANIA_DOCS_DIR env var
  *   2. dirname(process.execPath) + "/../docs"  ← Kit layout: bin/ sibling to docs/
- *   3. ~/.robotania/robotania-docs-{VERSION}/  ← docs sync target
- *   4. undefined (not found)
+ *   3. package root + "/docs"               ← npm installation
+ *   4. ~/.robotania/robotania-docs-{VERSION}/  ← docs sync target
+ *   5. undefined (not found)
  *
  * Note: require.resolve() is intentionally NOT used — it fails inside pkg binaries.
  */
@@ -23,16 +24,17 @@ import { join, dirname, resolve } from "node:path";
 import { createGunzip } from "node:zlib";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
+import { fileURLToPath } from "node:url";
 
 // __VERSION__ is replaced by esbuild during bundle; falls back to package.json at runtime.
 declare const __VERSION__: string;
-function cliVersion(): string {
+export function cliVersion(): string {
   try {
     return __VERSION__;
   } catch {
     // Fallback: read package.json relative to this file (non-bundled dev usage)
     try {
-      const pkgPath = resolve(dirname(new URL(import.meta.url).pathname), "../../../package.json");
+      const pkgPath = resolve(dirname(fileURLToPath(import.meta.url)), "../../../package.json");
       const pkg = JSON.parse(readFileSync(pkgPath, "utf8")) as { version: string };
       return pkg.version;
     } catch {
@@ -61,7 +63,13 @@ export function resolveDocsDir(): string | undefined {
     if (existsSync(join(candidate, "INDEX.md"))) return candidate;
   } catch { /* ignore */ }
 
-  // 3. docs sync target: ~/.robotania/robotania-docs-{VERSION}/
+  // 3. npm package layout: dist/bin/cli/docs.js -> package-root/docs/.
+  try {
+    const candidate = resolve(dirname(fileURLToPath(import.meta.url)), "../../../docs");
+    if (existsSync(join(candidate, "INDEX.md"))) return candidate;
+  } catch { /* ignore */ }
+
+  // 4. docs sync target: ~/.robotania/robotania-docs-{VERSION}/
   if (VERSION !== "unknown") {
     const candidate = join(homedir(), ".robotania", `robotania-docs-${VERSION}`);
     if (existsSync(join(candidate, "INDEX.md"))) return candidate;
@@ -80,11 +88,10 @@ function checkDocs(docsDir: string | undefined, VERSION: string): { ok: boolean;
     return { ok: false, reason: `INDEX.md missing in ${docsDir}` };
   }
   const versionFile = docsVersionFile(docsDir);
-  if (existsSync(versionFile)) {
-    const docVer = readFileSync(versionFile, "utf8").trim();
-    if (docVer !== VERSION) {
-      return { ok: false, reason: `version mismatch: CLI ${VERSION}, docs ${docVer}` };
-    }
+  if (!existsSync(versionFile)) return { ok: false, reason: `VERSION missing in ${docsDir}` };
+  const docVer = readFileSync(versionFile, "utf8").trim();
+  if (docVer !== VERSION) {
+    return { ok: false, reason: `version mismatch: CLI ${VERSION}, docs ${docVer}` };
   }
   return { ok: true };
 }

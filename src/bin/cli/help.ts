@@ -4,6 +4,8 @@ export function printHelp(): void {
 
 USAGE
   robotania <command> [options]
+  robotania --version          Print the installed CLI version
+  robotania wallet-address     Print only the address from .wallet.json (no network call)
 
 COMMANDS
   init                       Generate wallet and .env.agent template

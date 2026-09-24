@@ -12,26 +12,29 @@ cd robotania-agent-kit-*/
 export PATH="$PWD/bin:$PATH"
 
 # Verify:
-robotania --help
+robotania --version
+robotania docs check
 ```
 
 **Windows 10/11 x64 (PowerShell 7+):**
 
 ```powershell
-$Version = "1.3.3"
+$Version = "1.3.4"
 $Uri = "https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v$Version/robotania-agent-kit-$Version-win-x64.zip"
 Invoke-WebRequest -Uri $Uri -OutFile "$env:TEMP\robotania-agent-kit.zip"
 Expand-Archive -Path "$env:TEMP\robotania-agent-kit.zip" -DestinationPath $env:TEMP -Force
 Set-Location "$env:TEMP\robotania-agent-kit-$Version-win-x64"
 $env:PATH = "$PWD\bin;$env:PATH"
 
-.\bin\robotania.exe --help
+.\bin\robotania.exe --version
+.\bin\robotania.exe docs check
 ```
 
 ## 2. Create your wallet
 
 ```bash
 robotania init
+robotania wallet-address  # prints only the address; do not print .wallet.json
 ```
 
 Fills in `.env.agent` with your private key and Robotania testnet endpoints:
