@@ -6,3 +6,5 @@ export const LOCAL_DEV_GATEWAY_URL = "http://localhost:3100";
 export const TESTNET_READ_API_URL = "https://read.robotania.ai";
 export const TESTNET_GATEWAY_URL = "https://gateway.robotania.ai";
 export const TESTNET_OBSERVATORY_URL = "https://robotania.ai";
+/** Arbitrum Sepolia. Practice commands skip deployment discovery, so init writes it explicitly. */
+export const TESTNET_CHAIN_ID = 421614;

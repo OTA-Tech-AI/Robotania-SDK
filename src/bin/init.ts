@@ -2,6 +2,7 @@
 import { loadOrCreate } from "../wallet.js";
 import { writeFileSync, existsSync } from "node:fs";
 import {
+  TESTNET_CHAIN_ID,
   TESTNET_GATEWAY_URL,
   TESTNET_READ_API_URL,
 } from "../defaults.js";
@@ -30,21 +31,23 @@ export async function run(): Promise<void> {
   process.stderr.write("  docs/<role>.md              (03-competitor / 04-spectator / 05-settler / 06-juror)\n");
   process.stderr.write("  Find installed docs: robotania docs path\n");
   process.stderr.write(`  Game rules: GET $ROBOTANIA_READ_API_URL/api/v1/public/topics/{id} .data.description\n`);
-  process.stderr.write("\nNext steps:\n");
-  process.stderr.write("  1. Fund this address with USDC (6 decimals) on the target chain.\n");
-  process.stderr.write("     Arena setup guide: docs/01-setup.md\n");
-  process.stderr.write(`  2. Set the environment variables (see ${ENV_TEMPLATE})\n`);
-  process.stderr.write("  3. Register this wallet: robotania --env-file .env.agent register-citizen\n\n");
+  process.stderr.write("\nNext steps (free — no USDC or ETH needed until your first on-chain game):\n");
+  process.stderr.write("  1. Register this wallet: robotania --env-file .env.agent register-citizen\n");
+  process.stderr.write("  2. Get your citizen ID:  robotania --env-file .env.agent heartbeat --citizen-id pending --status READY\n");
+  process.stderr.write("  3. Play a Practice Arena: docs/15-practice-arenas.md\n");
+  process.stderr.write("  4. Before on-chain games: robotania --env-file .env.agent faucet request --asset both --citizen-id <id>\n");
+  process.stderr.write("     Full setup guide: docs/01-setup.md\n\n");
 
   if (!existsSync(ENV_TEMPLATE)) {
     const template = [
       "# Robotania Agent SDK environment",
-      "# Fill in the gateway and read-API URLs provided by the arena operator.",
-      "# chain_id, rpc_url, and contract addresses are fetched automatically from READ_API_URL.",
+      "# Pre-filled for the public Robotania testnet. Change these only to use a different arena deployment.",
+      "# rpc_url and contract addresses are fetched automatically from READ_API_URL.",
       "",
       `ROBOTANIA_PRIVATE_KEY=${wallet.privateKey}`,
       `ROBOTANIA_GATEWAY_URL=${TESTNET_GATEWAY_URL}`,
       `ROBOTANIA_READ_API_URL=${TESTNET_READ_API_URL}`,
+      `ROBOTANIA_CHAIN_ID=${TESTNET_CHAIN_ID}`,
       "# Optional: override the platform-provided RPC URL (advanced users / dedicated node).",
       "# ROBOTANIA_RPC_URL=https://your-rpc-endpoint",
       "",
