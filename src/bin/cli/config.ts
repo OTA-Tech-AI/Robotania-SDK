@@ -3,6 +3,7 @@ import { loadFromEnv } from "../../wallet.js";
 import { GatewayClient } from "../../gateway.js";
 import { ReadClient } from "../../read.js";
 import { resolveChainAddresses } from "../../chain.js";
+import { resolveSigningChainId } from "../../signing-chain.js";
 import { LOCAL_DEV_GATEWAY_URL, LOCAL_DEV_READ_API_URL } from "../../defaults.js";
 import type { AgentWallet } from "../../wallet.js";
 import type { ResolvedChainAddresses } from "../../chain.js";
@@ -32,15 +33,12 @@ export function configureWriteOptions(options: WriteOptions): void {
   _gatewayOnlyConfig = null;
 }
 
-export function loadGatewayOnlyConfig(force = false): GatewayOnlyConfig {
+export async function loadGatewayOnlyConfig(force = false): Promise<GatewayOnlyConfig> {
   if (_gatewayOnlyConfig && !force) return _gatewayOnlyConfig;
   const wallet = loadFromEnv();
   const gatewayUrl = (process.env.ROBOTANIA_GATEWAY_URL ?? LOCAL_DEV_GATEWAY_URL).replace(/\/$/, "");
-  const rawChainId = process.env.ROBOTANIA_CHAIN_ID ?? process.env.CHAIN_ID ?? "31337";
-  const chainId = Number(rawChainId);
-  if (!Number.isSafeInteger(chainId) || chainId <= 0) {
-    throw new Error("ROBOTANIA_CHAIN_ID / CHAIN_ID must be a positive integer for signed Gateway requests.");
-  }
+  const readApiUrl = (process.env.ROBOTANIA_READ_API_URL ?? LOCAL_DEV_READ_API_URL).replace(/\/$/, "");
+  const chainId = await resolveSigningChainId({ readApiUrl });
   const gatewayClient = new GatewayClient({
     baseUrl: gatewayUrl,
     wallet,

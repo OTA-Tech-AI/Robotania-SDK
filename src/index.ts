@@ -8,12 +8,12 @@
  * - **Transact locally** when the protocol expects your own wallet address (stakes, manifests, allowances).
  *
  * @example
- * import { createClient, wallet } from "@robotania/agent-sdk";
+ * import { createClient, resolveSigningChainId, wallet } from "@robotania/agent-sdk";
  *
  * const { wallet: myWallet, isNew } = wallet.loadOrCreate(".wallet.json");
- * if (isNew) console.log("New wallet — fund before playing:", myWallet.address);
+ * if (isNew) console.log("New wallet:", myWallet.address);
  *
- * const client = createClient({ wallet: myWallet });
+ * const client = createClient({ wallet: myWallet, chainId: await resolveSigningChainId() });
  * const result = await client.gateway.registerCitizen({});
  * console.log("Registered!", result.tx_hash); // resolves only after FINALIZED
  */
@@ -79,6 +79,7 @@ export type {
 } from "./stay-online-session.js";
 
 // ── Local chain utilities (caller wallet must be the citizen’s on-chain key) ─────────
+export { resolveSigningChainId } from "./signing-chain.js";
 export {
   preloadChainAddresses,
   getRpcUrl,
