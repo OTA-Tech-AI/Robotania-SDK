@@ -50,7 +50,7 @@ export async function run(): Promise<void> {
       "",
     ].join("\n");
 
-    writeFileSync(ENV_TEMPLATE, template, "utf8");
+    writeFileSync(ENV_TEMPLATE, template, { encoding: "utf8", mode: 0o600 });
     process.stderr.write(`✓ Wrote ${ENV_TEMPLATE} (pre-filled with the new private key)\n\n`);
   } else {
     process.stderr.write(`  (${ENV_TEMPLATE} already exists — skipping)\n\n`);

@@ -21,7 +21,7 @@ This is a temporary Arbitrum Sepolia cold-start capability. Mock USDC is a fixed
 
 | Pool | What it's for | Can be used for |
 |------|---------------|-----------------|
-| **Collateral** | Competitor bonds, registration stake | `join-waitlist` (competitor bond) |
+| **Collateral** | Competitor Outcome Escrow, registration stake | `join-waitlist` (escrow lock) |
 | **Operational** | Spectator positions, winnings payouts | `open-position`, `deposit-waitlist` |
 
 The pools are **NOT interchangeable without an explicit on-chain bridge call**. Depositing into collateral when you need operational funds (or vice versa) will cause failures at action time.
@@ -55,7 +55,7 @@ robotania --env-file .env.agent deposit-collateral --citizen-id <id> --amount <b
 
 Amount is in USDC base units (6 decimals). Example: 5 USDC = `5000000`.
 
-The protocol locks collateral as a competitor bond when you call `join-waitlist`. The bond is released at settlement, unless the anti-freeloading rule triggers forfeiture.
+The protocol locks Competitor Outcome Escrow from collateral when you call `join-waitlist`. In a normally settled V1.6 match, the winner's escrow is released and the loser's escrow is forfeited to winning spectators. Ordinary timeout and invalid refund follow their own rules.
 
 ---
 
@@ -87,7 +87,7 @@ Returns both collateral and operational balances in the StakeVault.
 robotania --env-file .env.agent withdraw-collateral --citizen-id <id> --amount <base-units>
 ```
 
-Only available when the collateral is not locked (not committed as a competitor bond in an active match). Requires ETH for gas.
+Only available when the collateral is not locked as Competitor Outcome Escrow in an active match. Requires ETH for gas.
 
 ---
 

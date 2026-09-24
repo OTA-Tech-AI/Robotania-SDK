@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { execFile as execFileCb } from "node:child_process";
 import { promisify } from "node:util";
-import { mkdtempSync, rmSync, existsSync, readFileSync } from "node:fs";
+import { mkdtempSync, rmSync, existsSync, readFileSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -82,6 +82,12 @@ describe("robotania CLI", () => {
     expect(r.status).toBe(0);
   });
 
+  it("--version reports the installed SDK version without loading a wallet", async () => {
+    const r = await run(["--version"]);
+    expect(r.status).toBe(0);
+    expect(r.stdout.trim()).toBe("1.3.4");
+  });
+
   it("no args prints help and exits 0", async () => {
     const r = await run([]);
     expect(r.status).toBe(0);
@@ -115,6 +121,10 @@ describe("robotania CLI", () => {
       expect(r.status).toBe(0);
       expect(existsSync(join(tmpDir, ".wallet.json"))).toBe(true);
       expect(existsSync(join(tmpDir, ".env.agent"))).toBe(true);
+      if (process.platform !== "win32") {
+        expect(statSync(join(tmpDir, ".wallet.json")).mode & 0o777).toBe(0o600);
+        expect(statSync(join(tmpDir, ".env.agent")).mode & 0o777).toBe(0o600);
+      }
     });
 
     it(".wallet.json contains a valid private key", () => {
@@ -124,6 +134,16 @@ describe("robotania CLI", () => {
       };
       expect(wallet.privateKey).toMatch(/^0x[0-9a-fA-F]{64}$/);
       expect(wallet.address).toMatch(/^0x[0-9a-fA-F]{40}$/);
+    });
+
+    it("wallet-address prints only the wallet address", async () => {
+      const wallet = JSON.parse(readFileSync(join(tmpDir, ".wallet.json"), "utf8")) as {
+        address: string; privateKey: string;
+      };
+      const r = await run(["wallet-address"], {}, { cwd: tmpDir });
+      expect(r.status).toBe(0);
+      expect(r.stdout.trim()).toBe(wallet.address);
+      expect(`${r.stdout}${r.stderr}`).not.toContain(wallet.privateKey);
     });
 
     it(".env.agent contains ROBOTANIA_PRIVATE_KEY", () => {

@@ -61,7 +61,8 @@ export function loadFromFile(path: string): AgentWallet | null {
  * Keep this file out of source control (.gitignore it).
  */
 export function saveToFile(wallet: AgentWallet, path: string): void {
-  writeFileSync(path, JSON.stringify({ privateKey: wallet.privateKey, address: wallet.address }, null, 2), "utf8");
+  writeFileSync(path, JSON.stringify({ privateKey: wallet.privateKey, address: wallet.address }, null, 2),
+    { encoding: "utf8", mode: 0o600 });
 }
 
 /**

@@ -10,6 +10,7 @@ import {
   mkdtempSync,
   mkdirSync,
   writeFileSync,
+  readFileSync,
   rmSync,
 } from "node:fs";
 import { tmpdir, homedir } from "node:os";
@@ -23,6 +24,7 @@ const execFileAsync = promisify(execFileCb);
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const BINARY = resolve(__dirname, "../dist/bin/robotania.js");
 const NODE = process.execPath;
+const VERSION = (JSON.parse(readFileSync(resolve(__dirname, "../package.json"), "utf8")) as { version: string }).version;
 
 type RunResult = { status: number; stdout: string; stderr: string };
 
@@ -165,7 +167,7 @@ describe("robotania docs check", () => {
     expect(r.stderr).toContain("failed");
   });
 
-  it("exits 0 when ROBOTANIA_DOCS_DIR has INDEX.md (no VERSION file = version check skipped)", async () => {
+  it("rejects docs with no VERSION file", async () => {
     const tmpDir = mkdtempSync(join(tmpdir(), "robotania-docs-check-"));
     try {
       writeFileSync(join(tmpDir, "INDEX.md"), "# Index\n");
@@ -173,6 +175,19 @@ describe("robotania docs check", () => {
         ["docs", "check"],
         { ROBOTANIA_DOCS_DIR: tmpDir },
       );
+      expect(r.status).toBe(1);
+      expect(r.stderr).toContain("VERSION missing");
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it("accepts docs only when VERSION matches the CLI", async () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), "robotania-docs-matched-"));
+    try {
+      writeFileSync(join(tmpDir, "INDEX.md"), "# Index\n");
+      writeFileSync(join(tmpDir, "VERSION"), `${VERSION}\n`);
+      const r = await run(["docs", "check"], { ROBOTANIA_DOCS_DIR: tmpDir });
       expect(r.status).toBe(0);
       expect(r.stdout).toContain("ok");
     } finally {
