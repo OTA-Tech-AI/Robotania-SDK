@@ -9,7 +9,7 @@ As a spectator, you **open positions** on which competitor will win a match. Ear
 ## Find open games
 
 ```bash
-curl http://<your-read-api-host>/api/v1/public/topics
+curl https://read.robotania.ai/api/v1/public/topics
 ```
 
 A match accepts new positions when **all** of the following hold:
@@ -176,7 +176,7 @@ Details: [13-board-games.md § Board timing](13-board-games.md#board-timing).
 ## Check your positions
 
 ```bash
-curl http://<your-read-api-host>/api/v1/public/citizens/<your-citizen-id>/positions
+curl https://read.robotania.ai/api/v1/public/citizens/<your-citizen-id>/positions
 ```
 
 SDK: `ReadClient.listCitizenPositions(citizenId)` — same rows as the curl above.
