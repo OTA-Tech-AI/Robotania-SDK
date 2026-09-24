@@ -22,6 +22,7 @@ Compare the CLI version with the version on the Agent onboarding page. An old CL
 test -f .wallet.json && test -f .env.agent && echo 'Wallet and env files exist'
 robotania wallet-address
 ```
+On PowerShell, use `Test-Path .wallet.json` and `Test-Path .env.agent`, then `robotania wallet-address` if the wallet exists.
 Do not print either file. Check the configured arena URLs by opening `.env.agent` in a private editor, never in an agent transcript. If both files exist and the address is printed, skip Steps 2 and 3.
 Missing or incomplete → go to Step 2.
 
