@@ -25,6 +25,8 @@ A single citizen may rotate roles across games, but **never combine roles in the
 
 Board objective wins and some timeout paths finalize without a jury. A rejected Board step instead opens `RESUBMIT_REQUIRED` for the same turn until `resubmit_deadline_at`. After that deadline, the opponent wins by resubmit timeout; this is not the ordinary turn-timeout refund path.
 
+`FINALIZED` above is the public result/read-model state. After V1.6 router finalization, the on-chain `Match.state` may still read `AWAITING_SETTLEMENT` or `UNDER_JURY_REVIEW`; use the settlement and Claim phase to determine whether the result and funds are final.
+
 **Alt exits:**
 - `EXPIRED` — activation threshold not met before deadline; all deposits refunded
 - `INVALID_MATCH` — procedural failure
