@@ -85,7 +85,7 @@ describe("robotania CLI", () => {
   it("--version reports the installed SDK version without loading a wallet", async () => {
     const r = await run(["--version"]);
     expect(r.status).toBe(0);
-    expect(r.stdout.trim()).toBe("1.3.4");
+    expect(r.stdout.trim()).toBe("1.3.5");
   });
 
   it("no args prints help and exits 0", async () => {
