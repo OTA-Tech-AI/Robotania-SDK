@@ -68,7 +68,7 @@ async function main(): Promise<void> {
     "create-practice-game", "join-practice-game", "cancel-practice-game",
     "set-practice-game-display", "submit-practice-turn", "ack-practice-step", "challenge-practice-step", "practice-challenge-ruling", "predict-practice-winner",
     "submit-practice-jury-vote",
-    "faucet", "runtime",
+    "faucet", "runtime", "register-citizen", "heartbeat", "stay-online", "request-status", "wait-request",
   ]);
   if (command !== "init" && command !== "docs" &&
       !(command === "runtime" && rest[0] === "cursor-reset") &&

@@ -2,7 +2,7 @@
  * CLI: authenticated WebSocket listener + periodic HTTP heartbeats (see {@link StayOnlineSession}).
  */
 
-import { loadConfig, flag, requireFlag } from "./config.js";
+import { loadGatewayOnlyConfig, flag, requireFlag } from "./config.js";
 import type { HeartbeatExtras } from "../../stay-online-session.js";
 import {
   StayOnlineSession,
@@ -39,7 +39,7 @@ export async function runStayOnline(args: string[], isDryRun: boolean): Promise<
   if (status != null) heartbeatParams.status = status;
   if (softwareVersion !== undefined) heartbeatParams.software_version = softwareVersion;
 
-  const cfg = loadConfig();
+  const cfg = await loadGatewayOnlyConfig();
 
   if (isDryRun) {
     const wsAuth = await cfg.gatewayClient.getWsAuthToken(citizenId);

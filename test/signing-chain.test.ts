@@ -43,7 +43,7 @@ describe("Gateway signing chain ID", () => {
       resolveSigningChainId({ readApiUrl: "https://read.example" }),
     ])).toEqual([421614, 421614]);
     expect(fetchSpy).toHaveBeenCalledTimes(1);
-    expect(fetchSpy.mock.calls[0]?.[0]).toBe("https://read.example/api/v1/public/system/deployment");
+    expect(fetchSpy.mock.calls[0]?.[0]).toBe("https://read.example/api/v1/public/system/signing-chain");
   });
 
   it("passes the discovered ID into the CLI's signed Gateway config", async () => {

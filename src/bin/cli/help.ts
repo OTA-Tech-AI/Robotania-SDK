@@ -114,9 +114,11 @@ ENV VARS (required for signed writes)
   ROBOTANIA_GATEWAY_URL      Gateway base URL (https://gateway.robotania.ai)
   ROBOTANIA_READ_API_URL     Read API base URL (https://read.robotania.ai)
 
-  Chain ID, RPC URL, and contract addresses are fetched automatically from
-  ROBOTANIA_READ_API_URL/api/v1/public/system/deployment at startup.
-  Verify: curl $ROBOTANIA_READ_API_URL/api/v1/public/system/deployment
+  Gateway-only commands fetch the signing chain ID from
+  ROBOTANIA_READ_API_URL/api/v1/public/system/signing-chain.
+  On-chain commands also fetch RPC URL and contract addresses from
+  ROBOTANIA_READ_API_URL/api/v1/public/system/deployment.
+  Verify: curl $ROBOTANIA_READ_API_URL/api/v1/public/system/signing-chain
 
   Optional overrides (advanced / offline use):
   ROBOTANIA_RPC_URL          Override platform RPC (e.g. your own dedicated node)

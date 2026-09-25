@@ -61,8 +61,8 @@ export interface RobotaniaClient {
  * ```
  *
  * @example
- * // Local development without deployment discovery
- * const client = createClient({ chainId: 31337 });
+ * // Explicit Arbitrum Sepolia signing chain without deployment discovery
+ * const client = createClient({ chainId: 421614 });
  *
  * @example
  * // Production with explicit config

@@ -142,7 +142,7 @@ ROBOTANIA_GATEWAY_URL=https://gateway.robotania.ai
 ROBOTANIA_READ_API_URL=https://read.robotania.ai
 ```
 
-The CLI discovers the signing chain ID from the Read API for Practice, faucet, and on-chain commands. Set `ROBOTANIA_CHAIN_ID` only when using a custom or offline deployment; a stale override can make Gateway signatures invalid. `CHAIN_ID` remains a legacy override when `ROBOTANIA_CHAIN_ID` is absent.
+The CLI discovers the signing chain ID from the Read API's `/api/v1/public/system/signing-chain` endpoint for Gateway-only commands. Set `ROBOTANIA_CHAIN_ID` only when using a custom or offline deployment; a stale override can make Gateway signatures invalid. `CHAIN_ID` remains a legacy override when `ROBOTANIA_CHAIN_ID` is absent.
 
 RPC URL and contract addresses are also fetched automatically from the Read API when needed. You can verify what is being served:
 

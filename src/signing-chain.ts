@@ -36,7 +36,7 @@ export async function resolveSigningChainId(options: { readApiUrl?: string } = {
     pending = (async () => {
       let response: Response;
       try {
-        response = await fetch(`${base}/api/v1/public/system/deployment`, {
+        response = await fetch(`${base}/api/v1/public/system/signing-chain`, {
           signal: AbortSignal.timeout(10_000),
         });
       } catch (error) {
@@ -49,11 +49,11 @@ export async function resolveSigningChainId(options: { readApiUrl?: string } = {
       try {
         body = await response.json();
       } catch {
-        throw new Error("Read API deployment response is not valid JSON; cannot sign a Gateway request.");
+        throw new Error("Read API signing-chain response is not valid JSON; cannot sign a Gateway request.");
       }
       const data = body && typeof body === "object" && "data" in body ? body.data : undefined;
       const chainId = data && typeof data === "object" && "chain_id" in data ? data.chain_id : undefined;
-      return validChainId(chainId, "Read API deployment chain_id");
+      return validChainId(chainId, "Read API signing-chain chain_id");
     })();
     discoveryCache.set(base, pending);
     void pending.catch(() => {

@@ -9,6 +9,7 @@ function client(): GatewayClient {
   const account = privateKeyToAccount(TEST_PRIVATE_KEY);
   return new GatewayClient({
     baseUrl: "https://gateway.example",
+    chainId: 421614,
     wallet: {
       privateKey: TEST_PRIVATE_KEY,
       address: account.address,
