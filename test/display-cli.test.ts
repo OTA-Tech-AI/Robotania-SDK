@@ -15,11 +15,11 @@ vi.mock("../src/bin/cli/config.js", async (importOriginal) => {
       readClient: {},
       wallet: {},
     } as unknown as ReturnType<typeof original.loadConfig>),
-    loadGatewayOnlyConfig: () => ({
+    loadGatewayOnlyConfig: async () => ({
       chainId: 31337,
       gatewayClient: {},
       wallet: {},
-    } as unknown as ReturnType<typeof original.loadGatewayOnlyConfig>),
+    } as unknown as Awaited<ReturnType<typeof original.loadGatewayOnlyConfig>>),
   };
 });
 

@@ -19,8 +19,24 @@ import {
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import type { AgentWallet } from "./wallet.js";
+import { configuredSigningChainId } from "./signing-chain.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+function deploymentChainId(value: unknown): number {
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value <= 0) {
+    throw new Error("Deployment chain ID must be a positive safe integer; set ROBOTANIA_CHAIN_ID explicitly if needed.");
+  }
+  return value;
+}
+
+function explicitChainId(): number {
+  const chainId = configuredSigningChainId();
+  if (chainId === undefined) {
+    throw new Error("Set ROBOTANIA_CHAIN_ID or CHAIN_ID when supplying contract addresses without deployment discovery.");
+  }
+  return chainId;
+}
 
 const protocolMinStakeAbi = [
   {
@@ -179,7 +195,7 @@ export async function preloadChainAddresses(): Promise<void> {
       stakeVault:      process.env.ROBOTANIA_STAKE_VAULT as `0x${string}` | undefined,
       topicWaitlist:   process.env.ROBOTANIA_TOPIC_WAITLIST as `0x${string}` | undefined,
       positionPool:    process.env.ROBOTANIA_POSITION_POOL as `0x${string}` | undefined,
-      chainId:         Number(process.env.CHAIN_ID ?? process.env.ROBOTANIA_CHAIN_ID ?? 31337),
+      chainId:         explicitChainId(),
     };
     return;
   }
@@ -211,7 +227,7 @@ export async function preloadChainAddresses(): Promise<void> {
       stakeVault:    (process.env.ROBOTANIA_STAKE_VAULT ?? c.StakeVault) as `0x${string}` | undefined,
       topicWaitlist: (process.env.ROBOTANIA_TOPIC_WAITLIST ?? c.TopicWaitlist) as `0x${string}` | undefined,
       positionPool:  (process.env.ROBOTANIA_POSITION_POOL ?? c.PositionPool) as `0x${string}` | undefined,
-      chainId:       Number(process.env.CHAIN_ID ?? process.env.ROBOTANIA_CHAIN_ID ?? raw.chainId ?? 31337),
+      chainId:       configuredSigningChainId() ?? deploymentChainId(raw.chainId),
     };
     return;
   }
@@ -240,15 +256,17 @@ export async function preloadChainAddresses(): Promise<void> {
   const body = (await res.json()) as { data?: { chain_id?: number; rpc_url?: string; contracts?: Record<string, string> } };
   const data = body.data ?? {};
   const c = data.contracts ?? {};
+  const configuredChainId = configuredSigningChainId();
+  const invalidDiscoveredChainId = !Number.isSafeInteger(data.chain_id) || Number(data.chain_id) <= 0;
 
   // Validate required fields before caching — fail fast with actionable error
   const missing = (["ProtocolConfig", "CitizenRegistry", "CitizenActionRelay", "SettlementToken"] as const).filter(
     (k) => !c[k] || !/^0x[0-9a-fA-F]{40}$/.test(c[k]),
   );
-  if (missing.length > 0 || !data.chain_id) {
+  if (missing.length > 0 || (configuredChainId === undefined && invalidDiscoveredChainId)) {
     throw new Error(
       `Deployment discovery returned invalid data from ${base}. ` +
-      `Missing or malformed fields: ${[...missing, ...(!data.chain_id ? ["chain_id"] : [])].join(", ")}. ` +
+      `Missing or malformed fields: ${[...missing, ...(configuredChainId === undefined && invalidDiscoveredChainId ? ["chain_id"] : [])].join(", ")}. ` +
       `Check that DEPLOYED_ADDRESSES_JSON is correctly configured on the Read API server.`,
     );
   }
@@ -261,7 +279,7 @@ export async function preloadChainAddresses(): Promise<void> {
     stakeVault:      c.StakeVault as `0x${string}` | undefined,
     topicWaitlist:   c.TopicWaitlist as `0x${string}` | undefined,
     positionPool:    c.PositionPool as `0x${string}` | undefined,
-    chainId:         data.chain_id,
+    chainId:         configuredChainId ?? deploymentChainId(data.chain_id),
     rpcUrl:          data.rpc_url,  // platform-supplied; no private key
   };
 }
@@ -291,7 +309,7 @@ export function resolveChainAddresses(): ResolvedChainAddresses {
       stakeVault:      sve,
       topicWaitlist:   twe,
       positionPool:    ppe,
-      chainId:         Number(process.env.CHAIN_ID ?? process.env.ROBOTANIA_CHAIN_ID ?? 31337),
+      chainId:         explicitChainId(),
     };
   }
 
@@ -330,7 +348,7 @@ export function resolveChainAddresses(): ResolvedChainAddresses {
     stakeVault:    (sve ?? c.StakeVault) as `0x${string}` | undefined,
     topicWaitlist: (twe ?? c.TopicWaitlist) as `0x${string}` | undefined,
     positionPool:  (ppe ?? c.PositionPool) as `0x${string}` | undefined,
-    chainId:       Number(process.env.CHAIN_ID ?? process.env.ROBOTANIA_CHAIN_ID ?? raw.chainId ?? 31337),
+    chainId:       configuredSigningChainId() ?? deploymentChainId(raw.chainId),
   };
 }
 

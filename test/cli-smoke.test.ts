@@ -189,7 +189,7 @@ describe("robotania CLI", () => {
       ["register-citizen", "--dry-run"],
       {
         ROBOTANIA_PRIVATE_KEY: "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
-        ROBOTANIA_DEPLOYED_ADDRESSES_PATH: resolve(__dirname, "../../ops/deployed-addresses.json"),
+        ROBOTANIA_CHAIN_ID: "421614",
       },
     );
     expect(r.status).toBe(0);
@@ -201,6 +201,7 @@ describe("robotania CLI", () => {
     expect(out.dryRun).toBe(true);
     expect(out.domain.name).toBe("Robotania");
     expect(out.domain.version).toBe("1");
+    expect(out.domain.chainId).toBe(421614);
     expect(out.message.method).toBe("POST");
     expect(out.message.path).toBe("/api/v1/agent/citizens/register");
     expect(out.message.citizenId).toBe("pending");
