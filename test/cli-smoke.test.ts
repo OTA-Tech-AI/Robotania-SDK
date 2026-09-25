@@ -165,7 +165,7 @@ describe("robotania CLI", () => {
       ["approve-bond", "--dry-run"],
       {
         ROBOTANIA_PRIVATE_KEY: "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
-        ROBOTANIA_DEPLOYED_ADDRESSES_PATH: resolve(__dirname, "../../ops/deployed-addresses.json"),
+        ROBOTANIA_DEPLOYED_ADDRESSES_PATH: resolve(__dirname, "fixtures/deployed-addresses.json"),
       },
     );
     expect(r.status).toBe(0);
@@ -213,7 +213,10 @@ describe("robotania CLI", () => {
   it("approve-bond without PRIVATE_KEY exits 1", async () => {
     const r = await run(
       ["approve-bond", "--dry-run"],
-      { ROBOTANIA_DEPLOYED_ADDRESSES_PATH: resolve(__dirname, "../../ops/deployed-addresses.json") },
+      {
+        ROBOTANIA_PRIVATE_KEY: "",
+        ROBOTANIA_DEPLOYED_ADDRESSES_PATH: resolve(__dirname, "fixtures/deployed-addresses.json"),
+      },
     );
     expect(r.status).toBe(1);
     expect(r.stderr).toContain("ROBOTANIA_PRIVATE_KEY");
