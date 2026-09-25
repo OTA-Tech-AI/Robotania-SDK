@@ -13,9 +13,17 @@ describe("GatewayClient POST envelope", () => {
     vi.unstubAllGlobals();
   });
 
+  it("requires an explicit valid signing chain before any request", () => {
+    const wallet = createRandom();
+    const opts = { baseUrl: "http://localhost:9", wallet };
+    expect(() => new GatewayClient(opts as ConstructorParameters<typeof GatewayClient>[0])).toThrow(/chainId/);
+    expect(() => new GatewayClient({ ...opts, chainId: 0 })).toThrow(/positive safe integer/);
+    expect(() => new GatewayClient({ ...opts, chainId: Number.MAX_SAFE_INTEGER + 1 })).toThrow(/positive safe integer/);
+  });
+
   it("returns a finalized outcome from a write", async () => {
     const wallet = createRandom();
-    const client = new GatewayClient({ baseUrl: "http://localhost:9", wallet });
+    const client = new GatewayClient({ baseUrl: "http://localhost:9", wallet, chainId: 421614 });
 
     vi.stubGlobal(
       "fetch",
@@ -48,6 +56,7 @@ describe("GatewayClient POST envelope", () => {
       baseUrl: "http://localhost:9",
       wallet,
       writeOptions: { mode: "async" },
+      chainId: 421614,
     });
     vi.stubGlobal("fetch", vi.fn(async () => ({
       ok: true,
@@ -136,6 +145,7 @@ describe("GatewayClient POST envelope", () => {
       baseUrl: "http://localhost:9",
       wallet,
       writeOptions: { timeoutMs: 1 },
+      chainId: 421614,
     });
     vi.stubGlobal("fetch", vi.fn(async () => ({
       ok: true,
@@ -165,7 +175,7 @@ describe("GatewayClient POST envelope", () => {
 
   it("does not invent a Gateway phase when request status is unavailable", async () => {
     const wallet = createRandom();
-    const client = new GatewayClient({ baseUrl: "http://localhost:9", wallet });
+    const client = new GatewayClient({ baseUrl: "http://localhost:9", wallet, chainId: 421614 });
     vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("network unavailable"); }) as unknown as typeof fetch);
 
     const error = await client.waitForRequest("req-unavailable", {
@@ -179,7 +189,7 @@ describe("GatewayClient POST envelope", () => {
 
   it("waits for a pending write to finalize by default", async () => {
     const wallet = createRandom();
-    const client = new GatewayClient({ baseUrl: "http://localhost:9", wallet });
+    const client = new GatewayClient({ baseUrl: "http://localhost:9", wallet, chainId: 421614 });
     const fetchMock = vi.fn()
       .mockResolvedValueOnce({
         ok: true,
@@ -224,7 +234,7 @@ describe("GatewayClient POST envelope", () => {
 
   it("throws a typed error for a terminal failed request", async () => {
     const wallet = createRandom();
-    const client = new GatewayClient({ baseUrl: "http://localhost:9", wallet });
+    const client = new GatewayClient({ baseUrl: "http://localhost:9", wallet, chainId: 421614 });
     vi.stubGlobal("fetch", vi.fn(async () => ({
       ok: true,
       status: 200,
@@ -252,7 +262,7 @@ describe("GatewayClient POST envelope", () => {
 
   it("throws when success body omits data", async () => {
     const wallet = createRandom();
-    const client = new GatewayClient({ baseUrl: "http://localhost:9", wallet });
+    const client = new GatewayClient({ baseUrl: "http://localhost:9", wallet, chainId: 421614 });
 
     vi.stubGlobal(
       "fetch",
@@ -268,7 +278,7 @@ describe("GatewayClient POST envelope", () => {
 
   it("rejects a successful write response that is not a normalized outcome", async () => {
     const wallet = createRandom();
-    const client = new GatewayClient({ baseUrl: "http://localhost:9", wallet });
+    const client = new GatewayClient({ baseUrl: "http://localhost:9", wallet, chainId: 421614 });
 
     vi.stubGlobal(
       "fetch",
@@ -286,7 +296,7 @@ describe("GatewayClient POST envelope", () => {
 
   it("retains public Gateway error fields for retry handling", async () => {
     const wallet = createRandom();
-    const client = new GatewayClient({ baseUrl: "http://localhost:9", wallet });
+    const client = new GatewayClient({ baseUrl: "http://localhost:9", wallet, chainId: 421614 });
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => ({

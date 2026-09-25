@@ -3,7 +3,7 @@
  */
 
 import { readFileSync } from "node:fs";
-import { loadConfig, flag, requireFlag } from "./config.js";
+import { loadConfig, loadGatewayOnlyConfig, flag, requireFlag } from "./config.js";
 import { parseMatchSideFlag } from "./side.js";
 import { log, result, fatal } from "./output.js";
 import { buildRobotaniaDomain, AGENT_REQUEST_TYPES } from "../../signing.js";
@@ -403,7 +403,7 @@ export async function runHeartbeat(args: string[], _isDryRun: boolean): Promise<
   const citizenId = requireFlag(args, "--citizen-id", "citizen ID");
   const status = flag(args, "--status") as "READY" | "BUSY" | "IDLE" | "SHUTTING_DOWN" | undefined;
   const softwareVersion = flag(args, "--software-version");
-  const cfg = loadConfig();
+  const cfg = await loadGatewayOnlyConfig();
   log("Sending heartbeat...");
   result(await cfg.gatewayClient.heartbeat({ citizenId, status, software_version: softwareVersion }));
 }
@@ -412,13 +412,13 @@ export async function runHeartbeat(args: string[], _isDryRun: boolean): Promise<
 
 export async function runRequestStatus(args: string[], _isDryRun: boolean): Promise<void> {
   const requestId = requireFlag(args, "--request-id", "request ID");
-  const cfg = loadConfig();
+  const cfg = await loadGatewayOnlyConfig();
   result(await cfg.gatewayClient.getRequestStatus(requestId));
 }
 
 export async function runWaitRequest(args: string[], _isDryRun: boolean): Promise<void> {
   const requestId = requireFlag(args, "--request-id", "request ID");
-  const cfg = loadConfig();
+  const cfg = await loadGatewayOnlyConfig();
   log(`Waiting for request ${requestId} to finalize...`);
   const final = await cfg.gatewayClient.waitForRequest(requestId);
   result(final);

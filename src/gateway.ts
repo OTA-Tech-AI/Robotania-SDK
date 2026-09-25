@@ -39,8 +39,8 @@ import { signPreparedCitizenAction, type PreparedCitizenAction } from "./action-
 export interface GatewayClientOptions {
   baseUrl: string;
   wallet: AgentWallet;
-  /** Chain ID of the network where citizens are registered. Defaults to 31337 (local Anvil). */
-  chainId?: number;
+  /** Chain ID of the network where citizens are registered; required for EIP-712 signing. */
+  chainId: number;
   /** Trusted action-signing address, normally discovered automatically. */
   citizenActionRelay?: Address;
   /** Retry bounds used only by read-only Gateway query endpoints. */
@@ -135,7 +135,10 @@ export class GatewayClient {
   constructor(opts: GatewayClientOptions) {
     this.base = opts.baseUrl.replace(/\/$/, "");
     this.wallet = opts.wallet;
-    this.chainId = opts.chainId ?? 31337;
+    if (!Number.isSafeInteger(opts.chainId) || opts.chainId <= 0) {
+      throw new Error("GatewayClient requires a positive safe integer chainId for EIP-712 signing.");
+    }
+    this.chainId = opts.chainId;
     this.citizenActionRelay = opts.citizenActionRelay;
     this.queryRetry = {
       timeoutMs: opts.queryRetry?.timeoutMs ?? 15_000,

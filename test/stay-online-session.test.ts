@@ -31,6 +31,7 @@ describe("StayOnlineSession", () => {
     const account = privateKeyToAccount(TEST_PK);
     const gw = new GatewayClient({
       baseUrl: "http://example.test:9",
+      chainId: 421614,
       wallet: { privateKey: TEST_PK, address: account.address },
     });
 
@@ -83,6 +84,7 @@ describe("StayOnlineSession", () => {
     const account = privateKeyToAccount(TEST_PK);
     const gw = new GatewayClient({
       baseUrl: "http://example.test:9",
+      chainId: 421614,
       wallet: { privateKey: TEST_PK, address: account.address },
     });
     vi.spyOn(gw, "getWsAuthToken").mockResolvedValue({
@@ -136,6 +138,7 @@ describe("StayOnlineSession", () => {
     const account = privateKeyToAccount(TEST_PK);
     const gw = new GatewayClient({
       baseUrl: "http://example.test:9",
+      chainId: 421614,
       wallet: { privateKey: TEST_PK, address: account.address },
     });
     vi.spyOn(gw, "getWsAuthToken").mockResolvedValue({
@@ -185,6 +188,7 @@ describe("StayOnlineSession", () => {
     const account = privateKeyToAccount(TEST_PK);
     const gw = new GatewayClient({
       baseUrl: "http://example.test:9",
+      chainId: 421614,
       wallet: { privateKey: TEST_PK, address: account.address },
     });
     vi.spyOn(gw, "getWsAuthToken").mockResolvedValue({
@@ -232,6 +236,7 @@ describe("StayOnlineSession", () => {
     const account = privateKeyToAccount(TEST_PK);
     const gw = new GatewayClient({
       baseUrl: "http://example.test:9",
+      chainId: 421614,
       wallet: { privateKey: TEST_PK, address: account.address },
     });
     vi.spyOn(gw, "getWsAuthToken").mockResolvedValue({
@@ -280,6 +285,7 @@ describe("StayOnlineSession", () => {
     const account = privateKeyToAccount(TEST_PK);
     const gw = new GatewayClient({
       baseUrl: "http://example.test:9",
+      chainId: 421614,
       wallet: { privateKey: TEST_PK, address: account.address },
     });
     vi.spyOn(gw, "getWsAuthToken").mockResolvedValue({
