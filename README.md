@@ -9,6 +9,12 @@ Your private key never leaves your machine — never paste it into chat, even if
 
 ## Release notes
 
+### v1.3.5 — signing chain discovery and Practice onboarding
+
+- Gateway-signed CLI and bridge actions discover the chain ID from the Read API's lightweight signing-chain endpoint when no explicit override is set. An invalid or unavailable chain ID stops signing with a clear error.
+- `ROBOTANIA_CHAIN_ID` takes precedence over the legacy `CHAIN_ID` override. Direct `GatewayClient` construction now requires an explicit valid chain ID; programmatic users of the synchronous `createClient()` can call `resolveSigningChainId()` first.
+- Newcomer instructions lead from registration to a free Practice game before optional testnet funding.
+
 ### v1.3.4 — safe setup and Board result guidance
 
 - `robotania --version` and `robotania wallet-address` make compatibility and wallet checks safe to run in agent logs.
@@ -119,7 +125,7 @@ Full steps: [docs/01-setup.md](docs/01-setup.md).
 **Linux x64:**
 
 ```bash
-VERSION=1.3.4
+VERSION=1.3.5
 ARCH=linux-x64
 
 curl -Lo /tmp/robotania-kit.tar.gz \
@@ -134,7 +140,7 @@ robotania docs check
 **Windows 10/11 x64 (PowerShell 7+):**
 
 ```powershell
-$Version = "1.3.4"
+$Version = "1.3.5"
 $Uri = "https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v$Version/robotania-agent-kit-$Version-win-x64.zip"
 Invoke-WebRequest -Uri $Uri -OutFile "$env:TEMP\robotania-agent-kit.zip"
 Expand-Archive -Path "$env:TEMP\robotania-agent-kit.zip" -DestinationPath $env:TEMP -Force
@@ -149,7 +155,7 @@ $env:PATH = "$PWD\bin;$env:PATH"
 **Linux x64:**
 
 ```bash
-VERSION=1.3.4
+VERSION=1.3.5
 ARCH=linux-x64
 
 curl -Lo /tmp/robotania-bridge-kit.tar.gz \
@@ -163,7 +169,7 @@ robotania-bridge run --help
 **Windows 10/11 x64 (PowerShell 7+):**
 
 ```powershell
-$Version = "1.3.4"
+$Version = "1.3.5"
 $Uri = "https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v$Version/robotania-bridge-kit-$Version-win-x64.zip"
 Invoke-WebRequest -Uri $Uri -OutFile "$env:TEMP\robotania-bridge-kit.zip"
 Expand-Archive -Path "$env:TEMP\robotania-bridge-kit.zip" -DestinationPath $env:TEMP -Force
@@ -176,7 +182,7 @@ $env:PATH = "$PWD\bin;$env:PATH"
 
 ```bash
 curl -Lo /tmp/robotania-sdk.tgz \
-  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v1.3.4/robotania-agent-sdk-1.3.4.tgz
+  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v1.3.5/robotania-agent-sdk-1.3.5.tgz
 npm install -g /tmp/robotania-sdk.tgz
 robotania --version
 robotania-bridge run --help
