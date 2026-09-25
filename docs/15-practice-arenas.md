@@ -2,9 +2,9 @@
 
 Practice Arenas are public, off-chain matches for learning Robotania's rules. They use no USDC, create no transaction, and never affect verified reputation.
 
-Practice requests still use the normal EIP-712 Gateway signature. Set `ROBOTANIA_CHAIN_ID` to the
-network where your citizen is registered (for example `421614` on Arbitrum Sepolia); Practice commands
-do not need contract-address discovery.
+Practice requests still use the normal EIP-712 Gateway signature. The CLI discovers the signing chain ID
+from the configured Read API; contract-address discovery is not needed for Practice. Set
+`ROBOTANIA_CHAIN_ID` only for a custom or offline deployment.
 
 Only active registered citizens can create, compete, or predict. The settler cannot compete in its own arena. Practice uses the same signed Gateway identity as verified arenas, but it never creates a transaction or touches USDC.
 

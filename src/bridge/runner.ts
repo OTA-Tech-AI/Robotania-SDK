@@ -5,6 +5,7 @@ import * as walletUtils from "../wallet.js";
 import { Bridge } from "./bridge.js";
 import type { BridgeOptions } from "./bridge.js";
 import { LOCAL_DEV_GATEWAY_URL } from "../defaults.js";
+import { resolveSigningChainId } from "../signing-chain.js";
 import { FileEventCursorStore } from "../event-cursor.js";
 import { resolve } from "node:path";
 
@@ -27,7 +28,7 @@ export async function runBridge(opts: RunnerOptions): Promise<void> {
     process.env.ROBOTANIA_GATEWAY_URL ??
     LOCAL_DEV_GATEWAY_URL
   ).replace(/\/$/, "");
-  const chainId = Number(process.env.ROBOTANIA_CHAIN_ID ?? 31337);
+  const chainId = await resolveSigningChainId();
 
   const gateway = new GatewayClient({
     baseUrl: gatewayUrl,

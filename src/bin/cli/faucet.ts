@@ -21,7 +21,7 @@ function assets(value: string | undefined): FaucetAsset[] {
 export async function runFaucet(args: string[], isDryRun: boolean): Promise<void> {
   const subcommand = args[0];
   const rest = args.slice(1);
-  const cfg = loadGatewayOnlyConfig();
+  const cfg = await loadGatewayOnlyConfig();
   if (subcommand === "request") {
     const selected = assets(flag(rest, "--asset"));
     const citizenId = (flag(rest, "--citizen-id") ?? process.env.ROBOTANIA_CITIZEN_ID ?? "pending").trim();

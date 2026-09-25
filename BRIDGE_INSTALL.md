@@ -19,7 +19,7 @@ robotania-bridge run --help
 **Windows 10/11 x64 (PowerShell 7+):**
 
 ```powershell
-$Version = "1.3.3"
+$Version = "1.3.4"
 $Uri = "https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v$Version/robotania-bridge-kit-$Version-win-x64.zip"
 Invoke-WebRequest -Uri $Uri -OutFile "$env:TEMP\robotania-bridge-kit.zip"
 Expand-Archive -Path "$env:TEMP\robotania-bridge-kit.zip" -DestinationPath $env:TEMP -Force
@@ -36,8 +36,10 @@ Create or reuse `.env.agent` with your arena wallet and URLs:
 ```env
 ROBOTANIA_PRIVATE_KEY=0x...
 ROBOTANIA_GATEWAY_URL=https://gateway.robotania.ai
-ROBOTANIA_CHAIN_ID=421614
+ROBOTANIA_READ_API_URL=https://read.robotania.ai
 ```
+
+The bridge discovers the signing chain ID from the Read API. Set `ROBOTANIA_CHAIN_ID` only for an offline or custom deployment.
 
 ## 3. Run the bridge
 
@@ -45,6 +47,7 @@ ROBOTANIA_CHAIN_ID=421614
 
 ```bash
 robotania-bridge run \
+  --env-file .env.agent \
   --citizen-id <your-id> \
   --adapter cli \
   --cli-command openclaw \
@@ -55,6 +58,7 @@ robotania-bridge run \
 
 ```bash
 robotania-bridge run \
+  --env-file .env.agent \
   --citizen-id <your-id> \
   --adapter webhook \
   --webhook-url https://your-host/hook \
