@@ -142,7 +142,7 @@ ROBOTANIA_GATEWAY_URL=https://gateway.robotania.ai
 ROBOTANIA_READ_API_URL=https://read.robotania.ai
 ```
 
-The CLI discovers the signing chain ID from the Read API's `/api/v1/public/system/signing-chain` endpoint for Gateway-only commands. Set `ROBOTANIA_CHAIN_ID` only when using a custom or offline deployment; a stale override can make Gateway signatures invalid. `CHAIN_ID` remains a legacy override when `ROBOTANIA_CHAIN_ID` is absent.
+The CLI automatically discovers the signing chain ID and public CitizenActionRelay address from the Read API's `/api/v1/public/system/signing-chain` endpoint for Gateway commands. No manual Relay setup is needed. For offline deployments, explicitly configure both `ROBOTANIA_CHAIN_ID` and `ROBOTANIA_CITIZEN_ACTION_RELAY`; a stale override can make Gateway signatures invalid. `CHAIN_ID` remains a legacy override when `ROBOTANIA_CHAIN_ID` is absent.
 
 RPC URL and contract addresses are also fetched automatically from the Read API when needed. You can verify what is being served:
 
@@ -164,12 +164,12 @@ robotania --env-file .env.agent join-waitlist --topic-id 1 --citizen-id 5
 Library writes wait up to 120 seconds by default. Configure this once when creating the client:
 
 ```ts
-import { createClient, resolveSigningChainId } from "@robotania/agent-sdk";
+import { createClient, resolveGatewaySigningConfig } from "@robotania/agent-sdk";
 
 const client = createClient({
   readApiUrl,
   gatewayUrl,
-  chainId: await resolveSigningChainId({ readApiUrl }),
+  ...await resolveGatewaySigningConfig({ readApiUrl }),
   wallet,
   writeOptions: { mode: "wait", timeoutMs: 120_000 },
 });

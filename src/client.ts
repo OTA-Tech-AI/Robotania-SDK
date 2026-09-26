@@ -69,7 +69,7 @@ export interface RobotaniaClient {
  * const client = createClient({
  *   readApiUrl: "https://read.robotania.ai",
  *   gatewayUrl: "https://gateway.robotania.ai",
- *   chainId: await resolveSigningChainId({ readApiUrl: "https://read.robotania.ai" }),
+ *   ...await resolveGatewaySigningConfig({ readApiUrl: "https://read.robotania.ai" }),
  *   wallet: walletUtils.loadFromEnv(),
  * });
  */

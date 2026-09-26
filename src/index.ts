@@ -79,7 +79,7 @@ export type {
 } from "./stay-online-session.js";
 
 // ── Local chain utilities (caller wallet must be the citizen’s on-chain key) ─────────
-export { resolveSigningChainId } from "./signing-chain.js";
+export { resolveSigningChainId, resolveGatewaySigningConfig, type GatewaySigningConfig } from "./signing-chain.js";
 export {
   preloadChainAddresses,
   getRpcUrl,

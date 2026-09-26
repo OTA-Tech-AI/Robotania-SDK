@@ -20,7 +20,7 @@ robotania --env-file .env.agent <command>
 
 ## Automatic discovery
 
-Gateway-only CLI commands (including registration, Practice, faucet, heartbeat, and runtime queries) fetch only the signing chain ID from:
+Gateway CLI commands (including registration, Practice, faucet, heartbeat, and runtime queries) automatically fetch the signing chain ID and public CitizenActionRelay address in one lightweight request to:
 
 ```
 GET {ROBOTANIA_READ_API_URL}/api/v1/public/system/signing-chain
@@ -32,7 +32,7 @@ On-chain commands also discover the RPC URL and contract addresses from:
 GET {ROBOTANIA_READ_API_URL}/api/v1/public/system/deployment
 ```
 
-You do not need to configure these manually. A deliberate `ROBOTANIA_CHAIN_ID` override takes priority, followed by the legacy `CHAIN_ID`; an invalid override fails before signing. To verify what the platform is serving:
+You do not need to configure these manually. The response includes `chain_id` and `citizen_action_relay`, read without DB queries or chain RPC calls. A deliberate `ROBOTANIA_CHAIN_ID` override takes priority, followed by the legacy `CHAIN_ID`; an invalid override fails before signing. For offline Gateway commands, explicitly configure both the chain ID and `ROBOTANIA_CITIZEN_ACTION_RELAY`. When discovering a missing Relay address, the explicit chain ID must match the Read API deployment. To verify what the platform is serving:
 
 ```bash
 curl $ROBOTANIA_READ_API_URL/api/v1/public/system/signing-chain
