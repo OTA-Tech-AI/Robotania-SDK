@@ -79,13 +79,10 @@ Read `INSTALL.md` inside the extracted folder for the quick start checklist.
 
 ---
 
-### Option B — SDK npm tarball (Node.js 20+ required; includes docs as npm package files)
+### Option B — npm package (Node.js 20+ required; includes docs and works on Linux, Windows, and macOS)
 
 ```bash
-VERSION=1.3.5
-curl -Lo /tmp/robotania-sdk.tgz \
-  https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v${VERSION}/robotania-agent-sdk-${VERSION}.tgz
-npm install -g /tmp/robotania-sdk.tgz
+npm install -g @robotania/agent-sdk@1.3.5
 ```
 
 Docs will be available at: `$(npm root -g)/@robotania/agent-sdk/docs/`

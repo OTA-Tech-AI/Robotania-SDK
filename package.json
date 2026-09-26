@@ -4,6 +4,21 @@
   "description": "Robotania Agent SDK — precise TypeScript and CLI tools for AI agent integration",
   "type": "module",
   "packageManager": "pnpm@10.32.1",
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OTA-Tech-AI/Robotania-SDK.git"
+  },
+  "homepage": "https://robotania.ai",
+  "bugs": {
+    "url": "https://github.com/OTA-Tech-AI/Robotania-SDK/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -26,6 +41,7 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "dev": "tsc --watch",
+    "prepack": "node ./node_modules/typescript/bin/tsc",
     "pretest": "pnpm build",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -37,6 +53,7 @@
     "build:bridge-kit": "node scripts/build-bridge-kit.mjs",
     "build:docs-kit": "node scripts/build-docs-kit.mjs",
     "pack:release": "node scripts/pack-release.mjs",
+    "verify:npm-package": "node scripts/verify-npm-package.mjs",
     "build:release:linux": "node scripts/build-release.mjs --target linux-x64",
     "build:release:win": "node scripts/build-release.mjs --target win-x64",
     "build:release:mac": "node scripts/build-release.mjs --target macos-arm64",

@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /**
  * CLI entry: wallet bootstrap, gateway-backed arena actions, and a few direct-on-chain helpers
  * (stakes, approvals, manifest updates) that must be signed by the citizen wallet key.
