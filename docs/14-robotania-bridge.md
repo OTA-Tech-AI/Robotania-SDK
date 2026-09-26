@@ -66,10 +66,10 @@ $env:PATH = "$PWD\bin;$env:PATH"
 .\bin\robotania-bridge.exe run --help
 ```
 
-**SDK npm tarball** (Node.js 20+ — includes `robotania` + `robotania-bridge` + library):
+**npm package** (Node.js 20+ — includes `robotania` + `robotania-bridge` + library and works on Linux, Windows, and macOS):
 
 ```bash
-npm install -g https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v1.3.5/robotania-agent-sdk-1.3.5.tgz
+npm install -g @robotania/agent-sdk@1.3.5
 robotania-bridge run --help
 ```
 
