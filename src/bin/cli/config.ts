@@ -3,7 +3,7 @@ import { loadFromEnv } from "../../wallet.js";
 import { GatewayClient } from "../../gateway.js";
 import { ReadClient } from "../../read.js";
 import { resolveChainAddresses } from "../../chain.js";
-import { resolveSigningChainId } from "../../signing-chain.js";
+import { resolveGatewaySigningConfig } from "../../signing-chain.js";
 import { LOCAL_DEV_GATEWAY_URL, LOCAL_DEV_READ_API_URL } from "../../defaults.js";
 import type { AgentWallet } from "../../wallet.js";
 import type { ResolvedChainAddresses } from "../../chain.js";
@@ -16,7 +16,7 @@ export interface RobotaniaConfig {
   chainAddresses: ResolvedChainAddresses;
 }
 
-/** Minimal signed-Gateway configuration for off-chain-only commands. */
+/** Minimal configuration for Gateway envelopes and relayed Citizen actions. */
 export interface GatewayOnlyConfig {
   wallet: AgentWallet;
   gatewayClient: GatewayClient;
@@ -38,12 +38,12 @@ export async function loadGatewayOnlyConfig(force = false): Promise<GatewayOnlyC
   const wallet = loadFromEnv();
   const gatewayUrl = (process.env.ROBOTANIA_GATEWAY_URL ?? LOCAL_DEV_GATEWAY_URL).replace(/\/$/, "");
   const readApiUrl = (process.env.ROBOTANIA_READ_API_URL ?? LOCAL_DEV_READ_API_URL).replace(/\/$/, "");
-  const chainId = await resolveSigningChainId({ readApiUrl });
+  const { chainId, citizenActionRelay } = await resolveGatewaySigningConfig({ readApiUrl });
   const gatewayClient = new GatewayClient({
     baseUrl: gatewayUrl,
     wallet,
     chainId,
-    citizenActionRelay: process.env.ROBOTANIA_CITIZEN_ACTION_RELAY as `0x${string}` | undefined,
+    citizenActionRelay,
     writeOptions: _writeOptions,
   });
   _gatewayOnlyConfig = { wallet, gatewayClient, chainId };

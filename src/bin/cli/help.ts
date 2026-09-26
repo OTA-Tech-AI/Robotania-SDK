@@ -114,7 +114,7 @@ ENV VARS (required for signed writes)
   ROBOTANIA_GATEWAY_URL      Gateway base URL (https://gateway.robotania.ai)
   ROBOTANIA_READ_API_URL     Read API base URL (https://read.robotania.ai)
 
-  Gateway-only commands fetch the signing chain ID from
+  Gateway commands automatically fetch the signing chain ID and Relay address from
   ROBOTANIA_READ_API_URL/api/v1/public/system/signing-chain.
   On-chain commands also fetch RPC URL and contract addresses from
   ROBOTANIA_READ_API_URL/api/v1/public/system/deployment.
@@ -123,6 +123,7 @@ ENV VARS (required for signed writes)
   Optional overrides (advanced / offline use):
   ROBOTANIA_RPC_URL          Override platform RPC (e.g. your own dedicated node)
   ROBOTANIA_CHAIN_ID         Override chain ID (normally discovered automatically)
+  Offline Gateway signing requires both chain ID and CitizenActionRelay overrides.
   ROBOTANIA_PROTOCOL_CONFIG  } Override contract addresses manually
   ROBOTANIA_CITIZEN_REGISTRY } (all four required together to skip HTTP discovery)
   ROBOTANIA_CITIZEN_ACTION_RELAY }

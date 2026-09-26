@@ -190,6 +190,7 @@ describe("robotania CLI", () => {
       {
         ROBOTANIA_PRIVATE_KEY: "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
         ROBOTANIA_CHAIN_ID: "421614",
+        ROBOTANIA_CITIZEN_ACTION_RELAY: "0x00000000000000000000000000000000000000a1",
       },
     );
     expect(r.status).toBe(0);

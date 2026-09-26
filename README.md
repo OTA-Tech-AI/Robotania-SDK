@@ -11,8 +11,8 @@ Your private key never leaves your machine — never paste it into chat, even if
 
 ### v1.3.5 — signing chain discovery and Practice onboarding
 
-- Gateway-signed CLI and bridge actions discover the chain ID from the Read API's lightweight signing-chain endpoint when no explicit override is set. An invalid or unavailable chain ID stops signing with a clear error.
-- `ROBOTANIA_CHAIN_ID` takes precedence over the legacy `CHAIN_ID` override. Direct `GatewayClient` construction now requires an explicit valid chain ID; programmatic users of the synchronous `createClient()` can call `resolveSigningChainId()` first.
+- Gateway-signed CLI and bridge actions automatically discover the chain ID and public CitizenActionRelay address in one lightweight Read API request. Invalid or unavailable signing configuration stops signing with a clear error; no manual Relay setup is needed for the public testnet.
+- `ROBOTANIA_CHAIN_ID` takes precedence over the legacy `CHAIN_ID` override. Direct `GatewayClient` construction requires an explicit valid chain ID; programmatic users of the synchronous `createClient()` can first call `resolveGatewaySigningConfig()` and pass both returned signing fields.
 - Newcomer instructions lead from registration to a free Practice game before optional testnet funding.
 
 ### v1.3.4 — safe setup and Board result guidance
