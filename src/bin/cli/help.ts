@@ -20,6 +20,8 @@ COMMANDS
   citizen-wallet-balance     Show settlement-token balance held locally on this agent wallet
   citizen-arena-balances     Show vault collateral + operational totals for a citizen
   register-citizen           Register this wallet as an arena citizen via the gateway
+  terms link                 Create a short-lived operator review link for the current legal release
+  terms status [--wait]      Check or wait for the operator's current-version acknowledgement
   manifest update            Publish a new manifest hash / metadata URI from this wallet
   submit-turn                Submit a match turn payload
   create-game                Launch a new arena game; params include topicType and marketMode (reward type)

@@ -36,6 +36,8 @@ import type { RetryOptions } from "./transport.js";
 import { isFaucetRequestOutcome, type FaucetAsset, type FaucetRequestOutcome } from "./faucet.js";
 import { signPreparedCitizenAction, type PreparedCitizenAction } from "./action-signing.js";
 
+const REVIEW_REQUEST_TIMEOUT_MS = 15_000;
+
 export interface GatewayClientOptions {
   baseUrl: string;
   wallet: AgentWallet;
@@ -47,6 +49,32 @@ export interface GatewayClientOptions {
   queryRetry?: RetryOptions;
   /** Default behavior for signed writes. Defaults to waiting up to 120 seconds. */
   writeOptions?: WriteOptions;
+}
+
+/** Published document versions and review links returned by the Gateway. */
+export interface TermsRelease {
+  release_id: string;
+  deployment_id: string;
+  terms_version: string;
+  privacy_version: string;
+  terms_hash: `0x${string}`;
+  privacy_hash: `0x${string}`;
+  acceptance_text: string;
+  acceptance_text_hash: `0x${string}`;
+  promotion_choice_enabled: boolean;
+  change_summary: string;
+  published_at: string;
+  existing_required_at: string;
+  terms_url: string;
+  privacy_url: string;
+}
+
+export interface TermsStatus {
+  available: boolean;
+  accepted: boolean;
+  satisfied?: boolean;
+  exempt?: boolean;
+  release?: TermsRelease;
 }
 
 /** Exactly one avatar mutation for the citizen associated with the signing wallet. */
@@ -155,6 +183,86 @@ export class GatewayClient {
   /** Gateway origin (`http(S)` …, no trailing slash) — e.g. WebSocket base derivation. */
   get baseUrl(): string {
     return this.base;
+  }
+
+  /** Hosted-service acknowledgement status; a wallet signature is not an acceptance. */
+  async termsStatus(): Promise<TermsStatus> {
+    return this.get<TermsStatus>("/api/v1/agent/terms/status");
+  }
+
+  private async reviewRequest<T>(path: string, init?: RequestInit): Promise<T> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), REVIEW_REQUEST_TIMEOUT_MS);
+    try {
+      const res = await fetch(`${this.base}${path}`, { ...init, signal: controller.signal });
+      let json: {
+        ok?: boolean; data?: T; error_code?: string; message?: string;
+        error?: { code?: string; message?: string };
+      };
+      try {
+        json = await res.json() as typeof json;
+      } catch (error) {
+        if (controller.signal.aborted) throw error;
+        throw new GatewayError(502, path, "INVALID_RESPONSE", "Gateway review response is not valid JSON");
+      }
+      if (!res.ok || json?.ok === false) {
+        throw new GatewayError(res.status, path, json?.error?.code ?? json?.error_code ?? "REVIEW_REQUEST_FAILED",
+          json?.error?.message ?? json?.message ?? `Review request failed (HTTP ${res.status})`, json);
+      }
+      if (json?.data === undefined) {
+        throw new GatewayError(502, path, "INVALID_RESPONSE", "Gateway review response is missing data");
+      }
+      return json.data;
+    } catch (error) {
+      if (error instanceof GatewayError) throw error;
+      if (controller.signal.aborted) {
+        throw new GatewayError(408, path, "REVIEW_REQUEST_TIMEOUT", "Gateway review request timed out");
+      }
+      throw new GatewayError(503, path, "REVIEW_NETWORK_ERROR", "Gateway review request could not be completed");
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  /** Creates a wallet-bound, short-lived URL for the human operator to review. */
+  async createTermsReviewLink(): Promise<string> {
+    const challenge = await this.reviewRequest<{
+      deployment_id: string; terms_hash: `0x${string}`; privacy_hash: `0x${string}`;
+      acceptance_text_hash: `0x${string}`; nonce: `0x${string}`; issued_at: number; expires_at: number;
+    }>(`/api/v1/agent/terms/link-challenge?wallet=${encodeURIComponent(this.wallet.address)}`);
+    const request = {
+      purpose: "OPERATOR_TERMS_REVIEW_LINK", wallet: this.wallet.address,
+      deploymentId: challenge.deployment_id, termsHash: challenge.terms_hash,
+      privacyHash: challenge.privacy_hash, acceptanceTextHash: challenge.acceptance_text_hash,
+      nonce: challenge.nonce, issuedAt: challenge.issued_at, expiresAt: challenge.expires_at,
+    };
+    const signature = await privateKeyToAccount(this.wallet.privateKey).signTypedData({
+      domain: buildRobotaniaDomain(this.chainId),
+      types: { OperatorReviewLinkRequest: [
+        { name: "purpose", type: "string" }, { name: "wallet", type: "address" },
+        { name: "deploymentId", type: "string" }, { name: "termsHash", type: "bytes32" },
+        { name: "privacyHash", type: "bytes32" }, { name: "acceptanceTextHash", type: "bytes32" },
+        { name: "nonce", type: "bytes32" }, { name: "issuedAt", type: "uint64" },
+        { name: "expiresAt", type: "uint64" },
+      ] }, primaryType: "OperatorReviewLinkRequest",
+      message: { ...request, issuedAt: BigInt(request.issuedAt), expiresAt: BigInt(request.expiresAt) },
+    });
+    const link = await this.reviewRequest<{ url: string }>("/api/v1/agent/terms/links", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ request, signature }),
+    });
+    if (!link.url) throw new GatewayError(502, "terms/links", "INVALID_RESPONSE", "Gateway review link is missing");
+    return link.url;
+  }
+
+  async waitForTermsAcceptance(timeoutMs = 15 * 60_000): Promise<void> {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      const status = await this.termsStatus();
+      if (!status.available) throw new Error("No published Terms release is available");
+      if (status.accepted || status.exempt) return;
+      await new Promise(resolve => setTimeout(resolve, 3000));
+    }
+    throw new Error("Terms review timed out. Run the command again to create a new review link.");
   }
 
   // ── Citizens ──────────────────────────────────────────────────────────────
@@ -821,7 +929,7 @@ export class GatewayClient {
           path,
           response.error?.code ?? response.error_code ?? "UNKNOWN",
           response.error?.message ?? response.message ?? "Unknown error",
-          response.error ?? response,
+          response.error ? { ...response, ...response.error } : response,
         );
       }
 
@@ -934,7 +1042,7 @@ export class GatewayClient {
         path,
         json.error?.code ?? json.error_code ?? "UNKNOWN",
         json.error?.message ?? json.message ?? "Unknown error",
-        json.error ?? json,
+        json.error ? { ...json, ...json.error } : json,
       );
     }
 
@@ -991,6 +1099,13 @@ export class GatewayActionFailedError extends Error {
     super(outcome.error.message);
     this.name = "GatewayActionFailedError";
   }
+}
+
+/** A legal rejection is safely retryable only when execution ended before broadcast. */
+export function isPreBroadcastTermsRejection(error: unknown): error is GatewayActionFailedError {
+  return error instanceof GatewayActionFailedError &&
+    error.outcome.status === "FAILED" && error.outcome.phase === "FAILED" &&
+    error.outcome.tx_hash === null && error.outcome.error.code === "TERMS_ACCEPTANCE_REQUIRED";
 }
 
 export class GatewayActionPendingError extends Error {

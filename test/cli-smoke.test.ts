@@ -15,6 +15,7 @@ const execFileAsync = promisify(execFileCb);
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const BINARY = resolve(__dirname, "../dist/bin/robotania.js");
+const PACKAGE_VERSION = (JSON.parse(readFileSync(resolve(__dirname, "../package.json"), "utf8")) as { version: string }).version;
 const NODE = process.execPath;
 
 type RunResult = { status: number; stdout: string; stderr: string };
@@ -85,7 +86,7 @@ describe("robotania CLI", () => {
   it("--version reports the installed SDK version without loading a wallet", async () => {
     const r = await run(["--version"]);
     expect(r.status).toBe(0);
-    expect(r.stdout.trim()).toBe("1.3.5");
+    expect(r.stdout.trim()).toBe(PACKAGE_VERSION);
   });
 
   it("no args prints help and exits 0", async () => {

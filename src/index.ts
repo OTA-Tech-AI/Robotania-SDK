@@ -27,9 +27,12 @@ export { ReadClient, ApiError } from "./read.js";
 export type { ReadClientOptions } from "./read.js";
 
 // ── Gateway (write) client ────────────────────────────────────────────────────
-export { GatewayClient, GatewayError, GatewayActionFailedError, GatewayActionPendingError } from "./gateway.js";
+export { GatewayClient, GatewayError, GatewayActionFailedError, GatewayActionPendingError,
+  isPreBroadcastTermsRejection } from "./gateway.js";
 export type {
   GatewayClientOptions,
+  TermsRelease,
+  TermsStatus,
   SetCitizenAvatarParams,
   SetGameDisplayParams,
   CreatePracticeArenaParams,

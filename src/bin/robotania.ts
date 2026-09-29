@@ -4,14 +4,23 @@
  * (stakes, approvals, manifest updates) that must be signed by the citizen wallet key.
  */
 
-import { parseArgv, applyDotenv, configureWriteOptions } from "./cli/config.js";
+import { parseArgv, applyDotenv, configureWriteOptions, loadGatewayOnlyConfig } from "./cli/config.js";
 import { printHelp } from "./cli/help.js";
+import { checkTermsBeforeAction, recoverTermsRejection, TermsManualRetryError,
+  termsReviewNextAction } from "./cli/terms-review.js";
 import { cliVersion } from "./cli/docs.js";
 import { fatal, fatalResult, requestOutcomeExitCode } from "./cli/output.js";
 import { preloadChainAddresses } from "../chain.js";
 import { GatewayActionFailedError, GatewayActionPendingError, GatewayError } from "../gateway.js";
 import { readFileSync } from "node:fs";
 import { privateKeyToAccount } from "viem/accounts";
+
+async function requestOperatorReview(): Promise<void> {
+  const { gatewayClient } = await loadGatewayOnlyConfig();
+  const url = await gatewayClient.createTermsReviewLink();
+  process.stderr.write(`Operator review required. Open this link and check the terms box: ${url}\n`);
+  await gatewayClient.waitForTermsAcceptance();
+}
 
 async function main(): Promise<void> {
   const { envFile, isDryRun, args, writeOptions } = parseArgv(process.argv.slice(2));
@@ -44,7 +53,7 @@ async function main(): Promise<void> {
 
   // Reject unknown commands before attempting discovery so the error message is actionable.
   const KNOWN_COMMANDS = new Set([
-    "init", "docs", "wallet-address",
+    "init", "docs", "wallet-address", "terms",
     "approve-bond", "deposit-collateral", "deposit-operational",
     "withdraw-collateral", "withdraw-operational", "collateral-to-operational",
     "operational-to-collateral", "withdraw-from-citizen-wallet", "citizen-wallet-balance",
@@ -63,13 +72,27 @@ async function main(): Promise<void> {
     fatal(`Unknown command: ${command}. Run "robotania --help" for usage.`);
   }
 
+  // New entry/content actions can have local preparation before the Gateway
+  // request. Check the server's current decision first so a renewal does not
+  // repeat that preparation. Older Gateway deployments may lack this endpoint.
+  const newActions = new Set([
+    "register-citizen", "create-game", "create-practice-game", "join-waitlist",
+    "deposit-waitlist", "join-practice-game", "open-position", "predict-practice-winner",
+    "set-game-display", "set-practice-game-display", "set-citizen-avatar", "profile",
+  ]);
+  if (!isDryRun && newActions.has(command)) {
+    const { gatewayClient } = await loadGatewayOnlyConfig();
+    await checkTermsBeforeAction(() => gatewayClient.termsStatus(), requestOperatorReview,
+      () => process.stderr.write("Terms update available. This action may continue during the review window; run `robotania terms link` to review it.\n"));
+  }
+
   // Populate the module-level address cache once before any command runs.
   // Skipped for `init` and `docs` — these don't need chain addresses.
   const gatewayOnlyCommands = new Set([
     "create-practice-game", "join-practice-game", "cancel-practice-game",
     "set-practice-game-display", "submit-practice-turn", "ack-practice-step", "challenge-practice-step", "practice-challenge-ruling", "predict-practice-winner",
     "submit-practice-jury-vote",
-    "faucet", "runtime", "register-citizen", "heartbeat", "stay-online", "request-status", "wait-request",
+    "faucet", "runtime", "register-citizen", "heartbeat", "stay-online", "request-status", "wait-request", "terms",
   ]);
   if (command !== "init" && command !== "docs" &&
       !(command === "runtime" && rest[0] === "cursor-reset") &&
@@ -78,6 +101,16 @@ async function main(): Promise<void> {
   }
 
   switch (command) {
+    case "terms": {
+      const { gatewayClient } = await loadGatewayOnlyConfig();
+      if (rest[0] === "link") {
+        process.stdout.write(`${await gatewayClient.createTermsReviewLink()}\n`);
+      } else if (rest[0] === "status") {
+        if (rest.includes("--wait")) await gatewayClient.waitForTermsAcceptance();
+        process.stdout.write(`${JSON.stringify(await gatewayClient.termsStatus())}\n`);
+      } else fatal("Usage: robotania terms link | terms status [--wait]");
+      break;
+    }
     case "init": {
       const { run } = await import("./init.js");
       await run();
@@ -354,7 +387,20 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((err) => {
+async function mainWithTermsReview(): Promise<void> {
+  try { await main(); }
+  catch (error) {
+    await recoverTermsRejection(error, process.argv.includes("--idempotency-key"),
+      requestOperatorReview, main);
+  }
+}
+
+mainWithTermsReview().catch((err) => {
+  if (err instanceof TermsManualRetryError) {
+    fatalResult({ ok: false, request_id: err.requestId,
+      error: { code: "TERMS_REVIEW_COMPLETED_RETRY_REQUIRED", message: err.message,
+        next_action: "RETRY_NEW_REQUEST" } }, 1);
+  }
   if (err instanceof GatewayActionFailedError) {
     fatalResult(err.outcome, requestOutcomeExitCode("FAILED"));
   }
@@ -370,9 +416,11 @@ main().catch((err) => {
     }, requestOutcomeExitCode("PENDING"));
   }
   if (err instanceof GatewayError) {
-    const nextAction = typeof err.response?.next_action === "string"
-      ? err.response.next_action
-      : "OPERATOR_REVIEW";
+    const nested = err.response?.error;
+    const nextAction = typeof err.response?.next_action === "string" ? err.response.next_action
+      : typeof nested === "object" && nested !== null && "next_action" in nested
+        && typeof nested.next_action === "string" ? nested.next_action
+          : termsReviewNextAction(err) ?? "OPERATOR_REVIEW";
     fatalResult({
       ok: false,
       error: { code: err.errorCode, message: err.detail, next_action: nextAction },
