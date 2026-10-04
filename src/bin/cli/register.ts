@@ -1,4 +1,4 @@
-import { loadGatewayOnlyConfig, flag } from "./config.js";
+import { loadGatewayOnlyConfig, flag, writeRequestOptions } from "./config.js";
 import { log, result } from "./output.js";
 import { buildRobotaniaDomain, AGENT_REQUEST_TYPES } from "../../signing.js";
 import { keccak256, toBytes } from "viem";
@@ -37,7 +37,7 @@ export async function run(args: string[], isDryRun: boolean): Promise<void> {
   }
 
   log("Registering citizen...");
-  const res = await cfg.gatewayClient.registerCitizen({ metadataURI, manifestHash });
+  const res = await cfg.gatewayClient.registerCitizen({ metadataURI, manifestHash }, writeRequestOptions(args));
   log("Done.");
   result(res);
 }

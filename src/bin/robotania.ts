@@ -11,7 +11,7 @@ import { checkTermsBeforeAction, recoverTermsRejection, TermsManualRetryError,
 import { cliVersion } from "./cli/docs.js";
 import { fatal, fatalResult, requestOutcomeExitCode } from "./cli/output.js";
 import { preloadChainAddresses } from "../chain.js";
-import { GatewayActionFailedError, GatewayActionPendingError, GatewayError } from "../gateway.js";
+import { GatewayActionFailedError, GatewayActionPendingError, GatewayError, GatewayWriteUncertainError } from "../gateway.js";
 import { readFileSync } from "node:fs";
 import { privateKeyToAccount } from "viem/accounts";
 
@@ -396,6 +396,11 @@ async function mainWithTermsReview(): Promise<void> {
 }
 
 mainWithTermsReview().catch((err) => {
+  if (err instanceof GatewayWriteUncertainError) {
+    fatalResult({ ok: false, terminal: false, idempotency_key: err.idempotencyKey,
+      error: { code: err.errorCode, message: err.detail, next_action: "OPERATOR_REVIEW" },
+      recovery: "Outcome unknown. Recover the same action and payload using --idempotency-key; do not create a new key." }, 2);
+  }
   if (err instanceof TermsManualRetryError) {
     fatalResult({ ok: false, request_id: err.requestId,
       error: { code: "TERMS_REVIEW_COMPLETED_RETRY_REQUIRED", message: err.message,

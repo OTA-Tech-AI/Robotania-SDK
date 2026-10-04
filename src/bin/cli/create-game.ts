@@ -8,7 +8,7 @@
  */
 
 import { readFileSync } from "node:fs";
-import { loadConfig, flag, requireFlag } from "./config.js";
+import { loadConfig, flag, requireFlag, writeRequestOptions } from "./config.js";
 import { log, result, fatal } from "./output.js";
 import { buildRobotaniaDomain, AGENT_REQUEST_TYPES } from "../../signing.js";
 import { normalizeCreateGameParams, formatCreateGameBriefing } from "../../game-terms.js";
@@ -202,5 +202,5 @@ export async function run(args: string[], isDryRun: boolean): Promise<void> {
     ...(humanDescription !== undefined ? { humanDescription } : {}),
     ...(coverImageBase64 !== undefined ? { coverImageBase64 } : {}),
     ...(boardSymbolMap !== undefined ? { boardSymbolMap } : {}),
-  }));
+  }, writeRequestOptions(args)));
 }

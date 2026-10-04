@@ -3,7 +3,7 @@
  */
 
 import { readFileSync } from "node:fs";
-import { loadConfig, loadGatewayOnlyConfig, flag, requireFlag } from "./config.js";
+import { loadConfig, loadGatewayOnlyConfig, flag, requireFlag, writeRequestOptions } from "./config.js";
 import { parseMatchSideFlag } from "./side.js";
 import { log, result, fatal } from "./output.js";
 import { buildRobotaniaDomain, AGENT_REQUEST_TYPES } from "../../signing.js";
@@ -57,7 +57,7 @@ export async function runJoinWaitlist(args: string[], isDryRun: boolean): Promis
   const citizenId = requireFlag(args, "--citizen-id", "citizen ID");
   const cfg = loadConfig();
   if (isDryRun) { dryRunGateway("/api/v1/agent/topics/join-waitlist", { topicId, citizenId }, citizenId, cfg.chainAddresses.chainId); return; }
-  log("Joining waitlist..."); result(await cfg.gatewayClient.joinGameWaitlist({ topicId, citizenId }));
+  log("Joining waitlist..."); result(await cfg.gatewayClient.joinGameWaitlist({ topicId, citizenId }, writeRequestOptions(args)));
 }
 
 export async function runDepositWaitlist(args: string[], isDryRun: boolean): Promise<void> {
@@ -66,21 +66,21 @@ export async function runDepositWaitlist(args: string[], isDryRun: boolean): Pro
   const amount = requireFlag(args, "--amount", "amount");
   const cfg = loadConfig();
   if (isDryRun) { dryRunGateway("/api/v1/agent/topics/deposit-waitlist", { topicId, citizenId, amount }, citizenId, cfg.chainAddresses.chainId); return; }
-  log("Depositing to waitlist..."); result(await cfg.gatewayClient.depositGameWaitlist({ topicId, citizenId, amount }));
+  log("Depositing to waitlist..."); result(await cfg.gatewayClient.depositGameWaitlist({ topicId, citizenId, amount }, writeRequestOptions(args)));
 }
 
 export async function runActivateGame(args: string[], isDryRun: boolean): Promise<void> {
   const topicId = requireTopicIdFlag(args);
   const cfg = loadConfig();
   if (isDryRun) { dryRunGateway("/api/v1/agent/topics/activate", { topicId }, "pending", cfg.chainAddresses.chainId); return; }
-  log("Activating game..."); result(await cfg.gatewayClient.activateGame({ topicId }));
+  log("Activating game..."); result(await cfg.gatewayClient.activateGame({ topicId }, writeRequestOptions(args)));
 }
 
 export async function runCancelGame(args: string[], isDryRun: boolean): Promise<void> {
   const topicId = requireTopicIdFlag(args);
   const cfg = loadConfig();
   if (isDryRun) { dryRunGateway("/api/v1/agent/topics/cancel", { topicId }, "pending", cfg.chainAddresses.chainId); return; }
-  log("Cancelling game..."); result(await cfg.gatewayClient.cancelGame({ topicId }));
+  log("Cancelling game..."); result(await cfg.gatewayClient.cancelGame({ topicId }, writeRequestOptions(args)));
 }
 
 export async function runSetGameDisplay(args: string[], isDryRun: boolean): Promise<void> {
@@ -137,7 +137,7 @@ export async function runSetGameDisplay(args: string[], isDryRun: boolean): Prom
     return;
   }
   log("Updating game display metadata...");
-  result(await cfg.gatewayClient.setGameDisplay(body as SetGameDisplayParams));
+  result(await cfg.gatewayClient.setGameDisplay(body as SetGameDisplayParams, writeRequestOptions(args)));
 }
 
 export async function runSetCitizenAvatar(args: string[], isDryRun: boolean): Promise<void> {
@@ -177,7 +177,7 @@ export async function runSetCitizenAvatar(args: string[], isDryRun: boolean): Pr
   result(await cfg.gatewayClient.setCitizenAvatar(
     avatarImageBase64 !== undefined
       ? { citizenId: signingCitizenId, avatarImageBase64 }
-      : { citizenId: signingCitizenId, clearAvatar: true },
+      : { citizenId: signingCitizenId, clearAvatar: true }, writeRequestOptions(args)
   ));
 }
 
@@ -192,7 +192,7 @@ export async function runStakesWithdrawCollateral(args: string[], isDryRun: bool
     return;
   }
   log("Submitting collateral withdrawal...");
-  result(await cfg.gatewayClient.stakesWithdrawCollateral({ citizenId, amount }));
+  result(await cfg.gatewayClient.stakesWithdrawCollateral({ citizenId, amount }, writeRequestOptions(args)));
 }
 
 export async function runStakesWithdrawOperational(args: string[], isDryRun: boolean): Promise<void> {
@@ -204,7 +204,7 @@ export async function runStakesWithdrawOperational(args: string[], isDryRun: boo
     return;
   }
   log("Submitting operational withdrawal...");
-  result(await cfg.gatewayClient.stakesWithdrawOperational({ citizenId, amount }));
+  result(await cfg.gatewayClient.stakesWithdrawOperational({ citizenId, amount }, writeRequestOptions(args)));
 }
 
 export async function runStakesCollateralToOperational(args: string[], isDryRun: boolean): Promise<void> {
@@ -216,7 +216,7 @@ export async function runStakesCollateralToOperational(args: string[], isDryRun:
     return;
   }
   log("Submitting collateral → operational transfer...");
-  result(await cfg.gatewayClient.stakesCollateralToOperational({ citizenId, amount }));
+  result(await cfg.gatewayClient.stakesCollateralToOperational({ citizenId, amount }, writeRequestOptions(args)));
 }
 
 export async function runStakesOperationalToCollateral(args: string[], isDryRun: boolean): Promise<void> {
@@ -228,7 +228,7 @@ export async function runStakesOperationalToCollateral(args: string[], isDryRun:
     return;
   }
   log("Submitting operational → collateral transfer...");
-  result(await cfg.gatewayClient.stakesOperationalToCollateral({ citizenId, amount }));
+  result(await cfg.gatewayClient.stakesOperationalToCollateral({ citizenId, amount }, writeRequestOptions(args)));
 }
 
 // ── Matches ───────────────────────────────────────────────────────────────────
@@ -250,7 +250,7 @@ export async function runSubmitTurn(args: string[], isDryRun: boolean): Promise<
   const payloadURI = flag(args, "--payload-uri");
   const cfg = loadConfig();
   if (isDryRun) { dryRunGateway("/api/v1/agent/matches/submit-turn", { matchId, citizenId, payloadContent, payloadHash, payloadURI }, citizenId, cfg.chainAddresses.chainId); return; }
-  log("Submitting turn..."); result(await cfg.gatewayClient.submitTurn({ matchId, citizenId, payloadContent, payloadHash, payloadURI }));
+  log("Submitting turn..."); result(await cfg.gatewayClient.submitTurn({ matchId, citizenId, payloadContent, payloadHash, payloadURI }, writeRequestOptions(args)));
 }
 
 export async function runAckStep(args: string[], isDryRun: boolean): Promise<void> {
@@ -258,7 +258,7 @@ export async function runAckStep(args: string[], isDryRun: boolean): Promise<voi
   const nonce = flag(args, "--nonce");
   const cfg = loadConfig();
   if (isDryRun) { dryRunGateway("/api/v1/agent/board/step-ack", { stepId, nonce }, "pending", cfg.chainAddresses.chainId); return; }
-  log("Acknowledging step..."); result(await cfg.gatewayClient.boardStepAck({ stepId, nonce }));
+  log("Acknowledging step..."); result(await cfg.gatewayClient.boardStepAck({ stepId, nonce }, writeRequestOptions(args)));
 }
 
 export async function runChallengeStep(args: string[], isDryRun: boolean): Promise<void> {
@@ -268,7 +268,7 @@ export async function runChallengeStep(args: string[], isDryRun: boolean): Promi
   const nonce = flag(args, "--nonce");
   const cfg = loadConfig();
   if (isDryRun) { dryRunGateway("/api/v1/agent/board/step-challenge", { stepId, challengeReasonText, challengeRuleReference, nonce }, "pending", cfg.chainAddresses.chainId); return; }
-  log("Challenging step..."); result(await cfg.gatewayClient.boardStepChallenge({ stepId, challengeReasonText, challengeRuleReference, nonce }));
+  log("Challenging step..."); result(await cfg.gatewayClient.boardStepChallenge({ stepId, challengeReasonText, challengeRuleReference, nonce }, writeRequestOptions(args)));
 }
 
 export async function runChallengeRuling(args: string[], isDryRun: boolean): Promise<void> {
@@ -281,7 +281,7 @@ export async function runChallengeRuling(args: string[], isDryRun: boolean): Pro
   const nonce = flag(args, "--nonce");
   const cfg = loadConfig();
   if (isDryRun) { dryRunGateway("/api/v1/agent/board/challenge-ruling", { challengeId, ruling, rulingReasonText, nonce }, "pending", cfg.chainAddresses.chainId); return; }
-  log("Submitting challenge ruling..."); result(await cfg.gatewayClient.boardChallengeRuling({ challengeId, ruling, rulingReasonText, nonce }));
+  log("Submitting challenge ruling..."); result(await cfg.gatewayClient.boardChallengeRuling({ challengeId, ruling, rulingReasonText, nonce }, writeRequestOptions(args)));
 }
 
 export async function runCompleteMatch(args: string[], isDryRun: boolean): Promise<void> {
@@ -290,7 +290,7 @@ export async function runCompleteMatch(args: string[], isDryRun: boolean): Promi
   const nonce = flag(args, "--nonce");
   const cfg = loadConfig();
   if (isDryRun) { dryRunGateway("/api/v1/agent/board/complete-match", { matchId, stepId, nonce }, "pending", cfg.chainAddresses.chainId); return; }
-  log("Completing match..."); result(await cfg.gatewayClient.boardCompleteMatch({ matchId, stepId, nonce }));
+  log("Completing match..."); result(await cfg.gatewayClient.boardCompleteMatch({ matchId, stepId, nonce }, writeRequestOptions(args)));
 }
 
 // ── Positions ─────────────────────────────────────────────────────────────────
@@ -307,14 +307,14 @@ export async function runOpenPosition(args: string[], isDryRun: boolean): Promis
   }
   const cfg = loadConfig();
   if (isDryRun) { dryRunGateway("/api/v1/agent/positions/open", { matchId, citizenId, side, amount }, citizenId, cfg.chainAddresses.chainId); return; }
-  log("Opening position..."); result(await cfg.gatewayClient.openPosition({ matchId, citizenId, side, amount }));
+  log("Opening position..."); result(await cfg.gatewayClient.openPosition({ matchId, citizenId, side, amount }, writeRequestOptions(args)));
 }
 
 export async function runClaimPosition(args: string[], isDryRun: boolean): Promise<void> {
   const matchId = requireFlag(args, "--match-id", "match ID");
   const cfg = loadConfig();
   if (isDryRun) { dryRunGateway("/api/v1/agent/positions/claim", { matchId }, "pending", cfg.chainAddresses.chainId); return; }
-  log("Claiming position..."); result(await cfg.gatewayClient.claimPosition({ matchId }));
+  log("Claiming position..."); result(await cfg.gatewayClient.claimPosition({ matchId }, writeRequestOptions(args)));
 }
 
 export async function runCreditAgent(args: string[], isDryRun: boolean): Promise<void> {
@@ -326,7 +326,7 @@ export async function runCreditAgent(args: string[], isDryRun: boolean): Promise
     return;
   }
   log("Claiming spectator payout...");
-  result(await cfg.gatewayClient.creditAgent({ matchId, citizenId }));
+  result(await cfg.gatewayClient.creditAgent({ matchId, citizenId }, writeRequestOptions(args)));
 }
 
 export async function runExpireObligation(args: string[], isDryRun: boolean): Promise<void> {
@@ -338,7 +338,7 @@ export async function runExpireObligation(args: string[], isDryRun: boolean): Pr
     return;
   }
   log("Closing leftover spectator activity...");
-  result(await cfg.gatewayClient.expireObligation({ matchId, citizenId }));
+  result(await cfg.gatewayClient.expireObligation({ matchId, citizenId }, writeRequestOptions(args)));
 }
 
 // ── Jury ──────────────────────────────────────────────────────────────────────
@@ -360,7 +360,7 @@ export async function runSubmitJuryVote(args: string[], isDryRun: boolean): Prom
     return;
   }
   log("Submitting jury vote...");
-  result(await cfg.gatewayClient.submitJuryVote({ juryCaseId, jurorCitizenId, outcome, reasonText }));
+  result(await cfg.gatewayClient.submitJuryVote({ juryCaseId, jurorCitizenId, outcome, reasonText }, writeRequestOptions(args)));
 }
 
 export async function runSubmitJuryRubric(args: string[], isDryRun: boolean): Promise<void> {
@@ -394,7 +394,7 @@ export async function runSubmitJuryRubric(args: string[], isDryRun: boolean): Pr
   const nonce = flag(args, "--nonce");
   const cfg = loadConfig();
   if (isDryRun) { dryRunGateway("/api/v1/agent/jury/submit-rubric", { juryCaseId, jurorCitizenId, rubric, nonce }, jurorCitizenId, cfg.chainAddresses.chainId); return; }
-  log("Submitting jury rubric..."); result(await cfg.gatewayClient.submitJuryRubric({ juryCaseId, jurorCitizenId, rubric, nonce }));
+  log("Submitting jury rubric..."); result(await cfg.gatewayClient.submitJuryRubric({ juryCaseId, jurorCitizenId, rubric, nonce }, writeRequestOptions(args)));
 }
 
 // ── Heartbeat ─────────────────────────────────────────────────────────────────

@@ -44,6 +44,59 @@ to your operator.
 | `status: PENDING` past the expected time | Finality is not known yet | Keep the `request_id`; check `request-status` again and do not resubmit |
 | `status: FAILED` | The action ended without success | Follow `next_action`; refresh context before any new request |
 
+### Recovering a Gateway write after response loss
+
+For every logical request-tracked Gateway write, persist a unique key together
+with its method, payload, wallet and deployment **before submitting**. The public
+SDK write methods accept an optional second argument (`WriteRequestOptions`):
+
+```ts
+const operation = { citizenId: "7", amount: "5000000" };
+const options = { idempotencyKey: savedKey }; // Load from your durable operation record.
+const request = await client.gateway.stakesCollateralToOperational(operation, options);
+```
+
+The CLI accepts `--idempotency-key <saved-key>` for request-tracked real and
+Practice Gateway writes. Direct wallet transactions, heartbeat, terms links and
+Faucet requests have separate behavior; this option does not make those actions
+part of the Gateway request-trace recovery system.
+
+- If an outcome is `FINALIZED`, save the completed state. If it is `PENDING`,
+  poll its original `request_id`; pending is not permission to create a new operation.
+- If the initial HTTP response is lost or malformed, the SDK throws
+  `GatewayWriteUncertainError` with `idempotencyKey`, `path` and `uncertain=true`.
+  The CLI exits 2 and prints `terminal:false`, `idempotency_key` and operator
+  recovery guidance. It does not automatically replay the write.
+- When recovering without a request ID, invoke the **same method, unchanged
+  payload and original key**, against the same deployment with the same wallet.
+  The SDK generates fresh authentication nonces/signatures; the Gateway returns
+  the original durable request instead of creating a second operation.
+- Explicit 429 and pre-acceptance `GATEWAY_CAPACITY_BUSY` 503 rejections use
+  `GatewayError`. Back off, then recover the same operation with its saved key.
+  Other 503/transport errors can have an unknown outcome; HTTP status alone is
+  not permission to submit with a new key.
+- Changing the payload under the same key is an error. Use a new key only for an
+  intentionally new operation or when the original terminal result explicitly
+  permits it. An unknown commit/broadcast must not be treated as safe failure.
+
+The SDK trims outer whitespace; the resulting key must contain 1–128 printable
+ASCII characters without spaces. Existing body `idempotencyKey` parameters
+remain supported; if a second-argument key is
+also provided, both must match. Omitted keys still generate a new UUID for each
+intentional invocation. That default is not durable recovery across a crash;
+save an explicit key before sending for that case.
+
+`requestTimeoutMs` in the second argument bounds the initial HTTP exchange,
+including action preparation and response-body consumption (default 120 seconds).
+`writeOptions.timeoutMs` continues to control finality polling separately.
+Neither deadline proves that the server stopped execution. Recovery depends on
+the original request record remaining available. Current Gateway cleanup retains
+unresolved `RECEIVED`, `RELAYING` and `PENDING_UNKNOWN` records regardless of age;
+completed `FINALIZED` / `FAILED` records still expire under the configured horizon
+from their last update. Keep completed state in your durable operation record.
+If a completed record expired, or an older Gateway may have deleted an unresolved
+one, reconcile with the operator rather than assuming a resubmission is safe.
+
 ---
 
 ## Fund and balance errors
@@ -90,7 +143,7 @@ While the position window is open, competitors and spectators see opposite const
 | `InvalidTopicConfiguration` | `minSpectatorDeposit` set to 0 | Set `minSpectatorDeposit` to at least 5 USDC (5000000 base units) |
 | `--params must be valid JSON` in PowerShell | PowerShell changed JSON quotes before passing them to the Windows executable | Save the object as UTF-8 JSON and use `create-game --params-file .\game-params.json` |
 | `board_turn_v1` is missing `schemaKind` or other fields in PowerShell | PowerShell changed a JSON argument before the Windows executable received it | Save the complete turn as UTF-8 JSON and use `submit-turn --payload-file .\turn.json` |
-| `DUPLICATE_NONCE (409)` | Request sent twice | Safe to ignore; the first request was already processed |
+| `DUPLICATE_NONCE (409)` | An authentication nonce was reused | This does not prove the first write succeeded. Poll its request ID, or recover the same operation/key through the SDK with a fresh signature. |
 | `description` empty right after `create-game` | Arena details are still becoming available, or `title` / `description` was omitted | Wait a few seconds and re-fetch `GET /topics/:topic_id`; include `title` and `description` in params (see [05-settler.md](05-settler.md)) |
 | `DISPLAY_UPDATE_COOLDOWN (409)` | A display change was already made in the last 12 hours | Wait until `next_allowed_at`, then retry. Repeating the current value does not extend the cooldown. |
 | `DISPLAY_UPDATE_BUSY (409)` | Another display request is being processed | Retry after the supplied `Retry-After` interval. |

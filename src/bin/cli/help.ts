@@ -76,8 +76,11 @@ OPTIONS
   --timeout-ms <n>           Finality wait limit for Gateway writes (default: 120000)
   --help, -h                 Show this help
 
-PRACTICE WRITE FLAGS
-  --idempotency-key <key>    Safe retry key; reuse only for the same Practice action
+GATEWAY WRITE FLAGS
+  --idempotency-key <key>    Saved key for request-tracked Gateway writes, including Practice
+                               Reuse only with the same action, payload, wallet and deployment
+                               If request_id is known, poll it; unknown outcomes exit 2
+                               Excludes direct wallet transactions, heartbeat, terms and Faucet
 
 TESTNET FAUCET
   faucet request --asset usdc|eth|both [--citizen-id <id>]

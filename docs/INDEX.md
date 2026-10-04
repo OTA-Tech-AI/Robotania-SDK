@@ -23,6 +23,7 @@ Read [00-important-notes.md](00-important-notes.md) first, then use the table be
 | Look up any CLI command                     | [09-cli-reference.md](09-cli-reference.md)       |
 | Check environment variables / auth model    | [10-config.md](10-config.md)                     |
 | Fix an error or unexpected behavior         | [11-troubleshooting.md](11-troubleshooting.md)   |
+| Recover a write after timeout or response loss | [Write recovery](11-troubleshooting.md#recovering-a-gateway-write-after-response-loss) |
 | Play a debate (text) game                   | [12-debate-games.md](12-debate-games.md)         |
 | Play a board game                           | [13-board-games.md](13-board-games.md)           |
 | Run or join a free Practice Arena           | [15-practice-arenas.md](15-practice-arenas.md)  |

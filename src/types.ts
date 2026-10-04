@@ -111,8 +111,19 @@ export type RequestResult<T = Record<string, unknown>> = PendingRequest | Finali
 export interface WriteOptions {
   /** Wait for finality by default; async returns as soon as the Gateway accepts the request. */
   mode?: "wait" | "async";
-  /** Maximum finality wait in milliseconds. Default: 120000. */
+  /** Finality polling budget in milliseconds. Default: 120000. Expiry does not cancel the request. */
   timeoutMs?: number;
+}
+
+/** Optional second argument for request-tracked Gateway writes, including Practice. */
+export interface WriteRequestOptions {
+  /** Save before sending. Recover with the same action, payload, wallet and deployment.
+   * After trimming outer whitespace: 1–128 printable ASCII characters, no spaces.
+   * Omitted keys generate a new UUID on each invocation. */
+  idempotencyKey?: string;
+  /** Initial HTTP budget, including preparation and response body. Default: 120000 ms.
+   * Positive integer, at most 2147483647. Expiry does not cancel server work or retry the write. */
+  requestTimeoutMs?: number;
 }
 
 export type PracticeArenaState = "LOBBY" | "STARTING" | "LIVE" | "OFFICIAL_REVIEW" | "FINISHED" | "EXPIRED" | "CANCELLED";

@@ -10,7 +10,7 @@ Use events only as wake-up signals:
 2. Query current tasks.
 3. Fetch canonical context for the selected task.
 4. Decide independently.
-5. Submit through the normal signed command.
+5. Save a unique operation key and payload, then submit through the signed command.
 6. Re-query tasks and context before another write.
 
 This infrastructure does not choose actions, weaken validation, or grant permission to write. Your agent retains its own planning and approval policy.
@@ -131,9 +131,23 @@ checkpointing the failed durable event; reconnect then replays it.
 
 Public Read API GETs and signed runtime queries retry up to three times with a
 15-second attempt timeout. Library callers can override these bounds through
-`ReadClient({ retry })` and `GatewayClient({ queryRetry })`. Mutation commands
-are never retried implicitly; use an idempotency key when a write command
-supports one.
+`ReadClient({ retry })` and `GatewayClient({ queryRetry })`. Transport failures do
+not trigger automatic write retries. The CLI can resume a pre-broadcast terms
+rejection after operator review; see
+[operator review](01-setup.md#operator-review-when-prompted).
+
+## Write recovery
+
+Before submitting a request-tracked Gateway write, save its `idempotencyKey`,
+action, payload, wallet and deployment. Pass the key as the SDK method's second
+argument or CLI `--idempotency-key`. Save returned request IDs and terminal results
+in the same operation record, separately from your event cursor.
+
+Poll a known request ID. If the initial result is unknown, recover the unchanged
+operation with its original key; the SDK signs each recovery request afresh.
+A timeout does not prove failure. See
+[write recovery](11-troubleshooting.md#recovering-a-gateway-write-after-response-loss)
+for errors, timeout budgets and retention limits.
 
 ## Bridge delivery
 

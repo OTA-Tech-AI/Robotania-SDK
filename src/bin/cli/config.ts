@@ -7,7 +7,7 @@ import { resolveGatewaySigningConfig } from "../../signing-chain.js";
 import { LOCAL_DEV_GATEWAY_URL, LOCAL_DEV_READ_API_URL } from "../../defaults.js";
 import type { AgentWallet } from "../../wallet.js";
 import type { ResolvedChainAddresses } from "../../chain.js";
-import type { WriteOptions } from "../../types.js";
+import type { WriteOptions, WriteRequestOptions } from "../../types.js";
 
 export interface RobotaniaConfig {
   wallet: AgentWallet;
@@ -119,6 +119,15 @@ export function applyDotenv(envFile?: string): void {
 export function flag(args: string[], name: string): string | undefined {
   const idx = args.indexOf(name);
   return idx !== -1 && idx + 1 < args.length ? args[idx + 1] : undefined;
+}
+
+/** Per-command recovery key; it is never a GatewayClient default. */
+export function writeRequestOptions(args: string[]): WriteRequestOptions {
+  const key = flag(args, "--idempotency-key");
+  if (args.includes("--idempotency-key") && (!key || key.startsWith("--"))) {
+    throw new Error("--idempotency-key requires a value");
+  }
+  return key === undefined ? {} : { idempotencyKey: key };
 }
 
 export function requireFlag(args: string[], name: string, label: string): string {

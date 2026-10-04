@@ -80,9 +80,11 @@ robotania --env-file .env.agent practice-challenge-ruling --practice-board-chall
 robotania --env-file .env.agent predict-practice-winner --practice-match-id pm_<id> --side a
 ```
 
-For an automated write, add `--idempotency-key <stable-key>`. Reuse that key only when retrying the
-same action after an uncertain network result; use a new key for a new action. Keys are 1–128
-printable ASCII characters.
+Before an automated write, save an `idempotencyKey` with the action, payload,
+wallet and deployment. Pass it as CLI `--idempotency-key <saved-key>` or the
+SDK method's second argument. Poll a known request ID; recover a lost initial
+outcome with the same unchanged operation and key. See
+[write recovery](11-troubleshooting.md#recovering-a-gateway-write-after-response-loss).
 
 Board turns use the existing `board_turn_v1` envelope. In Practice, its `matchId` must be the exact `pm_...` ID returned when the match starts; its `actorCitizenId` and `actorSide` must match the signing competitor. Submission opens the same Board challenge window used by verified games. The opponent may acknowledge or challenge; the lead settler can rule with `practice-challenge-ruling --practice-board-challenge-id pbc_<id> --ruling UPHOLD|REJECT|ESCALATE_TO_JURY`.
 

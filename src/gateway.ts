@@ -24,6 +24,7 @@ import type {
   PracticeTurnPayloadContent,
   TurnPayloadContent,
   WriteOptions,
+  WriteRequestOptions,
 } from "./types.js";
 import { normalizeCreateGameParams } from "./game-terms.js";
 import type {
@@ -47,7 +48,7 @@ export interface GatewayClientOptions {
   citizenActionRelay?: Address;
   /** Retry bounds used only by read-only Gateway query endpoints. */
   queryRetry?: RetryOptions;
-  /** Default behavior for signed writes. Defaults to waiting up to 120 seconds. */
+  /** Request-tracked write mode and finality polling budget. Default: wait, 120 seconds. */
   writeOptions?: WriteOptions;
 }
 
@@ -70,9 +71,14 @@ export interface TermsRelease {
 }
 
 export interface TermsStatus {
+  /** A published Terms/Privacy release is available. */
   available: boolean;
+  /** This wallet has acknowledged the current release. */
   accepted: boolean;
+  /** The terms check is satisfied, possibly by notice-period allowance or exemption.
+   * Not proof of acceptance or permission for every action; the Gateway checks each write. */
   satisfied?: boolean;
+  /** The Gateway verified an exemption for this wallet. */
   exempt?: boolean;
   release?: TermsRelease;
 }
@@ -94,7 +100,7 @@ type SetBoardSymbolMap =
   | { boardSymbolMap: Record<string, string>; clearBoardSymbolMap?: never }
   | { boardSymbolMap?: never; clearBoardSymbolMap: true };
 type NoBoardSymbolMapChange = { boardSymbolMap?: never; clearBoardSymbolMap?: never };
-/** Optional authenticated-citizen hint and safe-retry key for Practice writes. */
+/** Practice identity hint and legacy body key. WriteRequestOptions also accepts the key. */
 export type PracticeRequestOptions = { citizenId?: string; idempotencyKey?: string };
 
 /** One or more mutable display changes for a game. Only lead settlers may submit this request. */
@@ -254,6 +260,8 @@ export class GatewayClient {
     return link.url;
   }
 
+  /** Poll until the current release is accepted or the Gateway verifies an exemption.
+   * Notice-period satisfaction alone does not complete this wait. Default: 15 minutes. */
   async waitForTermsAcceptance(timeoutMs = 15 * 60_000): Promise<void> {
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
@@ -277,23 +285,23 @@ export class GatewayClient {
   async registerCitizen(params: {
     metadataURI?: string;
     manifestHash?: string;
-  }): Promise<RequestResult> {
+  }, options: WriteRequestOptions = {}): Promise<RequestResult> {
     return this.postWrite("/api/v1/agent/citizens/register", {
       walletAddress: this.wallet.address,
       metadataURI: params.metadataURI ?? "",
       manifestHash: params.manifestHash ?? "0x" + "0".repeat(64),
-    });
+    }, "pending", options);
   }
 
   /** Update or clear the mutable, off-chain avatar for the signing citizen. */
-  async setCitizenAvatar(params: SetCitizenAvatarParams): Promise<RequestResult> {
+  async setCitizenAvatar(params: SetCitizenAvatarParams, options: WriteRequestOptions = {}): Promise<RequestResult> {
     return this.postWrite(
       "/api/v1/agent/citizens/set-avatar",
       {
         ...(params.avatarImageBase64 !== undefined ? { avatarImageBase64: params.avatarImageBase64 } : {}),
         ...(params.clearAvatar ? { clearAvatar: true } : {}),
       },
-      params.citizenId,
+      params.citizenId, options
     );
   }
 
@@ -326,8 +334,8 @@ export class GatewayClient {
    * jury escrow → lead settler's arena balance.
    * The creation fee is non-refundable.
    */
-  async cancelGame(params: { topicId: string }): Promise<RequestResult> {
-    return this.postWrite("/api/v1/agent/topics/cancel", { topicId: params.topicId });
+  async cancelGame(params: { topicId: string }, options: WriteRequestOptions = {}): Promise<RequestResult> {
+    return this.postWrite("/api/v1/agent/topics/cancel", { topicId: params.topicId }, "pending", options);
   }
 
   // ── Games (Gateway paths use /topics/* — protocol / on-chain vocabulary) ─
@@ -339,8 +347,8 @@ export class GatewayClient {
   async joinGameWaitlist(params: {
     topicId: string;
     citizenId: string;
-  }): Promise<RequestResult> {
-    return this.postWrite("/api/v1/agent/topics/join-waitlist", params, params.citizenId);
+  }, options: WriteRequestOptions = {}): Promise<RequestResult> {
+    return this.postWrite("/api/v1/agent/topics/join-waitlist", params, params.citizenId, options);
   }
 
   /**
@@ -357,11 +365,11 @@ export class GatewayClient {
     topicId: string;
     citizenId: string;
     amount: bigint | string;
-  }): Promise<RequestResult> {
+  }, options: WriteRequestOptions = {}): Promise<RequestResult> {
     return this.postWrite(
       "/api/v1/agent/topics/deposit-waitlist",
       { topicId: params.topicId, amount: params.amount.toString() },
-      params.citizenId,  // citizenId goes into x-agent-citizen-id header (EIP-712 auth)
+      params.citizenId, options  // citizenId goes into x-agent-citizen-id header (EIP-712 auth)
     );
   }
 
@@ -370,8 +378,8 @@ export class GatewayClient {
    * On success, a match is created and the game moves to ACTIVE state.
    * @param topicId - The game's on-chain ID.
    */
-  async activateGame(params: { topicId: string }): Promise<RequestResult> {
-    return this.postWrite("/api/v1/agent/topics/activate", params);
+  async activateGame(params: { topicId: string }, options: WriteRequestOptions = {}): Promise<RequestResult> {
+    return this.postWrite("/api/v1/agent/topics/activate", params, "pending", options);
   }
 
   /**
@@ -396,7 +404,7 @@ export class GatewayClient {
     coverImageBase64?: string;
     /** Human-facing board value → emoji map; never enters board or protocol hashes. */
     boardSymbolMap?: Record<string, string>;
-  }): Promise<RequestResult> {
+  }, options: WriteRequestOptions = {}): Promise<RequestResult> {
     const params = normalizeCreateGameParams({ ...body.params });
     return this.postWrite("/api/v1/agent/topics/create", {
       params,
@@ -404,87 +412,87 @@ export class GatewayClient {
       ...(body.humanDescription !== undefined ? { humanDescription: body.humanDescription } : {}),
       ...(body.coverImageBase64 !== undefined ? { coverImageBase64: body.coverImageBase64 } : {}),
       ...(body.boardSymbolMap !== undefined ? { boardSymbolMap: body.boardSymbolMap } : {}),
-    });
+    }, "pending", options);
   }
 
   /**
    * Update mutable, off-chain game presentation metadata (lead settler only).
    * Effective changes share a 12-hour cooldown and do not create a transaction.
    */
-  async setGameDisplay(params: SetGameDisplayParams): Promise<RequestResult> {
-    return this.postWrite("/api/v1/agent/topics/set-display", params);
+  async setGameDisplay(params: SetGameDisplayParams, options: WriteRequestOptions = {}): Promise<RequestResult> {
+    return this.postWrite("/api/v1/agent/topics/set-display", params, "pending", options);
   }
 
   /** Create an off-chain Practice Arena. This never creates a transaction or uses USDC. */
-  async createPracticeArena(params: CreatePracticeArenaParams): Promise<RequestResult<PracticeArenaCreateResult>> {
+  async createPracticeArena(params: CreatePracticeArenaParams, options: WriteRequestOptions = {}): Promise<RequestResult<PracticeArenaCreateResult>> {
     const { citizenId, ...body } = params;
     return this.postWrite<PracticeArenaCreateResult>(
       "/api/v1/agent/practice/arenas/create",
       body as Record<string, unknown>,
-      citizenId,
+      citizenId, options
     );
   }
   /** `practiceArenaId` accepts public `P<number>` / number references and legacy `pa_...` IDs. */
-  async joinPracticeArena(params: { practiceArenaId: string } & PracticeRequestOptions): Promise<RequestResult<PracticeJoinResult>> { return this.postWrite<PracticeJoinResult>("/api/v1/agent/practice/arenas/join", { practiceArenaId: params.practiceArenaId, ...(params.idempotencyKey !== undefined ? { idempotencyKey: params.idempotencyKey } : {}) }, params.citizenId); }
+  async joinPracticeArena(params: { practiceArenaId: string } & PracticeRequestOptions, options: WriteRequestOptions = {}): Promise<RequestResult<PracticeJoinResult>> { return this.postWrite<PracticeJoinResult>("/api/v1/agent/practice/arenas/join", { practiceArenaId: params.practiceArenaId, ...(params.idempotencyKey !== undefined ? { idempotencyKey: params.idempotencyKey } : {}) }, params.citizenId, options); }
   /** `practiceArenaId` accepts public `P<number>` / number references and legacy `pa_...` IDs. */
-  async cancelPracticeArena(params: { practiceArenaId: string } & PracticeRequestOptions): Promise<RequestResult> { return this.postWrite("/api/v1/agent/practice/arenas/cancel", { practiceArenaId: params.practiceArenaId, ...(params.idempotencyKey !== undefined ? { idempotencyKey: params.idempotencyKey } : {}) }, params.citizenId); }
-  async setPracticeGameDisplay(params: SetPracticeGameDisplayParams): Promise<RequestResult> {
+  async cancelPracticeArena(params: { practiceArenaId: string } & PracticeRequestOptions, options: WriteRequestOptions = {}): Promise<RequestResult> { return this.postWrite("/api/v1/agent/practice/arenas/cancel", { practiceArenaId: params.practiceArenaId, ...(params.idempotencyKey !== undefined ? { idempotencyKey: params.idempotencyKey } : {}) }, params.citizenId, options); }
+  async setPracticeGameDisplay(params: SetPracticeGameDisplayParams, options: WriteRequestOptions = {}): Promise<RequestResult> {
     const { citizenId, ...body } = params;
-    return this.postWrite("/api/v1/agent/practice/arenas/set-display", body as Record<string, unknown>, citizenId);
+    return this.postWrite("/api/v1/agent/practice/arenas/set-display", body as Record<string, unknown>, citizenId, options);
   }
-  async submitPracticeTurn(params: { practiceMatchId: string; payloadContent: PracticeTurnPayloadContent } & PracticeRequestOptions): Promise<RequestResult<PracticeTurnResult>> { return this.postWrite<PracticeTurnResult>("/api/v1/agent/practice/matches/submit-turn", { practiceMatchId: params.practiceMatchId, payloadContent: params.payloadContent, ...(params.idempotencyKey !== undefined ? { idempotencyKey: params.idempotencyKey } : {}) }, params.citizenId); }
+  async submitPracticeTurn(params: { practiceMatchId: string; payloadContent: PracticeTurnPayloadContent } & PracticeRequestOptions, options: WriteRequestOptions = {}): Promise<RequestResult<PracticeTurnResult>> { return this.postWrite<PracticeTurnResult>("/api/v1/agent/practice/matches/submit-turn", { practiceMatchId: params.practiceMatchId, payloadContent: params.payloadContent, ...(params.idempotencyKey !== undefined ? { idempotencyKey: params.idempotencyKey } : {}) }, params.citizenId, options); }
   /** Acknowledge an opponent's pending Practice Board step. */
-  async acknowledgePracticeStep(params: { practiceBoardStepId: string } & PracticeRequestOptions): Promise<RequestResult> { return this.postWrite("/api/v1/agent/practice/board/step-ack", { practiceBoardStepId: params.practiceBoardStepId, ...(params.idempotencyKey !== undefined ? { idempotencyKey: params.idempotencyKey } : {}) }, params.citizenId); }
+  async acknowledgePracticeStep(params: { practiceBoardStepId: string } & PracticeRequestOptions, options: WriteRequestOptions = {}): Promise<RequestResult> { return this.postWrite("/api/v1/agent/practice/board/step-ack", { practiceBoardStepId: params.practiceBoardStepId, ...(params.idempotencyKey !== undefined ? { idempotencyKey: params.idempotencyKey } : {}) }, params.citizenId, options); }
   /** Challenge an opponent's pending Practice Board step. */
-  async challengePracticeStep(params: { practiceBoardStepId: string; challengeReasonText: string; challengeRuleReference?: string } & PracticeRequestOptions): Promise<RequestResult> { return this.postWrite("/api/v1/agent/practice/board/step-challenge", { practiceBoardStepId: params.practiceBoardStepId, challengeReasonText: params.challengeReasonText, ...(params.challengeRuleReference !== undefined ? { challengeRuleReference: params.challengeRuleReference } : {}), ...(params.idempotencyKey !== undefined ? { idempotencyKey: params.idempotencyKey } : {}) }, params.citizenId); }
+  async challengePracticeStep(params: { practiceBoardStepId: string; challengeReasonText: string; challengeRuleReference?: string } & PracticeRequestOptions, options: WriteRequestOptions = {}): Promise<RequestResult> { return this.postWrite("/api/v1/agent/practice/board/step-challenge", { practiceBoardStepId: params.practiceBoardStepId, challengeReasonText: params.challengeReasonText, ...(params.challengeRuleReference !== undefined ? { challengeRuleReference: params.challengeRuleReference } : {}), ...(params.idempotencyKey !== undefined ? { idempotencyKey: params.idempotencyKey } : {}) }, params.citizenId, options); }
   /** Rule on a challenged Practice Board step. UPHOLD accepts the step; REJECT requires a resubmission. */
-  async rulePracticeChallenge(params: { practiceBoardChallengeId: string; ruling: BoardChallengeRuling; rulingReasonText?: string } & PracticeRequestOptions): Promise<RequestResult> { return this.postWrite("/api/v1/agent/practice/board/challenge-ruling", { practiceBoardChallengeId: params.practiceBoardChallengeId, ruling: params.ruling, ...(params.rulingReasonText !== undefined ? { rulingReasonText: params.rulingReasonText } : {}), ...(params.idempotencyKey !== undefined ? { idempotencyKey: params.idempotencyKey } : {}) }, params.citizenId); }
-  async predictPracticeWinner(params: { practiceMatchId: string; side: 1 | 2 } & PracticeRequestOptions): Promise<RequestResult<PracticePredictionResult>> { return this.postWrite<PracticePredictionResult>("/api/v1/agent/practice/matches/predict", { practiceMatchId: params.practiceMatchId, side: params.side, ...(params.idempotencyKey !== undefined ? { idempotencyKey: params.idempotencyKey } : {}) }, params.citizenId); }
-  async submitPracticeJuryVote(params: { practiceJuryCaseId: string; outcomeSide: 1 | 2; reasonText: string } & PracticeRequestOptions): Promise<RequestResult<PracticeJuryVoteResult>> { return this.postWrite<PracticeJuryVoteResult>("/api/v1/agent/practice/jury/vote", { practiceJuryCaseId: params.practiceJuryCaseId, outcomeSide: params.outcomeSide, reasonText: params.reasonText, ...(params.idempotencyKey !== undefined ? { idempotencyKey: params.idempotencyKey } : {}) }, params.citizenId); }
+  async rulePracticeChallenge(params: { practiceBoardChallengeId: string; ruling: BoardChallengeRuling; rulingReasonText?: string } & PracticeRequestOptions, options: WriteRequestOptions = {}): Promise<RequestResult> { return this.postWrite("/api/v1/agent/practice/board/challenge-ruling", { practiceBoardChallengeId: params.practiceBoardChallengeId, ruling: params.ruling, ...(params.rulingReasonText !== undefined ? { rulingReasonText: params.rulingReasonText } : {}), ...(params.idempotencyKey !== undefined ? { idempotencyKey: params.idempotencyKey } : {}) }, params.citizenId, options); }
+  async predictPracticeWinner(params: { practiceMatchId: string; side: 1 | 2 } & PracticeRequestOptions, options: WriteRequestOptions = {}): Promise<RequestResult<PracticePredictionResult>> { return this.postWrite<PracticePredictionResult>("/api/v1/agent/practice/matches/predict", { practiceMatchId: params.practiceMatchId, side: params.side, ...(params.idempotencyKey !== undefined ? { idempotencyKey: params.idempotencyKey } : {}) }, params.citizenId, options); }
+  async submitPracticeJuryVote(params: { practiceJuryCaseId: string; outcomeSide: 1 | 2; reasonText: string } & PracticeRequestOptions, options: WriteRequestOptions = {}): Promise<RequestResult<PracticeJuryVoteResult>> { return this.postWrite<PracticeJuryVoteResult>("/api/v1/agent/practice/jury/vote", { practiceJuryCaseId: params.practiceJuryCaseId, outcomeSide: params.outcomeSide, reasonText: params.reasonText, ...(params.idempotencyKey !== undefined ? { idempotencyKey: params.idempotencyKey } : {}) }, params.citizenId, options); }
 
   // ── Stake vault (Gateway-assisted withdrawals and pool moves; you still sign) ─────
 
   async stakesWithdrawCollateral(params: {
     citizenId: string;
     amount: bigint | string;
-  }): Promise<RequestResult> {
+  }, options: WriteRequestOptions = {}): Promise<RequestResult> {
     return this.postWrite(
       "/api/v1/agent/stakes/withdraw-collateral",
       { amount: params.amount.toString() },
-      params.citizenId,
+      params.citizenId, options
     );
   }
 
   async stakesWithdrawOperational(params: {
     citizenId: string;
     amount: bigint | string;
-  }): Promise<RequestResult> {
+  }, options: WriteRequestOptions = {}): Promise<RequestResult> {
     return this.postWrite(
       "/api/v1/agent/stakes/withdraw-operational",
       { amount: params.amount.toString() },
-      params.citizenId,
+      params.citizenId, options
     );
   }
 
   async stakesCollateralToOperational(params: {
     citizenId: string;
     amount: bigint | string;
-  }): Promise<RequestResult> {
+  }, options: WriteRequestOptions = {}): Promise<RequestResult> {
     return this.postWrite(
       "/api/v1/agent/stakes/collateral-to-operational",
       { amount: params.amount.toString() },
-      params.citizenId,
+      params.citizenId, options
     );
   }
 
   async stakesOperationalToCollateral(params: {
     citizenId: string;
     amount: bigint | string;
-  }): Promise<RequestResult> {
+  }, options: WriteRequestOptions = {}): Promise<RequestResult> {
     return this.postWrite(
       "/api/v1/agent/stakes/operational-to-collateral",
       { amount: params.amount.toString() },
-      params.citizenId,
+      params.citizenId, options
     );
   }
 
@@ -508,17 +516,17 @@ export class GatewayClient {
     /** Pre-hashed payload (legacy fallback) */
     payloadHash?: `0x${string}`;
     payloadURI?: string;
-  }): Promise<RequestResult> {
+  }, options: WriteRequestOptions = {}): Promise<RequestResult> {
     return this.postWrite("/api/v1/agent/matches/submit-turn", {
       ...params,
       matchId: params.matchId.toString(),
       citizenId: params.citizenId.toString(),
-    }, params.citizenId);
+    }, params.citizenId, options);
   }
 
   /** Opponent ACK — skip remaining challenge window (off-chain). */
-  async boardStepAck(params: { stepId: string; nonce?: string }): Promise<RequestResult> {
-    return this.postWrite("/api/v1/agent/board/step-ack", params);
+  async boardStepAck(params: { stepId: string; nonce?: string }, options: WriteRequestOptions = {}): Promise<RequestResult> {
+    return this.postWrite("/api/v1/agent/board/step-ack", params, "pending", options);
   }
 
   async boardStepChallenge(params: {
@@ -526,8 +534,8 @@ export class GatewayClient {
     challengeReasonText: string;
     challengeRuleReference?: string;
     nonce?: string;
-  }): Promise<RequestResult> {
-    return this.postWrite("/api/v1/agent/board/step-challenge", params);
+  }, options: WriteRequestOptions = {}): Promise<RequestResult> {
+    return this.postWrite("/api/v1/agent/board/step-challenge", params, "pending", options);
   }
 
   /** Rule on a challenged Board step. UPHOLD accepts the step; REJECT requires a resubmission. */
@@ -536,12 +544,12 @@ export class GatewayClient {
     ruling: BoardChallengeRuling;
     rulingReasonText?: string;
     nonce?: string;
-  }): Promise<RequestResult> {
-    return this.postWrite("/api/v1/agent/board/challenge-ruling", params);
+  }, options: WriteRequestOptions = {}): Promise<RequestResult> {
+    return this.postWrite("/api/v1/agent/board/challenge-ruling", params, "pending", options);
   }
 
-  async boardCompleteMatch(params: { matchId: string; stepId: string; nonce?: string }): Promise<RequestResult> {
-    return this.postWrite("/api/v1/agent/board/complete-match", params);
+  async boardCompleteMatch(params: { matchId: string; stepId: string; nonce?: string }, options: WriteRequestOptions = {}): Promise<RequestResult> {
+    return this.postWrite("/api/v1/agent/board/complete-match", params, "pending", options);
   }
 
   // ── Positions ─────────────────────────────────────────────────────────────
@@ -560,17 +568,17 @@ export class GatewayClient {
     /** @deprecated Contract derives turn automatically. Do not pass. */
     turnIndex?: number;
     /**
-     * Dedupe key for safe retries. Reuse the same key when retrying after a
-     * timeout or PENDING status — the Gateway returns the existing request
-     * instead of submitting a duplicate transaction.
+     * Legacy body key; also accepted in WriteRequestOptions. Save before sending.
+     * Recover the same payload, wallet and deployment with this key when no
+     * request ID was received. If the request ID is known, poll it.
      */
     idempotencyKey?: string;
-  }): Promise<RequestResult> {
+  }, options: WriteRequestOptions = {}): Promise<RequestResult> {
     const { turnIndex: _deprecatedTurnIndex, ...rest } = params;
     return this.postWrite("/api/v1/agent/positions/open", {
       ...rest,
       amount: params.amount.toString(),
-    }, params.citizenId);
+    }, params.citizenId, options);
   }
 
   /**
@@ -579,24 +587,24 @@ export class GatewayClient {
    */
   async claimPosition(params: {
     matchId: string;
-  }): Promise<RequestResult> {
-    return this.postWrite("/api/v1/agent/positions/claim", params);
+  }, options: WriteRequestOptions = {}): Promise<RequestResult> {
+    return this.postWrite("/api/v1/agent/positions/claim", params, "pending", options);
   }
 
   /** Pull this citizen's spectator payout or refund if the gateway has not already credited it. One successful claim per citizen per match. */
   async creditAgent(params: {
     matchId: string;
     citizenId: string;
-  }): Promise<RequestResult> {
+  }, options: WriteRequestOptions = {}): Promise<RequestResult> {
     return this.postWrite("/api/v1/agent/positions/credit-agent", {
       matchId: params.matchId,
       citizenId: params.citizenId,
-    }, params.citizenId);
+    }, params.citizenId, options);
   }
 
   /** Alias of {@link creditAgent}. */
-  async claimFor(params: { matchId: string; citizenId: string }): Promise<RequestResult> {
-    return this.creditAgent(params);
+  async claimFor(params: { matchId: string; citizenId: string }, options: WriteRequestOptions = {}): Promise<RequestResult> {
+    return this.creditAgent(params, options);
   }
 
   /**
@@ -604,11 +612,11 @@ export class GatewayClient {
    * citizen. Does not recover swept funds. No-op if already claimed or already expired.
    * The gateway also does this best-effort.
    */
-  async expireObligation(params: { matchId: string; citizenId: string }): Promise<RequestResult> {
+  async expireObligation(params: { matchId: string; citizenId: string }, options: WriteRequestOptions = {}): Promise<RequestResult> {
     return this.postWrite("/api/v1/agent/positions/expire-obligation", {
       matchId: params.matchId,
       citizenId: params.citizenId,
-    }, params.citizenId);
+    }, params.citizenId, options);
   }
 
   async submitJuryVote(params: {
@@ -617,8 +625,8 @@ export class GatewayClient {
     /** JuryOutcome enum value: 0=UNSET, 1=A_WINS, 2=B_WINS, 3=INVALID_MATCH, 4=REMATCH_REQUIRED, 5=INDETERMINATE */
     outcome: number;
     reasonText: string;
-  }): Promise<RequestResult> {
-    return this.postWrite("/api/v1/agent/jury/submit-vote", params, params.jurorCitizenId);
+  }, options: WriteRequestOptions = {}): Promise<RequestResult> {
+    return this.postWrite("/api/v1/agent/jury/submit-vote", params, params.jurorCitizenId, options);
   }
 
   /** Provide structured scoring for debate-style jury cases (where simple win/loss votes are not enough). */
@@ -627,8 +635,8 @@ export class GatewayClient {
     jurorCitizenId: string;
     rubric: Record<string, unknown>;
     nonce?: string;
-  }): Promise<RequestResult> {
-    return this.postWrite("/api/v1/agent/jury/submit-rubric", params, params.jurorCitizenId);
+  }, options: WriteRequestOptions = {}): Promise<RequestResult> {
+    return this.postWrite("/api/v1/agent/jury/submit-rubric", params, params.jurorCitizenId, options);
   }
 
   // ── Heartbeat ─────────────────────────────────────────────────────────────
@@ -881,7 +889,10 @@ export class GatewayClient {
           body: bodyStr,
           ...(controller ? { signal: controller.signal } : {}),
         });
-        const json = await res.json().catch(() => ({ ok: false, message: res.statusText })) as {
+        const json = await res.json().catch(() => {
+          if (res.ok) throw new GatewayError(502, path, "INVALID_RESPONSE", "Gateway write response is not valid JSON");
+          return { ok: false, message: res.statusText };
+        }) as {
           ok?: boolean;
           data?: T;
           error?: { code?: string; message?: string; next_action?: string; preparation?: PreparedCitizenAction };
@@ -952,16 +963,47 @@ export class GatewayClient {
     path: string,
     body: Record<string, unknown>,
     citizenId = "pending",
+    options: WriteRequestOptions = {},
   ): Promise<RequestResult<T>> {
-    // Reuse one logical key if signing requires a retry, preventing duplicates.
-    const keyedBody = body.idempotencyKey === undefined
-      ? { ...body, idempotencyKey: crypto.randomUUID() }
-      : body;
-    const outcome = await this.post<unknown>(path, keyedBody, citizenId);
-    if (!isRequestOutcome(outcome)) {
-      throw new GatewayError(502, path, "INVALID_RESPONSE", "Gateway returned an invalid request outcome");
+    const normalizeKey = (key: unknown): string => {
+      if (typeof key !== "string" || !/^[\x21-\x7e]{1,128}$/.test(key.trim())) {
+        throw new Error("idempotencyKey must contain 1-128 printable ASCII characters without spaces");
+      }
+      return key.trim();
+    };
+    const bodyKey = body.idempotencyKey === undefined ? undefined : normalizeKey(body.idempotencyKey);
+    const optionKey = options.idempotencyKey === undefined ? undefined : normalizeKey(options.idempotencyKey);
+    if (bodyKey !== undefined && optionKey !== undefined && bodyKey !== optionKey) {
+      throw new Error("Body and options idempotencyKey must match");
     }
-    return outcome as RequestResult<T>;
+    const key = optionKey ?? bodyKey ?? crypto.randomUUID();
+    const timeoutMs = options.requestTimeoutMs ?? 120_000;
+    if (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0 || timeoutMs > 2_147_483_647) {
+      throw new Error("requestTimeoutMs must be a positive integer within the Node timer range");
+    }
+    try {
+      // Initial transport has its own deadline; known pending requests use the existing finality wait.
+      const outcome = await this.post<unknown>(path, { ...body, idempotencyKey: key }, citizenId,
+        { timeoutMs, resolveOutcome: false });
+      if (!isRequestOutcome(outcome)) {
+        throw new GatewayError(502, path, "INVALID_RESPONSE", "Gateway returned an invalid request outcome");
+      }
+      return await this.resolveWriteOutcome(outcome as RequestOutcome<T>, this.writeOptions);
+    } catch (error) {
+      if (error instanceof GatewayActionPendingError || error instanceof GatewayActionFailedError) throw error;
+      if (error instanceof GatewayError && (
+        (error.statusCode >= 400 && error.statusCode < 500 &&
+          error.errorCode !== "INVALID_RESPONSE" && error.errorCode !== "MISSING_DATA") ||
+        // Explicit admission rejection and local preparation failure happen before a write is accepted.
+        error.errorCode === "GATEWAY_CAPACITY_BUSY" || error.errorCode === "ACTION_SIGNING_UNAVAILABLE"
+      )) {
+        error.idempotencyKey = key;
+        throw error;
+      }
+      // A transport/5xx/malformed success cannot establish whether the write was accepted.
+      // Expose the original key, rather than replaying automatically or claiming safe failure.
+      throw new GatewayWriteUncertainError(path, key, error);
+    }
   }
 
   private async resolveWriteOutcome<T>(
@@ -1081,6 +1123,8 @@ function normalizeFaucetUnavailable(error: unknown, path: string, disabledRouteM
 }
 
 export class GatewayError extends Error {
+  /** Original logical write key, when available. A key alone does not prove acceptance. */
+  idempotencyKey?: string;
   constructor(
     public readonly statusCode: number,
     public readonly path: string,
@@ -1098,6 +1142,22 @@ export class GatewayActionFailedError extends Error {
   constructor(public readonly outcome: FailedRequest) {
     super(outcome.error.message);
     this.name = "GatewayActionFailedError";
+  }
+}
+
+/** No trustworthy request outcome was received. Preserve the key and recover with
+ * the same action, payload, wallet and deployment. Do not treat this as failure. */
+export class GatewayWriteUncertainError extends GatewayError {
+  declare idempotencyKey: string;
+  readonly uncertain = true;
+  constructor(path: string, key: string, cause: unknown) {
+    super(cause instanceof GatewayError ? cause.statusCode : 503, path,
+      cause instanceof GatewayError ? cause.errorCode : "WRITE_OUTCOME_UNKNOWN",
+      cause instanceof Error ? cause.message : "Gateway write outcome is unknown",
+      cause instanceof GatewayError ? cause.response : undefined);
+    this.name = "GatewayWriteUncertainError";
+    this.idempotencyKey = key;
+    this.cause = cause;
   }
 }
 
