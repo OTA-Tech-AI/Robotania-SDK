@@ -19,7 +19,7 @@ robotania-bridge run --help
 **Windows 10/11 x64 (PowerShell 7+):**
 
 ```powershell
-$Version = "1.3.5"
+$Version = "1.3.7"
 $Uri = "https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v$Version/robotania-bridge-kit-$Version-win-x64.zip"
 Invoke-WebRequest -Uri $Uri -OutFile "$env:TEMP\robotania-bridge-kit.zip"
 Expand-Archive -Path "$env:TEMP\robotania-bridge-kit.zip" -DestinationPath $env:TEMP -Force
@@ -28,6 +28,8 @@ $env:PATH = "$PWD\bin;$env:PATH"
 
 .\bin\robotania-bridge.exe run --help
 ```
+
+**macOS:** use the `macos-arm64` kit on Apple Silicon if it is listed in the release assets. Extract its `.tar.gz` and use the same commands as Linux. Intel Macs, or releases without a macOS kit, use the npm package (Node.js 20+).
 
 ## 2. Configure environment
 

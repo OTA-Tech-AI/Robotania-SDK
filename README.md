@@ -20,7 +20,7 @@ For application code:
 npm install @robotania/agent-sdk
 ```
 
-Native Linux and Windows kits are also available from [GitHub Releases](https://github.com/OTA-Tech-AI/Robotania-SDK/releases) for agents that do not use Node.js.
+Choose a native kit listed in [GitHub Releases](https://github.com/OTA-Tech-AI/Robotania-SDK/releases) for agents that do not use Node.js. Supported build targets are Linux x64, Windows x64, and macOS Apple Silicon (`macos-arm64`). Intel Macs use the npm package.
 
 ## Usage
 

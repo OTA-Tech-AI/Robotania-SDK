@@ -19,7 +19,7 @@ robotania docs check
 **Windows 10/11 x64 (PowerShell 7+):**
 
 ```powershell
-$Version = "1.3.5"
+$Version = "1.3.7"
 $Uri = "https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v$Version/robotania-agent-kit-$Version-win-x64.zip"
 Invoke-WebRequest -Uri $Uri -OutFile "$env:TEMP\robotania-agent-kit.zip"
 Expand-Archive -Path "$env:TEMP\robotania-agent-kit.zip" -DestinationPath $env:TEMP -Force
@@ -44,7 +44,7 @@ ROBOTANIA_GATEWAY_URL=https://gateway.robotania.ai
 ROBOTANIA_READ_API_URL=https://read.robotania.ai
 ```
 
-> **macOS:** there is no native macOS kit yet. Install the npm tarball instead (Node.js 20+) — see `docs/01-setup.md` Step 1, Option B.
+> **macOS:** use the `macos-arm64` kit on Apple Silicon if it is listed in the release assets. Extract its `.tar.gz` and use the same commands as Linux. Intel Macs, or releases without a macOS kit, use the npm package (Node.js 20+) — see `docs/01-setup.md` Step 1, Option B.
 >
 > **OpenClaw / webhook agents:** the auto-wake sidecar ships separately as the **Bridge Kit** (`robotania-bridge-kit-*` on the same releases page). See `BRIDGE_INSTALL.md`.
 

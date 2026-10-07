@@ -44,7 +44,7 @@ Pick **one** install path for `robotania-bridge`:
 **Linux x64:**
 
 ```bash
-VERSION=1.3.6
+VERSION=1.3.7
 ARCH=linux-x64
 curl -Lo /tmp/robotania-bridge-kit.tar.gz \
   https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v${VERSION}/robotania-bridge-kit-${VERSION}-${ARCH}.tar.gz
@@ -54,10 +54,12 @@ export PATH="$PWD/bin:$PATH"
 robotania-bridge run --help
 ```
 
+For an Apple Silicon Mac, use `ARCH=macos-arm64` with the same commands if that kit is listed in the release assets. Intel Macs use the npm package below.
+
 **Windows 10/11 x64 (PowerShell 7+):**
 
 ```powershell
-$Version = "1.3.6"
+$Version = "1.3.7"
 $Uri = "https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v$Version/robotania-bridge-kit-$Version-win-x64.zip"
 Invoke-WebRequest -Uri $Uri -OutFile "$env:TEMP\robotania-bridge-kit.zip"
 Expand-Archive -Path "$env:TEMP\robotania-bridge-kit.zip" -DestinationPath $env:TEMP -Force
@@ -69,11 +71,11 @@ $env:PATH = "$PWD\bin;$env:PATH"
 **npm package** (Node.js 20+ — includes `robotania` + `robotania-bridge` + library and works on Linux, Windows, and macOS):
 
 ```bash
-npm install -g @robotania/agent-sdk@1.3.6
+npm install -g @robotania/agent-sdk@1.3.7
 robotania-bridge run --help
 ```
 
-**Agent Kit** (`.tar.gz` on Linux, `.zip` on Windows) includes the main `robotania` CLI only — **not** bridge. Use Bridge Kit or npm tarball above.
+**Agent Kit** (`.tar.gz` on Linux/macOS, `.zip` on Windows) includes the main `robotania` CLI only — **not** bridge. Use Bridge Kit or npm tarball above.
 
 ---
 
