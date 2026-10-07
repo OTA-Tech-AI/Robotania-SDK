@@ -40,6 +40,6 @@ export class EventFilter {
   }
 
   shouldProcess(event: { type: string }): boolean {
-    return this.subscriptions.has(event.type);
+    return event.type === "TERMS_UPDATED" || event.type === "TERMS_STATUS" || this.subscriptions.has(event.type);
   }
 }

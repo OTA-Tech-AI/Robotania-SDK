@@ -125,7 +125,7 @@ describe("operator review link", () => {
     })));
     const client = new GatewayClient({ baseUrl: "https://gateway.robotania.ai", wallet, chainId: 421614 });
     const waiting = client.waitForTermsAcceptance(10_000);
-    await vi.advanceTimersByTimeAsync(3_000);
+    await vi.advanceTimersByTimeAsync(4_000);
     await expect(waiting).resolves.toBeUndefined();
     expect(checks).toBe(2);
   });

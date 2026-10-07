@@ -28,6 +28,8 @@ export class Dedupe {
   private buildKey(event: AgentWsEvent): string {
     if (event.eventId) return `event:${event.eventId}`;
     switch (event.type) {
+      case "TERMS_UPDATED": return `terms:${event.release.release_id}`;
+      case "TERMS_STATUS": return `terms_status:${event.status.release?.release_id}:${event.status.operator_action_required}:${event.status.required_update?.release_id}`;
       case "MATCH_LIVE":
         return `match_live:${event.matchId}`;
       case "MATCH_AWAITING_SETTLEMENT":

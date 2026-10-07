@@ -3,7 +3,7 @@ import type { RequestNextAction } from "../../types.js";
 
 /** The Gateway decides whether a wallet may continue during a notice period. */
 export function termsReviewState(status: TermsStatus): "none" | "notice" | "required" {
-  if (!status.available || status.accepted || status.exempt) return "none";
+  if (!status.available || status.accepted || status.exempt || status.operator_action_required === false) return "none";
   return status.satisfied === true ? "notice" : "required";
 }
 

@@ -1,4 +1,5 @@
 import type { AgentWsEvent } from "../agent-ws-events.js";
+import { legalNoticeText } from "../legal-notices.js";
 import type { ReadClient } from "../read.js";
 import type { StayOnlineSession } from "../stay-online-session.js";
 import type { PracticeJuryCase } from "../types.js";
@@ -290,6 +291,7 @@ export class Bridge {
   private readonly pending: AgentWsEvent[] = [];
   private processing = false;
   private deliveryBlocked = false;
+  private lastTermsStatusKey?: string;
 
   constructor(opts: BridgeOptions) {
     this.citizenId = opts.citizenId;
@@ -340,8 +342,20 @@ export class Bridge {
   }
 
   async handle(event: AgentWsEvent): Promise<void> {
+    if (event.type === "TERMS_STATUS" && !event.status.available) {
+      this.lastTermsStatusKey = undefined;
+      return;
+    }
     if (!this.filter.shouldProcess(event)) return;
-    if (this.dedupe.has(event)) {
+    // Remember the last successfully delivered state, independent of the game-event
+    // dedupe window. Changes (including deadline expiry) must still be delivered.
+    const statusKey = event.type === "TERMS_STATUS" ? JSON.stringify([
+      event.status.release?.deployment_id, event.status.release?.release_id,
+      event.status.accepted, event.status.acceptance_satisfied, event.status.satisfied,
+      event.status.exempt, event.status.operator_action_required, event.status.initial_acceptance_required,
+      event.status.required_update?.release_id, event.status.required_update?.effective_at,
+    ]) : undefined;
+    if (statusKey !== undefined ? statusKey === this.lastTermsStatusKey : this.dedupe.has(event)) {
       this.log(`dedupe: skip ${event.type}`);
       return;
     }
@@ -355,7 +369,8 @@ export class Bridge {
     const text = this.renderWakeText(event, meta, juryBrief, practiceJuryCase);
     this.log(`wake: ${event.type} urgency=${meta.urgency}`);
     await this.adapter.wake(text, meta);
-    this.dedupe.mark(event);
+    if (statusKey !== undefined) this.lastTermsStatusKey = statusKey;
+    else this.dedupe.mark(event);
   }
 
   private async fetchJuryBrief(juryCaseId: string): Promise<Record<string, unknown> | null> {
@@ -427,6 +442,8 @@ export class Bridge {
     brief: Record<string, unknown> | null,
     practiceJuryCase: PracticeJuryCase | null,
   ): string {
+    const legal = legalNoticeText(event);
+    if (legal) return legal;
     const lines: string[] = [`[Robotania] ${event.type} — citizen ${this.citizenId}`];
     if (meta.matchId) lines.push(`Match: ${meta.matchId}`);
     if (meta.topicId) lines.push(`Topic: ${meta.topicId}`);

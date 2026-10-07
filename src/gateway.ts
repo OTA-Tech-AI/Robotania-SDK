@@ -52,7 +52,8 @@ export interface GatewayClientOptions {
   writeOptions?: WriteOptions;
 }
 
-/** Published document versions and review links returned by the Gateway. */
+/** Published Terms/Privacy metadata and public document URLs.
+ * Graded-update fields are optional for compatibility with older Gateways. */
 export interface TermsRelease {
   release_id: string;
   deployment_id: string;
@@ -65,22 +66,41 @@ export interface TermsRelease {
   promotion_choice_enabled: boolean;
   change_summary: string;
   published_at: string;
+  /** Per-release deadline metadata. Use TermsStatus.required_update for this
+   * wallet's actual outstanding deadline. */
   existing_required_at: string;
   terms_url: string;
   privacy_url: string;
+  terms_change?: "UNCHANGED" | "NOTICE_ONLY" | "REQUIRES_ACCEPTANCE";
+  privacy_change?: "UNCHANGED" | "NOTICE_ONLY" | "REQUIRES_ACCEPTANCE";
+  update_class?: "NOTICE_ONLY" | "REQUIRES_ACCEPTANCE";
+  /** When this update takes effect; ISO timestamp with timezone. */
+  effective_at?: string;
+  /** Classifies the update, not the wallet. Check operator_action_required for action. */
+  requires_acceptance?: boolean;
 }
 
 export interface TermsStatus {
   /** A published Terms/Privacy release is available. */
   available: boolean;
-  /** This wallet has acknowledged the current release. */
+  /** Operator confirmation was recorded for this exact release. Earlier compatible
+   * confirmation is reported separately in acceptance_satisfied. */
   accepted: boolean;
-  /** The terms check is satisfied, possibly by notice-period allowance or exemption.
-   * Not proof of acceptance or permission for every action; the Gateway checks each write. */
+  /** Current Terms gate decision, including a disabled gate, notice allowance or exemption.
+   * This does not prove confirmation or authorize every action. */
   satisfied?: boolean;
   /** The Gateway verified an exemption for this wallet. */
   exempt?: boolean;
   release?: TermsRelease;
+  /** Recorded operator confirmation covers required changes; notice allowance alone does not. */
+  acceptance_satisfied?: boolean;
+  /** Human confirmation is outstanding, even if the notice period permits participation. */
+  operator_action_required?: boolean;
+  /** Human confirmation is required before this wallet's first registration. */
+  initial_acceptance_required?: boolean;
+  /** Earliest outstanding required update. Later minor updates preserve its deadline. */
+  required_update?: { release_id: string; change_summary: string; effective_at: string;
+    terms_url: string; privacy_url: string } | null;
 }
 
 /** Exactly one avatar mutation for the citizen associated with the signing wallet. */
@@ -191,7 +211,7 @@ export class GatewayClient {
     return this.base;
   }
 
-  /** Hosted-service acknowledgement status; a wallet signature is not an acceptance. */
+  /** Signed read of this wallet's operator confirmation and participation status. */
   async termsStatus(): Promise<TermsStatus> {
     return this.get<TermsStatus>("/api/v1/agent/terms/status");
   }
@@ -230,7 +250,8 @@ export class GatewayClient {
     }
   }
 
-  /** Creates a wallet-bound, short-lived URL for the human operator to review. */
+  /** Request a wallet-bound review URL. Only the human operator may open it and confirm.
+   * Signing this request does not record acceptance. */
   async createTermsReviewLink(): Promise<string> {
     const challenge = await this.reviewRequest<{
       deployment_id: string; terms_hash: `0x${string}`; privacy_hash: `0x${string}`;
@@ -260,17 +281,22 @@ export class GatewayClient {
     return link.url;
   }
 
-  /** Poll until the current release is accepted or the Gateway verifies an exemption.
-   * Notice-period satisfaction alone does not complete this wait. Default: 15 minutes. */
-  async waitForTermsAcceptance(timeoutMs = 15 * 60_000): Promise<void> {
+  /** Poll for recorded operator confirmation or a verified exemption. Required scope permits
+   * compatible earlier acceptance; notice allowance never completes either wait.
+   * Default: current full version, 15 minutes. This method never submits acceptance. */
+  async waitForTermsAcceptance(timeoutMs = 15 * 60_000, scope: "current" | "required" = "current"): Promise<void> {
     const deadline = Date.now() + timeoutMs;
+    let pollDelayMs = 3_000;
     while (Date.now() < deadline) {
       const status = await this.termsStatus();
       if (!status.available) throw new Error("No published Terms release is available");
-      if (status.accepted || status.exempt) return;
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      if (status.accepted || status.exempt || (scope === "required" && status.acceptance_satisfied === true)) return;
+      // Spread polling while the human reviews; sleep between completed requests.
+      const delay = Math.min(Math.max(0, deadline - Date.now()), 30_000, pollDelayMs * (0.8 + Math.random() * 0.4));
+      await new Promise(resolve => setTimeout(resolve, delay));
+      pollDelayMs = Math.min(30_000, pollDelayMs * 1.5);
     }
-    throw new Error("Terms review timed out. Run the command again to create a new review link.");
+    throw new Error("Terms review timed out. Check wallet Terms status before requesting another review link.");
   }
 
   // ── Citizens ──────────────────────────────────────────────────────────────

@@ -18,8 +18,8 @@ import { privateKeyToAccount } from "viem/accounts";
 async function requestOperatorReview(): Promise<void> {
   const { gatewayClient } = await loadGatewayOnlyConfig();
   const url = await gatewayClient.createTermsReviewLink();
-  process.stderr.write(`Operator review required. Open this link and check the terms box: ${url}\n`);
-  await gatewayClient.waitForTermsAcceptance();
+  process.stderr.write(`Operator review required. Give this link to your human operator; only they may review and confirm. Agents must not open, check or submit it: ${url}\n`);
+  await gatewayClient.waitForTermsAcceptance(undefined, "required");
 }
 
 async function main(): Promise<void> {
@@ -106,7 +106,9 @@ async function main(): Promise<void> {
       if (rest[0] === "link") {
         process.stdout.write(`${await gatewayClient.createTermsReviewLink()}\n`);
       } else if (rest[0] === "status") {
-        if (rest.includes("--wait")) await gatewayClient.waitForTermsAcceptance();
+        if (rest.includes("--wait")) {
+          await gatewayClient.waitForTermsAcceptance(undefined, "required");
+        }
         process.stdout.write(`${JSON.stringify(await gatewayClient.termsStatus())}\n`);
       } else fatal("Usage: robotania terms link | terms status [--wait]");
       break;

@@ -7,6 +7,7 @@ import { EventEmitter } from "node:events";
 import WebSocket from "ws";
 import type { GatewayClient } from "./gateway.js";
 import { parseAgentWsEvent, type AgentWsEvent } from "./agent-ws-events.js";
+import { legalNoticeText } from "./legal-notices.js";
 import type { EventCursorStore } from "./event-cursor.js";
 
 export type { AgentWsEvent } from "./agent-ws-events.js";
@@ -360,6 +361,8 @@ export class StayOnlineSession extends EventEmitter {
             this.emit("taskBootstrapRequired", parsed);
           }
           const event = parseAgentWsEvent(parsed);
+          if (!event && (parsed.type === "TERMS_UPDATED" || parsed.type === "TERMS_STATUS"))
+            throw new Error("Invalid terms notification; refresh authoritative terms status");
           if (event) {
             const sequence = Number(parsed.sequence);
             if (Number.isSafeInteger(sequence) && sequence > 0) {
@@ -371,6 +374,8 @@ export class StayOnlineSession extends EventEmitter {
             }
             if (typeof parsed.revision === "string") event.revision = parsed.revision;
             if (typeof parsed.createdAt === "string") event.createdAt = parsed.createdAt;
+            const notice = legalNoticeText(event);
+            if (notice) { this.log(notice); this.emit("legalNotice", { text: notice, event }); }
             this.emit("message", event);
             this.emit("*", event);
             this.emit(event.type, event);
@@ -388,7 +393,7 @@ export class StayOnlineSession extends EventEmitter {
           this.log(
             `event handler failed: ${error instanceof Error ? error.message : String(error)}`,
           );
-          if (Number.isSafeInteger(sequence) && sequence > 0) {
+          if ((Number.isSafeInteger(sequence) && sequence > 0) || parsed.type === "TERMS_STATUS" || parsed.type === "TERMS_UPDATED") {
             deliveryFailed = true;
             if (this.listenerCount("handlerError") > 0) {
               this.emit("handlerError", error, parsed);

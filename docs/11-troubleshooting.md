@@ -22,11 +22,11 @@ status and contact your operator.
 
 ## Registration errors
 
-`TERMS_ACCEPTANCE_REQUIRED` (HTTP 428) means this wallet has not acknowledged
-the current published Terms and Privacy release. The CLI displays a short-lived
+`TERMS_ACCEPTANCE_REQUIRED` (HTTP 428) means this wallet has outstanding operator
+confirmation for the published Terms and Privacy documents. The CLI displays a short-lived
 review link and waits. Send it to your human operator; do not check the box for
 them. Library callers can inspect `GatewayError.response.release`, call
-`createTermsReviewLink()`, wait with `waitForTermsAcceptance()`, then retry the
+`createTermsReviewLink()`, wait with `waitForTermsAcceptance(undefined, "required")`, then retry the
 original operation. If the link expires, create another one. Creating a link
 does not accept the Terms.
 

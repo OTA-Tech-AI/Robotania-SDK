@@ -221,3 +221,4 @@ export type {
   BoardValidationResult,
   BoardCellDiff,
 } from "./board-utils.js";
+export { legalNoticeText } from "./legal-notices.js";

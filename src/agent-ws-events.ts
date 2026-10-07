@@ -4,8 +4,11 @@
  */
 
 import type { RequestNextAction } from "./types.js";
+import type { TermsRelease, TermsStatus } from "./gateway.js";
 
 export type AgentWsEvent = (
+  | { type: "TERMS_UPDATED"; release: TermsRelease }
+  | { type: "TERMS_STATUS"; status: TermsStatus }
   | { type: "CONNECTED"; citizenId: string }
   /** A game's lifecycle state changed (WAITLIST → ACTIVE → CLOSED etc.). `topicId` = on-chain game ID. */
   | { type: "GAME_STATE_CHANGE"; topicId: string }
@@ -67,11 +70,34 @@ export type AgentWsEvent = (
   createdAt?: string;
 };
 
-/** Parse raw JSON from the WebSocket into {@link AgentWsEvent} when `type` is known. */
+/** Validate public release metadata carried by Terms notifications. */
+function validTermsRelease(value: unknown): value is TermsRelease {
+  if (!value || typeof value !== "object") return false;
+  const r = value as Record<string, unknown>;
+  return ["release_id","deployment_id","terms_version","privacy_version","change_summary","acceptance_text",
+    "terms_url","privacy_url","effective_at","published_at","existing_required_at"].every(key => typeof r[key] === "string") &&
+    ["terms_hash","privacy_hash","acceptance_text_hash"].every(key => typeof r[key] === "string" && /^0x[0-9a-f]{64}$/i.test(r[key] as string)) &&
+    ["effective_at","published_at","existing_required_at"].every(key => Number.isFinite(Date.parse(r[key] as string))) &&
+    typeof r.promotion_choice_enabled === "boolean" &&
+    typeof r.requires_acceptance === "boolean" &&
+    (r.update_class === "NOTICE_ONLY" || r.update_class === "REQUIRES_ACCEPTANCE") &&
+    r.requires_acceptance === (r.update_class === "REQUIRES_ACCEPTANCE");
+}
 function parseKnownAgentWsEvent(raw: Record<string, unknown>): AgentWsEvent | null {
   const t = raw.type;
   if (typeof t !== "string") return null;
   switch (t) {
+    case "TERMS_UPDATED":
+      return validTermsRelease(raw.release) ? { type: "TERMS_UPDATED", release: raw.release } : null;
+    case "TERMS_STATUS": {
+      const status = raw.status as TermsStatus | undefined;
+      const pending = status?.required_update;
+      if (pending && (typeof pending.release_id !== "string" || typeof pending.change_summary !== "string" ||
+        typeof pending.effective_at !== "string" || !Number.isFinite(Date.parse(pending.effective_at)))) return null;
+      return status && typeof status.available === "boolean" && typeof status.accepted === "boolean" &&
+        typeof status.operator_action_required === "boolean" && (!status.available || validTermsRelease(status.release))
+        ? { type: "TERMS_STATUS", status } : null;
+    }
     case "CONNECTED":
       return typeof raw.citizenId === "string"
         ? { type: "CONNECTED", citizenId: raw.citizenId }

@@ -76,6 +76,8 @@ describe("robotania CLI", () => {
     expect(r.stdout).toContain("deposit-collateral");
     expect(r.stdout).toContain("deposit-operational");
     expect(r.stdout).toContain("register-citizen");
+    expect(r.stdout).toContain("--wait waits for confirmation covering required changes");
+    expect(r.stdout).not.toContain("current-version acknowledgement");
   });
 
   it("-h alias exits 0", async () => {
