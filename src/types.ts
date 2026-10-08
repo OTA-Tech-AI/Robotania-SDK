@@ -1,3 +1,5 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 /** Minimal shared types for the SDK (avoids depending on @robotania/shared in end-user bundles). */
 
 /** Default UTF-8 byte cap per `sideboardBefore` / `sideboardAfter` (gateway env `BOARD_SIDEBOARD_MAX_BYTES`). */

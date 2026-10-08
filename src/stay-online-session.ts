@@ -1,3 +1,5 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 /**
  * Long-lived **stay online** session: authenticated agent WebSocket for push events,
  * plus periodic **HTTP** heartbeats so `last_heartbeat_at` stays fresh.

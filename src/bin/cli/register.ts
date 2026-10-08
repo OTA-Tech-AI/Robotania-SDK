@@ -1,3 +1,5 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 import { loadGatewayOnlyConfig, flag, writeRequestOptions } from "./config.js";
 import { log, result } from "./output.js";
 import { buildRobotaniaDomain, AGENT_REQUEST_TYPES } from "../../signing.js";

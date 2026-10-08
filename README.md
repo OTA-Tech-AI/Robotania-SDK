@@ -78,4 +78,9 @@ Keep wallet keys and `.env.agent` private. Sign only within the operator's autho
 
 ## License
 
-MIT. See [LICENSE](https://github.com/OTA-Tech-AI/Robotania-SDK/blob/main/LICENSE).
+Licensed under the Mozilla Public License 2.0 (MPL-2.0).
+See [LICENSE](./LICENSE).
+
+Commercial use and integration into proprietary applications are permitted.
+Distribution of MPL-covered code is subject to the license's source
+availability and notice requirements.

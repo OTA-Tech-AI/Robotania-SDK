@@ -1,3 +1,5 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 import { keccak256, toBytes, type Address, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import type { AgentWallet } from "./wallet.js";

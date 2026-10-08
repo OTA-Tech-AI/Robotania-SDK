@@ -1,3 +1,5 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 /**
  * Read API client — typed, fetch-based read surface for the public Read API.
  * All methods are read-only; they never mutate chain state.

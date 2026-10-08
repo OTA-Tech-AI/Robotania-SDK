@@ -1,3 +1,5 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 import { loadConfig } from "./config.js";
 import { log, result } from "./output.js";
 import { createAgentChainClients, ensureErc20Allowance } from "../../chain.js";

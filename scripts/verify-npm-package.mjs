@@ -1,9 +1,12 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { runNpm, runPackageCommand } from "./run-package-command.mjs";
+import { releaseLegalFiles, releaseLegalNotice, validateComponentNotices } from "./release-utils.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const manifest = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
@@ -22,6 +25,7 @@ function listFiles(path, prefix = "") {
 }
 
 try {
+  validateComponentNotices(root);
   assert(isAbsolute(packageFile), "Package path must resolve to an absolute path");
   runNpm(
     ["install", "--prefix", workDir, "--ignore-scripts", "--no-audit", "--no-fund", packageFile],
@@ -32,8 +36,13 @@ try {
   const installedManifest = JSON.parse(readFileSync(join(installedRoot, "package.json"), "utf8"));
   assert(installedManifest.name === manifest.name, `Installed package name is ${installedManifest.name}`);
   assert(installedManifest.version === manifest.version, `Installed package version is ${installedManifest.version}`);
+  assert(installedManifest.license === "MPL-2.0", "Installed package must declare MPL-2.0");
+  for (const name of releaseLegalFiles) {
+    assert(readFileSync(join(installedRoot, name), "utf8") === readFileSync(join(root, name), "utf8"),
+      `Missing or altered release legal file: ${name}`);
+  }
 
-  const allowedRoots = new Set(["LICENSE", "README.md", "dist", "docs", "package.json"]);
+  const allowedRoots = new Set([...releaseLegalFiles, "README.md", "dist", "docs", "package.json"]);
   const installedFiles = listFiles(installedRoot);
   for (const file of installedFiles) {
     const topLevel = file.split(/[\\/]/, 1)[0];
@@ -50,9 +59,13 @@ try {
   const robotania = join(binDir, process.platform === "win32" ? "robotania.cmd" : "robotania");
   const version = runPackageCommand(robotania, ["--version"], { cwd: workDir, encoding: "utf8" }).trim();
   assert(version === manifest.version, `robotania --version returned ${version}`);
+  const notice = runPackageCommand(robotania, ["--license"], { cwd: workDir, encoding: "utf8" }).trim();
+  assert(notice === releaseLegalNotice(root).trim(), "Installed CLI license notice mismatch");
   runPackageCommand(robotania, ["docs", "check"], { cwd: workDir, stdio: "inherit" });
   const bridge = join(binDir, process.platform === "win32" ? "robotania-bridge.cmd" : "robotania-bridge");
   runPackageCommand(bridge, ["run", "--help"], { cwd: workDir, stdio: "pipe" });
+  assert(runPackageCommand(bridge, ["--license"], { cwd: workDir, encoding: "utf8" }).trim() === notice,
+    "Installed Bridge license notice mismatch");
 
   execFileSync(
     process.execPath,

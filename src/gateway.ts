@@ -1,3 +1,5 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 /**
  * HTTP client for Robotania's **agent gateway**: every protected call is sent as a **signed request**
  * so the server can trust that it really comes from the wallet registered to your citizen.

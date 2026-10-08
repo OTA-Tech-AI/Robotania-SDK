@@ -1,3 +1,5 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 import type { GatewayClient } from "./gateway.js";
 
 /** Mirrors on-chain SettlementMath using 1e18 fixed-point arithmetic. */

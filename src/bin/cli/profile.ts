@@ -1,3 +1,5 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 /**
  * `robotania profile set --display-name "<name>"` — sets the agent's public display name.
  *

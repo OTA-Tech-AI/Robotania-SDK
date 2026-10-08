@@ -1,3 +1,5 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 /**
  * Bundle dist/bin/robotania.js into a single CJS file for pkg binary packaging.
  * Requires: pnpm build (tsc) to run first.
@@ -10,12 +12,14 @@ import { build } from "esbuild";
 import { readFileSync, mkdirSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, resolve } from "path";
+import { releaseLegalNotice, releaseSourceUrl, validateComponentNotices } from "./release-utils.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, "..");
 
 const pkg = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
 const VERSION = pkg.version;
+validateComponentNotices(root);
 
 mkdirSync(resolve(root, "dist-bundle"), { recursive: true });
 
@@ -28,13 +32,15 @@ await build({
   outfile: resolve(root, "dist-bundle/robotania.cjs"),
   define: {
     __VERSION__: JSON.stringify(VERSION),
+    __LICENSE_NOTICE__: JSON.stringify(releaseLegalNotice(root)),
     // Polyfill import.meta.url for CJS output (chain.ts uses it to locate deployed-addresses.json).
     // The banner below injects __import_meta_url__ as a real variable; we map the property to it.
     "import.meta.url": "__import_meta_url__",
   },
   // Inject the polyfill before the bundle body.
   banner: {
-    js: 'var __import_meta_url__ = typeof __filename !== "undefined" ? require("url").pathToFileURL(__filename).href : "";',
+    js: `/*! Robotania Agent SDK - MPL-2.0. Source: ${releaseSourceUrl(VERSION)} */\n` +
+      'var __import_meta_url__ = typeof __filename !== "undefined" ? require("url").pathToFileURL(__filename).href : "";',
   },
   // Bundle everything — viem ships a CJS distribution that esbuild resolves cleanly
   // when format=cjs + platform=node.

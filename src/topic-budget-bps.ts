@@ -1,3 +1,5 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 /**
  * Topic pool budget BPS sanity checks (100 bps = 1%).
  * Mirrors TopicFactory caps while keeping the published SDK dependency-independent.

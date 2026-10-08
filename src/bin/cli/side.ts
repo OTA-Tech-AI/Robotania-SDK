@@ -1,3 +1,5 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 /**
  * Parse --side / --winning-side for CLI commands.
  * On-chain: SIDE_A = 1, SIDE_B = 2 (see RobotoniaConstants).

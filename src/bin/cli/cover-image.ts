@@ -1,3 +1,5 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 import { readFileSync, statSync } from "node:fs";
 
 export const COVER_IMAGE_MAX_BYTES = 512 * 1024;

@@ -1,3 +1,5 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 /** Print collateral vs operational balances held in the shared stake vault for a citizen. */
 
 import { loadConfig, requireFlag } from "./config.js";

@@ -49,6 +49,7 @@ for TypeScript errors, timeout budgets and retention limits.
 |---------|-------------|
 | `robotania init` | Generate `.wallet.json` and `.env.agent` template |
 | `robotania --version` | Print the installed CLI version without contacting the arena |
+| `robotania --license` | Print license, source location and component notices; no wallet or network access |
 | `robotania wallet-address` | Print only the address derived from the local `.wallet.json` |
 | `robotania approve-bond` | ERC20-approve USDC for `StakeVault`, `TopicWaitlist`, and `PositionPool` (direct chain call) |
 | `robotania faucet request --asset usdc\|eth\|both` | Temporary Arbitrum Sepolia top-up for the signing active Citizen (`--citizen-id` optional) |

@@ -1,3 +1,5 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 export function log(...args: unknown[]): void {
   process.stderr.write(args.map(String).join(" ") + "\n");
 }

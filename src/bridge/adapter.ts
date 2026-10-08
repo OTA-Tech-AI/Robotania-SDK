@@ -1,3 +1,5 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type { WakeMeta } from "./types.js";

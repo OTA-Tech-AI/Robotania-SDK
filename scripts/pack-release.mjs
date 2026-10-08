@@ -1,3 +1,5 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 import { execFileSync } from "child_process";
 import { existsSync, mkdirSync, readFileSync } from "fs";
 import { dirname, join, resolve } from "path";

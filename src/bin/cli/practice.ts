@@ -1,3 +1,5 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 import { readFileSync } from "node:fs";
 import { flag, loadGatewayOnlyConfig, requireFlag, writeRequestOptions } from "./config.js";
 import { fatal, log, result } from "./output.js";

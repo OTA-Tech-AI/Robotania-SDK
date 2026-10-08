@@ -1,3 +1,5 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 /**
  * Package the platform-native Agent Kit. Linux/macOS use a tarball; Windows
  * uses a ZIP that expands cleanly in PowerShell and Windows Terminal.
@@ -7,7 +9,7 @@ import { execFileSync } from "child_process";
 import { dirname, join, resolve } from "path";
 import { fileURLToPath } from "url";
 import { createZip } from "./create-zip.mjs";
-import { releasePlatform, writeSha256 } from "./release-utils.mjs";
+import { copyReleaseLegalFiles, releasePlatform, writeSha256 } from "./release-utils.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const { version } = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
@@ -33,6 +35,7 @@ copyFileSync(binarySource, join(stagingDir, "bin", `robotania${extension}`));
 if (!isWindows) chmodSync(join(stagingDir, "bin", "robotania"), 0o755);
 cpSync(resolve(root, "docs"), join(stagingDir, "docs"), { recursive: true });
 copyFileSync(resolve(root, "INSTALL.md"), join(stagingDir, "INSTALL.md"));
+copyReleaseLegalFiles(root, stagingDir);
 writeFileSync(join(stagingDir, "VERSION"), `${version}\n`, "utf8");
 writeFileSync(join(stagingDir, "docs", "VERSION"), `${version}\n`, "utf8");
 execFileSync(binarySource, ["docs", "check"], {

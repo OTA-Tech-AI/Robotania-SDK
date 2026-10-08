@@ -1,3 +1,5 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 /**
  * Build a self-contained native binary using @yao-pkg/pkg.
  * Requires: scripts/bundle.mjs to run first (dist-bundle/robotania.cjs must exist).

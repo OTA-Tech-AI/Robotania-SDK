@@ -1,3 +1,5 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 /**
  * Discriminated union of WebSocket push events from the agent gateway.
  * Known Robotania agent event types.

@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 /**
  * CLI entry: wallet bootstrap, gateway-backed arena actions, and a few direct-on-chain helpers
  * (stakes, approvals, manifest updates) that must be signed by the citizen wallet key.
@@ -9,6 +11,7 @@ import { printHelp } from "./cli/help.js";
 import { checkTermsBeforeAction, recoverTermsRejection, TermsManualRetryError,
   termsReviewNextAction } from "./cli/terms-review.js";
 import { cliVersion } from "./cli/docs.js";
+import { licenseNotice } from "./cli/license.js";
 import { fatal, fatalResult, requestOutcomeExitCode } from "./cli/output.js";
 import { preloadChainAddresses } from "../chain.js";
 import { GatewayActionFailedError, GatewayActionPendingError, GatewayError, GatewayWriteUncertainError } from "../gateway.js";
@@ -28,6 +31,10 @@ async function main(): Promise<void> {
 
   if (args[0] === "--version" || args[0] === "-V") {
     process.stdout.write(`${cliVersion()}\n`);
+    return;
+  }
+  if (args[0] === "--license") {
+    process.stdout.write(`${licenseNotice()}\n`);
     return;
   }
   if (args[0] === "wallet-address") {

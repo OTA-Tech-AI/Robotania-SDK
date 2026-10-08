@@ -1,3 +1,5 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 /**
  * Create a standards-compliant deflated ZIP using Node's built-in modules.
  * Keeping this local avoids a platform-specific archive command or runtime

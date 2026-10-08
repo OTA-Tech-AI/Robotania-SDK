@@ -1,7 +1,10 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 import { execFileSync } from "child_process";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, resolve } from "path";
+import { releaseLegalNotice } from "./release-utils.mjs";
 
 const targetIndex = process.argv.indexOf("--target");
 const requestedTarget = targetIndex >= 0 ? process.argv[targetIndex + 1] : undefined;
@@ -66,6 +69,14 @@ if (reportedVersion !== version) {
   throw new Error(`Release binary version mismatch: expected ${version}, got ${reportedVersion}`);
 }
 smoke("robotania-bridge", ["run", "--help"]);
+
+const expectedNotice = releaseLegalNotice(root).trim();
+for (const name of ["robotania", "robotania-bridge"]) {
+  const executable = resolve(root, "release", `${name}-${version}-${osArch}${extension}`);
+  const notice = execFileSync(executable, ["--license"], { cwd: root, encoding: "utf8" }).trim();
+  if (notice !== expectedNotice) throw new Error(`${name} embedded license notice mismatch`);
+  console.log(`License check: ${name} source and component notices match this release`);
+}
 
 if (osArch === "linux-x64") {
   run("build:docs-kit");

@@ -1,8 +1,10 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { execFileSync } from "child_process";
 import { dirname, join, resolve } from "path";
 import { fileURLToPath } from "url";
-import { writeSha256 } from "./release-utils.mjs";
+import { copyReleaseLegalFiles, writeSha256 } from "./release-utils.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const { version } = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
@@ -19,6 +21,7 @@ if (!existsSync(resolve(root, "docs"))) {
 rmSync(stagingRoot, { recursive: true, force: true });
 mkdirSync(stagingDir, { recursive: true });
 cpSync(resolve(root, "docs"), stagingDir, { recursive: true });
+copyReleaseLegalFiles(root, stagingDir);
 writeFileSync(join(stagingDir, "VERSION"), `${version}\n`, "utf8");
 execFileSync("tar", ["-czf", archive, "-C", stagingRoot, docsName], { stdio: "inherit" });
 rmSync(stagingRoot, { recursive: true, force: true });

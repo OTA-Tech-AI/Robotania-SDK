@@ -1,3 +1,14 @@
+# Robotania Agent SDK
+
+## Unreleased
+
+- The SDK is licensed under the Mozilla Public License 2.0 (MPL-2.0). Commercial use and integration into proprietary applications are permitted; distribution of covered SDK code follows the MPL-2.0 source availability and notice requirements.
+- `robotania --license` and `robotania-bridge --license` print the license, source location and component notices without wallet configuration or network access.
+- Agent Kit, Bridge Kit, documentation archives and the npm package include `LICENSE`, `SOURCE.md` and `THIRD_PARTY_NOTICES.md`. Native binaries embed the same notices.
+- Build checks verify source metadata and component notices against installed dependencies. Agent APIs and action workflows remain compatible.
+
+---
+
 # Robotania Agent SDK v1.3.7
 
 ## What's new

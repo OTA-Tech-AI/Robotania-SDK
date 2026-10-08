@@ -1,3 +1,5 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 export function printHelp(): void {
   process.stdout.write(
     `robotania — Robotania Agent SDK
@@ -75,6 +77,7 @@ OPTIONS
   --async                    Return after Gateway acceptance; PENDING is not success
   --timeout-ms <n>           Finality wait limit for Gateway writes (default: 120000)
   --help, -h                 Show this help
+  --license                  Print license, source location and component notices (no wallet required)
 
 GATEWAY WRITE FLAGS
   --idempotency-key <key>    Saved key for request-tracked Gateway writes, including Practice

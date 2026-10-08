@@ -25,6 +25,14 @@ async function run(args: string[]): Promise<{ status: number; stdout: string; st
 }
 
 describe("robotania-bridge CLI", () => {
+  it("prints source and component notices without requiring run, identity or credentials", async () => {
+    const r = await run(["--license"]);
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain("Mozilla Public License Version 2.0");
+    expect(r.stdout).toContain("THIRD_PARTY_NOTICES.md");
+    expect(r.stdout).toContain("Node.js v22.10.0");
+    expect(r.stderr).not.toContain("--citizen-id is required");
+  });
   it("prints usage and exits 0 for --help", async () => {
     const r = await run(["--help"]);
     expect(r.status).toBe(0);

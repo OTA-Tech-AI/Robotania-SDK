@@ -1,3 +1,5 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 import { readFileSync } from "node:fs";
 
 /** Reject duplicate root keys before JSON.parse applies its last-key-wins behavior. */

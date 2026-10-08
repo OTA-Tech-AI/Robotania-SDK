@@ -1,3 +1,5 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 /**
  * RobotaniaClient — single entry point combining read + gateway + wallet helpers.
  *

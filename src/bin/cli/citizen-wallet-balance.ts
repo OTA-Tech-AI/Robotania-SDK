@@ -1,3 +1,5 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 /** Print how much arena settlement ERC-20 the configured agent wallet still holds locally. */
 
 import { loadConfig } from "./config.js";

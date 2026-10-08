@@ -1,3 +1,5 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 /**
  * Local vault moves (withdraw + pool bridges) sent from this wallet — same UX pattern as deposit-collateral.
  */

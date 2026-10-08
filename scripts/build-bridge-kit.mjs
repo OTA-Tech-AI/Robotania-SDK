@@ -1,10 +1,12 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 /** Package the platform-native optional Bridge Kit. */
 import { chmodSync, copyFileSync, cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { execFileSync } from "child_process";
 import { dirname, join, resolve } from "path";
 import { fileURLToPath } from "url";
 import { createZip } from "./create-zip.mjs";
-import { releasePlatform, writeSha256 } from "./release-utils.mjs";
+import { copyReleaseLegalFiles, releasePlatform, writeSha256 } from "./release-utils.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const { version } = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
@@ -41,6 +43,7 @@ for (const document of bridgeDocs) {
   cpSync(source, join(stagingDir, "docs", document));
 }
 copyFileSync(resolve(root, "BRIDGE_INSTALL.md"), join(stagingDir, "BRIDGE_INSTALL.md"));
+copyReleaseLegalFiles(root, stagingDir);
 writeFileSync(join(stagingDir, "VERSION"), `${version}\n`, "utf8");
 
 if (isWindows) {

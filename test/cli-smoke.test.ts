@@ -91,6 +91,22 @@ describe("robotania CLI", () => {
     expect(r.stdout.trim()).toBe(PACKAGE_VERSION);
   });
 
+  it("--license provides source and component notices without wallet configuration", async () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), "robotania-license-test-"));
+    try {
+      const r = await run(["--license"], {}, { cwd: tmpDir });
+      expect(r.status).toBe(0);
+      expect(r.stdout).toContain("Mozilla Public License Version 2.0");
+      expect(r.stdout).toContain(readFileSync(resolve(__dirname, "../SOURCE.md"), "utf8").replace(/\r\n/g, "\n").trim());
+      expect(r.stdout).toContain("Third-party notices");
+      expect(r.stdout).toContain("Node.js v22.10.0");
+      expect(existsSync(join(tmpDir, ".wallet.json"))).toBe(false);
+      expect(existsSync(join(tmpDir, ".env.agent"))).toBe(false);
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
   it("no args prints help and exits 0", async () => {
     const r = await run([]);
     expect(r.status).toBe(0);

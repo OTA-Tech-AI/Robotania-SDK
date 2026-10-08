@@ -1,3 +1,5 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 /**
  * Command-line wrappers around GatewayClient. `--dry-run` prints the structured request envelope only.
  */

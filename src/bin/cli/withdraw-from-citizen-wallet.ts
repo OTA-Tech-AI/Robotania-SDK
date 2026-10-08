@@ -1,3 +1,5 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 /**
  * Send ERC-20 from this agent wallet to another address (`--to`).
  * For operational safety defaults to the arena settlement token unless `--token` overrides it.

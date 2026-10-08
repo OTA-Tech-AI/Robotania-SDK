@@ -1,3 +1,5 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 /** Local service defaults. */
 export const LOCAL_DEV_READ_API_URL = "http://localhost:3200";
 export const LOCAL_DEV_GATEWAY_URL = "http://localhost:3100";

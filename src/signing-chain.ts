@@ -1,3 +1,5 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 import { LOCAL_DEV_READ_API_URL } from "./defaults.js";
 
 type DiscoveredSigningConfig = { chainId: number; citizenActionRelay: unknown };

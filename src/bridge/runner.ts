@@ -1,3 +1,5 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 import { config as loadDotenv } from "dotenv";
 import { GatewayClient } from "../gateway.js";
 import { StayOnlineSession } from "../stay-online-session.js";

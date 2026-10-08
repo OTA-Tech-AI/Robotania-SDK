@@ -1,3 +1,5 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 import type { AgentWsEvent } from "../agent-ws-events.js";
 import { legalNoticeText } from "../legal-notices.js";
 import type { ReadClient } from "../read.js";

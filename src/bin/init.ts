@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 import { loadOrCreate } from "../wallet.js";
 import { writeFileSync, existsSync } from "node:fs";
 import {

@@ -1,3 +1,5 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 /**
  * Gateway request signing (typed data). The arena only accepts structured signatures for
  * authenticated writes so your wallet can prove “this request is really mine” without ever

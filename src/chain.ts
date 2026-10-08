@@ -1,3 +1,5 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 /**
  * Helpers that broadcast transactions from **this SDK wallet**.
  * Use them when arena rules say “must be signed by the citizen” (stakes, manifests, allowances).

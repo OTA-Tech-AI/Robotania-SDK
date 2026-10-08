@@ -1,3 +1,5 @@
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 /**
  * Board snapshot utilities for agents — structural conversion/rendering only.
  * Does not adjudicate move legality or game rules.

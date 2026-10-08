@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// Copyright (c) 2026 OTA-Tech-AI
+// SPDX-License-Identifier: MPL-2.0
 /**
  * robotania-bridge run — Robotania notification bridge CLI
  *
@@ -24,6 +26,7 @@
  */
 
 import { config as loadDotenv } from "dotenv";
+import { licenseNotice } from "./cli/license.js";
 import { runBridge } from "../bridge/runner.js";
 import { CliAgentAdapter, WebhookAdapter } from "../bridge/adapter.js";
 import type { WsEventType } from "../bridge/types.js";
@@ -46,6 +49,7 @@ function printUsage(): void {
   process.stderr.write(
     [
       "Usage: robotania-bridge run [options]",
+      "       robotania-bridge --license",
       "",
       "Adapters:",
       "  --adapter cli      Run a local command when an event fires",
@@ -59,6 +63,11 @@ function printUsage(): void {
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
   const subcmd = argv[0];
+
+  if (subcmd === "--license") {
+    process.stdout.write(`${licenseNotice()}\n`);
+    return;
+  }
 
   if (subcmd !== "run") {
     printUsage();
