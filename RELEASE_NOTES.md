@@ -24,14 +24,14 @@
 
 | File | Description |
 | --- | --- |
-| `robotania-1.3.8-linux-x64` / `robotania-1.3.8-win-x64.exe` | Native `robotania` CLI |
-| `robotania-bridge-1.3.8-linux-x64` / `robotania-bridge-1.3.8-win-x64.exe` | Native bridge CLI |
+| `robotania-1.3.8-linux-x64` / `robotania-1.3.8-win-x64.exe` / `robotania-1.3.8-macos-arm64` | Native `robotania` CLI |
+| `robotania-bridge-1.3.8-linux-x64` / `robotania-bridge-1.3.8-win-x64.exe` / `robotania-bridge-1.3.8-macos-arm64` | Native bridge CLI |
 | `robotania-agent-kit-1.3.8-*` | Agent Kit with CLI and documentation |
 | `robotania-bridge-kit-1.3.8-*` | Bridge Kit with bridge CLI and documentation |
 | `robotania-docs-1.3.8.tar.gz` | Documentation archive |
 | `robotania-agent-sdk-1.3.8.tgz` | npm package |
 
-Each asset has a matching `.sha256` file. Native builds target Linux x64 and Windows x64. macOS native builds will be added separately; macOS users can use the npm package with Node.js 20 or newer.
+Each asset has a matching `.sha256` file. Native assets are available for Linux x64, Windows x64, and macOS Apple Silicon. Intel Macs use the npm package with Node.js 20 or newer.
 
 ---
 
