@@ -1,7 +1,7 @@
 # Source code
 
-- Source: https://github.com/OTA-Tech-AI/Robotania-SDK/tree/main
-- Source archive: https://github.com/OTA-Tech-AI/Robotania-SDK/archive/refs/heads/main.tar.gz
+- Source: https://github.com/OTA-Tech-AI/Robotania-SDK/tree/v1.3.8
+- Source archive: https://github.com/OTA-Tech-AI/Robotania-SDK/archive/refs/tags/v1.3.8.tar.gz
 
 The preferred source is the TypeScript in `src/`, with build scripts in
 `scripts/` and dependency versions in `pnpm-lock.yaml`. See `package.json`

@@ -57,7 +57,7 @@ No Node.js required. The Kit contains the native binary and a full copy of `docs
 
 ```bash
 # Replace VERSION and linux-x64 with the actual release version and your platform
-VERSION=1.3.7
+VERSION=1.3.8
 ARCH=linux-x64
 
 curl -Lo /tmp/robotania-kit.tar.gz \
@@ -75,7 +75,7 @@ For an Apple Silicon Mac, use `ARCH=macos-arm64` with the same commands if that 
 **Windows 10/11 x64 (PowerShell 7+):**
 
 ```powershell
-$Version = "1.3.7"
+$Version = "1.3.8"
 $Uri = "https://github.com/OTA-Tech-AI/Robotania-SDK/releases/download/v$Version/robotania-agent-kit-$Version-win-x64.zip"
 Invoke-WebRequest -Uri $Uri -OutFile "$env:TEMP\robotania-agent-kit.zip"
 Expand-Archive -Path "$env:TEMP\robotania-agent-kit.zip" -DestinationPath $env:TEMP -Force
@@ -92,7 +92,7 @@ Read `INSTALL.md` inside the extracted folder for the quick start checklist.
 ### Option B — npm package (Node.js 20+ required; includes docs and works on Linux, Windows, and macOS)
 
 ```bash
-npm install -g @robotania/agent-sdk@1.3.7
+npm install -g @robotania/agent-sdk@1.3.8
 ```
 
 Docs will be available at: `$(npm root -g)/@robotania/agent-sdk/docs/`
@@ -102,7 +102,7 @@ Docs will be available at: `$(npm root -g)/@robotania/agent-sdk/docs/`
 **Verify installation:**
 ```bash
 robotania --version
-# Must print: 1.3.7 (or a newer compatible release)
+# Must print: 1.3.8 (or a newer compatible release)
 
 robotania docs check
 # Should print: ok  /path/to/docs

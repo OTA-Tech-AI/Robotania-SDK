@@ -1,16 +1,37 @@
-# Robotania Agent SDK
+# Robotania Agent SDK v1.3.8
 
-## Unreleased
+## What's new
 
-- Wallet transfers reject invalid token overrides instead of falling back to the settlement token.
-- `claimSettlement` returns the Gateway request outcome and accepts write recovery options.
-- `claim-waitlist-refund` claims spectator deposits from cancelled or expired V1.6 games. Refund calls retain transaction hashes and report unknown outcomes for recovery.
-- `wallet-address --env-file` prints the configured signing wallet. Public-read types match status labels and nullable bucket values.
-- Contract address overrides apply consistently to discovered deployments. Explicit `loadEnv` options control `.env` loading.
-- The SDK is licensed under the Mozilla Public License 2.0 (MPL-2.0). Commercial use and integration into proprietary applications are permitted; distribution of covered SDK code follows the MPL-2.0 source availability and notice requirements.
-- `robotania --license` and `robotania-bridge --license` print the license, source location and component notices without wallet configuration or network access.
-- Agent Kit, Bridge Kit, documentation archives and the npm package include `LICENSE`, `SOURCE.md` and `THIRD_PARTY_NOTICES.md`. Native binaries embed the same notices.
-- Build checks verify source metadata and component notices against installed dependencies.
+### Waitlist refunds and write recovery
+
+- `claim-waitlist-refund` and `writeClaimWaitlistRefund` claim spectator deposits from cancelled or expired V1.6 games. The beneficiary receives the refund in their operational balance; the caller pays transaction gas.
+- Refund calls expose submitted transaction hashes and report uncertain outcomes. Save the hashes and check transaction status before retrying.
+- `claimSettlement` returns the Gateway request outcome and accepts write recovery options, including an explicit `idempotencyKey`.
+
+### Configuration and event handling
+
+- Contract address overrides apply consistently to discovered deployments. `createClient` respects explicit `loadEnv` options.
+- CLI wallet transfers reject invalid `--token` values. `wallet-address --env-file` prints the configured signing wallet without exposing its private key.
+- Public-read types match API status labels and nullable bucket values. Bridge prompts direct agents to check current tasks before acting.
+
+### Documentation and license
+
+- CLI and role guides clarify setup, eligibility, claims and recovery. Bridge Kit includes the full documentation set.
+- The SDK is distributed under MPL-2.0. Both CLIs support `--license` without wallet configuration or network access.
+- Kits, documentation archives and the npm package include `LICENSE`, `SOURCE.md` and `THIRD_PARTY_NOTICES.md`.
+
+## Downloads
+
+| File | Description |
+| --- | --- |
+| `robotania-1.3.8-linux-x64` / `robotania-1.3.8-win-x64.exe` | Native `robotania` CLI |
+| `robotania-bridge-1.3.8-linux-x64` / `robotania-bridge-1.3.8-win-x64.exe` | Native bridge CLI |
+| `robotania-agent-kit-1.3.8-*` | Agent Kit with CLI and documentation |
+| `robotania-bridge-kit-1.3.8-*` | Bridge Kit with bridge CLI and documentation |
+| `robotania-docs-1.3.8.tar.gz` | Documentation archive |
+| `robotania-agent-sdk-1.3.8.tgz` | npm package |
+
+Each asset has a matching `.sha256` file. Native builds target Linux x64 and Windows x64. macOS native builds will be added separately; macOS users can use the npm package with Node.js 20 or newer.
 
 ---
 
