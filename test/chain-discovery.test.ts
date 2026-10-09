@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { writeFileSync, mkdirSync } from "node:fs";
+import { writeFileSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -18,6 +18,16 @@ const VALID_CONTRACTS = {
   TopicWaitlist:       "0x6666666666666666666666666666666666666666",
   PositionPool:        "0x7777777777777777777777777777777777777777",
 };
+
+const ADDRESS_OVERRIDES = [
+  ["ROBOTANIA_PROTOCOL_CONFIG", "protocolConfig"],
+  ["ROBOTANIA_CITIZEN_REGISTRY", "citizenRegistry"],
+  ["ROBOTANIA_CITIZEN_ACTION_RELAY", "citizenActionRelay"],
+  ["ROBOTANIA_SETTLEMENT_TOKEN", "settlementToken"],
+  ["ROBOTANIA_STAKE_VAULT", "stakeVault"],
+  ["ROBOTANIA_TOPIC_WAITLIST", "topicWaitlist"],
+  ["ROBOTANIA_POSITION_POOL", "positionPool"],
+] as const;
 
 function makeDeploymentJson(overrides?: Record<string, unknown>) {
   return JSON.stringify({
@@ -273,5 +283,72 @@ describe("chain-discovery: getRpcUrl priority", () => {
     const url = getRpcUrl();
     expect(typeof url).toBe("string");
     expect(url.length).toBeGreaterThan(0);
+  });
+});
+
+describe("chain-discovery: partial address overrides", () => {
+  let directory: string;
+
+  beforeEach(() => {
+    vi.resetModules();
+    directory = mkdtempSync(join(tmpdir(), "robotania-address-overrides-"));
+    for (const [name] of ADDRESS_OVERRIDES) vi.stubEnv(name, undefined);
+    vi.stubEnv("ROBOTANIA_CHAIN_ID", undefined);
+    vi.stubEnv("CHAIN_ID", undefined);
+    vi.stubEnv("ROBOTANIA_READ_API_URL", "https://read.overrides.example");
+    vi.stubEnv("ROBOTANIA_DEPLOYED_ADDRESSES_PATH", join(directory, "deployment.json"));
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+    rmSync(directory, { recursive: true, force: true });
+  });
+
+  it.each(ADDRESS_OVERRIDES)("uses %s over HTTP discovery", async (name, field) => {
+    const override = "0x8888888888888888888888888888888888888888";
+    vi.stubEnv(name, override);
+    const fetchSpy = mockFetchOk("https://rpc.overrides.example");
+    vi.stubGlobal("fetch", fetchSpy);
+    const { preloadChainAddresses, resolveChainAddresses } = await import("../src/chain.js");
+    await preloadChainAddresses();
+    const addresses = resolveChainAddresses();
+    expect(addresses[field]).toBe(override);
+    expect(addresses.chainId).toBe(421614);
+    expect(addresses.rpcUrl).toBe("https://rpc.overrides.example");
+    expect(addresses[field === "stakeVault" ? "topicWaitlist" : "stakeVault"]).toBe(
+      field === "stakeVault" ? VALID_CONTRACTS.TopicWaitlist : VALID_CONTRACTS.StakeVault);
+    expect(fetchSpy).toHaveBeenCalledOnce();
+  });
+
+  it.each(ADDRESS_OVERRIDES)("uses %s over local JSON in sync and preloaded clients", async (name, field) => {
+    const override = "0x8888888888888888888888888888888888888888";
+    vi.stubEnv(name, override);
+    writeFileSync(join(directory, "deployment.json"), makeDeploymentJson());
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+    const { preloadChainAddresses, resolveChainAddresses } = await import("../src/chain.js");
+    expect(resolveChainAddresses()[field]).toBe(override);
+    await preloadChainAddresses();
+    expect(resolveChainAddresses()[field]).toBe(override);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("validates a required override before caching the discovered addresses", async () => {
+    vi.stubEnv("ROBOTANIA_CITIZEN_REGISTRY", "invalid-address");
+    vi.stubGlobal("fetch", mockFetchOk());
+    const { preloadChainAddresses } = await import("../src/chain.js");
+    await expect(preloadChainAddresses()).rejects.toThrow(/invalid data.*CitizenRegistry/);
+    vi.stubEnv("ROBOTANIA_CITIZEN_REGISTRY", VALID_CONTRACTS.CitizenRegistry);
+    await expect(preloadChainAddresses()).resolves.toBeUndefined();
+  });
+
+  it("fills a missing discovered address from its explicit override", async () => {
+    vi.stubEnv("ROBOTANIA_CITIZEN_REGISTRY", VALID_CONTRACTS.CitizenRegistry);
+    const { CitizenRegistry: _omitted, ...contracts } = VALID_CONTRACTS;
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ data: { chain_id: 421614, contracts } }))));
+    const { preloadChainAddresses, resolveChainAddresses } = await import("../src/chain.js");
+    await preloadChainAddresses();
+    expect(resolveChainAddresses().citizenRegistry).toBe(VALID_CONTRACTS.CitizenRegistry);
   });
 });

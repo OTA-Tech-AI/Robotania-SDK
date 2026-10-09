@@ -1,8 +1,8 @@
 // Copyright (c) 2026 OTA-Tech-AI
 // SPDX-License-Identifier: MPL-2.0
 /**
- * Helpers that broadcast transactions from **this SDK wallet**.
- * Use them when arena rules say “must be signed by the citizen” (stakes, manifests, allowances).
+ * Local wallet transactions and chain reads.
+ * Approvals, stakes, manifests, transfers and refunds are signed locally.
  */
 
 import { readFileSync, existsSync } from "node:fs";
@@ -18,6 +18,8 @@ import {
   type Chain,
   type PublicClient,
   type WalletClient,
+  type ReplacementReturnType,
+  type TransactionReceipt,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import type { AgentWallet } from "./wallet.js";
@@ -172,13 +174,8 @@ export function getRpcUrl(): string {
 }
 
 /**
- * Called once at CLI startup (in robotania.ts main) before command dispatch.
- * Populates the module-level cache via HTTP discovery if neither env vars nor a local JSON file is available.
- * Idempotent — safe to call multiple times (no-ops after first successful run).
- *
- * Note: uses raw fetch rather than ReadClient to avoid a circular dependency
- * (chain ← config ← read ← chain). getSystemDeployment() on ReadClient is
- * available for agent business-logic use after startup.
+ * Load and cache chain addresses from environment variables, local JSON or the Read API.
+ * Call before direct chain operations that need discovery. Later calls reuse the cached result.
  */
 export async function preloadChainAddresses(): Promise<void> {
   if (_cachedAddresses) return;
@@ -212,10 +209,10 @@ export async function preloadChainAddresses(): Promise<void> {
       chainId?: number;
     };
     const c = raw.contracts ?? {};
-    const protocolConfig = c.ProtocolConfig as `0x${string}` | undefined;
-    const citizenRegistry = c.CitizenRegistry as `0x${string}` | undefined;
-    const citizenActionRelay = c.CitizenActionRelay as `0x${string}` | undefined;
-    const settlementToken = c.SettlementToken as `0x${string}` | undefined;
+    const protocolConfig = (pe ?? c.ProtocolConfig) as `0x${string}` | undefined;
+    const citizenRegistry = (ce ?? c.CitizenRegistry) as `0x${string}` | undefined;
+    const citizenActionRelay = (ae ?? c.CitizenActionRelay) as `0x${string}` | undefined;
+    const settlementToken = (te ?? c.SettlementToken) as `0x${string}` | undefined;
     if (!protocolConfig || !citizenRegistry || !citizenActionRelay || !settlementToken) {
       throw new Error(
         `deployed-addresses.json at ${jsonPath} is missing ProtocolConfig, CitizenRegistry, CitizenActionRelay, or SettlementToken`,
@@ -224,7 +221,7 @@ export async function preloadChainAddresses(): Promise<void> {
     _cachedAddresses = {
       protocolConfig,
       citizenRegistry,
-      citizenActionRelay: (process.env.ROBOTANIA_CITIZEN_ACTION_RELAY ?? citizenActionRelay) as `0x${string}`,
+      citizenActionRelay,
       settlementToken,
       stakeVault:    (process.env.ROBOTANIA_STAKE_VAULT ?? c.StakeVault) as `0x${string}` | undefined,
       topicWaitlist: (process.env.ROBOTANIA_TOPIC_WAITLIST ?? c.TopicWaitlist) as `0x${string}` | undefined,
@@ -257,7 +254,12 @@ export async function preloadChainAddresses(): Promise<void> {
   }
   const body = (await res.json()) as { data?: { chain_id?: number; rpc_url?: string; contracts?: Record<string, string> } };
   const data = body.data ?? {};
-  const c = data.contracts ?? {};
+  const c = {
+    ProtocolConfig: pe ?? data.contracts?.ProtocolConfig,
+    CitizenRegistry: ce ?? data.contracts?.CitizenRegistry,
+    CitizenActionRelay: ae ?? data.contracts?.CitizenActionRelay,
+    SettlementToken: te ?? data.contracts?.SettlementToken,
+  };
   const configuredChainId = configuredSigningChainId();
   const invalidDiscoveredChainId = !Number.isSafeInteger(data.chain_id) || Number(data.chain_id) <= 0;
 
@@ -267,9 +269,9 @@ export async function preloadChainAddresses(): Promise<void> {
   );
   if (missing.length > 0 || (configuredChainId === undefined && invalidDiscoveredChainId)) {
     throw new Error(
-      `Deployment discovery returned invalid data from ${base}. ` +
+      `Deployment configuration contains invalid data for ${base}. ` +
       `Missing or malformed fields: ${[...missing, ...(configuredChainId === undefined && invalidDiscoveredChainId ? ["chain_id"] : [])].join(", ")}. ` +
-      `Check that DEPLOYED_ADDRESSES_JSON is correctly configured on the Read API server.`,
+      `Check the Read API deployment and configured address overrides.`,
     );
   }
 
@@ -278,18 +280,17 @@ export async function preloadChainAddresses(): Promise<void> {
     citizenRegistry: c.CitizenRegistry as `0x${string}`,
     citizenActionRelay: c.CitizenActionRelay as `0x${string}`,
     settlementToken: c.SettlementToken as `0x${string}`,
-    stakeVault:      c.StakeVault as `0x${string}` | undefined,
-    topicWaitlist:   c.TopicWaitlist as `0x${string}` | undefined,
-    positionPool:    c.PositionPool as `0x${string}` | undefined,
+    stakeVault:      (process.env.ROBOTANIA_STAKE_VAULT ?? data.contracts?.StakeVault) as `0x${string}` | undefined,
+    topicWaitlist:   (process.env.ROBOTANIA_TOPIC_WAITLIST ?? data.contracts?.TopicWaitlist) as `0x${string}` | undefined,
+    positionPool:    (process.env.ROBOTANIA_POSITION_POOL ?? data.contracts?.PositionPool) as `0x${string}` | undefined,
     chainId:         configuredChainId ?? deploymentChainId(data.chain_id),
     rpcUrl:          data.rpc_url,  // platform-supplied; no private key
   };
 }
 
 /**
- * Sync — returns cached addresses populated by preloadChainAddresses().
- * Falls back to the existing env-var / local-JSON sync logic for library consumers
- * (tests, scripts) that don't go through the CLI entrypoint.
+ * Return cached addresses, or resolve synchronous environment/local-file configuration.
+ * For Read API discovery, call preloadChainAddresses() first.
  */
 export function resolveChainAddresses(): ResolvedChainAddresses {
   if (_cachedAddresses) return _cachedAddresses;
@@ -333,10 +334,10 @@ export function resolveChainAddresses(): ResolvedChainAddresses {
     chainId?: number;
   };
   const c = raw.contracts ?? {};
-  const protocolConfig = c.ProtocolConfig as `0x${string}` | undefined;
-  const citizenRegistry = c.CitizenRegistry as `0x${string}` | undefined;
-  const citizenActionRelay = c.CitizenActionRelay as `0x${string}` | undefined;
-  const settlementToken = c.SettlementToken as `0x${string}` | undefined;
+  const protocolConfig = (pe ?? c.ProtocolConfig) as `0x${string}` | undefined;
+  const citizenRegistry = (ce ?? c.CitizenRegistry) as `0x${string}` | undefined;
+  const citizenActionRelay = (are ?? c.CitizenActionRelay) as `0x${string}` | undefined;
+  const settlementToken = (te ?? c.SettlementToken) as `0x${string}` | undefined;
 
   if (!protocolConfig || !citizenRegistry || !citizenActionRelay || !settlementToken) {
     throw new Error(`deployed-addresses.json at ${path} missing ProtocolConfig, CitizenRegistry, CitizenActionRelay, or SettlementToken`);
@@ -345,7 +346,7 @@ export function resolveChainAddresses(): ResolvedChainAddresses {
   return {
     protocolConfig,
     citizenRegistry,
-    citizenActionRelay: (are ?? citizenActionRelay) as `0x${string}`,
+    citizenActionRelay,
     settlementToken,
     stakeVault:    (sve ?? c.StakeVault) as `0x${string}` | undefined,
     topicWaitlist: (twe ?? c.TopicWaitlist) as `0x${string}` | undefined,
@@ -407,6 +408,7 @@ type ChainTxParams = {
   functionName: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   args?: readonly any[];
+  onBroadcast?: (nonce: number, hash?: `0x${string}`) => void | Promise<void>;
 };
 
 function isNonRetryableError(err: unknown): boolean {
@@ -422,12 +424,12 @@ function isNonRetryableError(err: unknown): boolean {
 async function pollForReceipt(
   publicClient: PublicClient,
   txHash: `0x${string}`,
-): Promise<{ status: "success" | "reverted" } | null> {
+): Promise<Pick<TransactionReceipt, "status" | "transactionHash"> | null> {
   for (let i = 0; i < TX_POLL_ATTEMPTS; i++) {
     if (i > 0) await new Promise<void>((r) => setTimeout(r, TX_POLL_INTERVAL_MS));
     try {
       const receipt = await publicClient.getTransactionReceipt({ hash: txHash });
-      if (receipt) return { status: receipt.status };
+      if (receipt) return receipt;
     } catch {
       // not yet indexed — continue polling
     }
@@ -495,6 +497,7 @@ async function sendChainTx(
 
   // Broadcast
   let txHash: `0x${string}`;
+  if (txParams.onBroadcast) await txParams.onBroadcast(nonce);
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     txHash = await (walletClient.writeContract as any)({
@@ -515,33 +518,45 @@ async function sendChainTx(
     await new Promise<void>((r) => setTimeout(r, TX_POLL_INTERVAL_MS));
     return sendChainTx(clients, txParams, nonce, attempt + 1);
   }
+  if (txParams.onBroadcast) await txParams.onBroadcast(nonce, txHash);
 
-  // Wait for receipt with timeout
+  // Handle confirmed outcomes outside the retry path.
+  let replacement: ReplacementReturnType | undefined;
+  let receipt: Pick<TransactionReceipt, "status" | "transactionHash">;
   try {
-    const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash, timeout: TX_RECEIPT_TIMEOUT_MS });
-    if (receipt.status === "reverted") throw new Error(`Transaction reverted on-chain: ${txHash}`);
-    return txHash;
-  } catch (waitErr) {
-    const waitMsg = waitErr instanceof Error ? waitErr.message : String(waitErr);
-    if (waitMsg.includes("reverted on-chain")) throw waitErr;
-
+    receipt = await publicClient.waitForTransactionReceipt({
+      hash: txHash,
+      timeout: TX_RECEIPT_TIMEOUT_MS,
+      onReplaced: info => { replacement = info; },
+    });
+  } catch {
     // Poll to confirm not already mined before issuing a replacement (prevents double-spend)
     const mined = await pollForReceipt(publicClient, txHash);
     if (mined) {
-      if (mined.status === "reverted") throw new Error(`Transaction reverted on-chain: ${txHash}`);
-      return txHash;
+      receipt = mined;
+    } else {
+      if (attempt >= TX_MAX_RETRIES) {
+        throw new Error(
+          `Transaction unconfirmed after ${TX_MAX_RETRIES} retries. Last tx: ${txHash}. ` +
+            `Check the block explorer for the current status.`,
+        );
+      }
+      // Replace-by-fee: same nonce, higher fees on next attempt
+      return sendChainTx(clients, txParams, nonce, attempt + 1);
     }
-
-    if (attempt >= TX_MAX_RETRIES) {
-      throw new Error(
-        `Transaction unconfirmed after ${TX_MAX_RETRIES} retries. Last tx: ${txHash}. ` +
-          `Check the block explorer for the current status.`,
-      );
-    }
-
-    // Replace-by-fee: same nonce, higher fees on next attempt
-    return sendChainTx(clients, txParams, nonce, attempt + 1);
   }
+
+  const minedHash = receipt.transactionHash;
+  if (!minedHash || (replacement ? minedHash !== replacement.transactionReceipt.transactionHash : minedHash !== txHash)) {
+    throw new ChainTransactionUncertainError(account.address, clients.chainId, nonce, txHash,
+      new Error("Receipt does not identify the submitted transaction or a verified replacement."));
+  }
+  if (replacement && replacement.reason !== "repriced") {
+    throw new ChainTransactionReplacedError(account.address, clients.chainId, nonce, txHash, minedHash, replacement.reason);
+  }
+  if (receipt.status === "reverted") throw new Error(`Transaction reverted on-chain: ${minedHash}`);
+  if (minedHash !== txHash && txParams.onBroadcast) await txParams.onBroadcast(nonce, minedHash);
+  return minedHash;
 }
 
 export async function readErc20Allowance(
@@ -599,7 +614,7 @@ export async function writeUpdateManifest(
   });
 }
 
-/** Minimum collateral stake (USDC base units) from ProtocolConfig. Used as operate gate only — not a registration bond. */
+/** Minimum collateral for on-chain participation, in USDC base units. */
 export async function readMinCitizenStake(
   publicClient: PublicClient,
   protocolConfig: `0x${string}`,
@@ -612,10 +627,7 @@ export async function readMinCitizenStake(
   return raw as bigint;
 }
 
-/**
- * If allowance is below `amount`, submit `approve`. Otherwise no tx.
- * Typical: token = settlement USDC, spender = CitizenRegistry, amount = bond.
- */
+/** Approve the requested token allowance if insufficient; otherwise submit no transaction. */
 export async function ensureErc20Allowance(
   wallet: AgentWallet,
   params: {
@@ -704,6 +716,97 @@ async function writeStakeVaultEntry(
   });
 }
 
+/** A direct wallet transaction may have been submitted, but its outcome is unknown. */
+export class ChainTransactionUncertainError extends Error {
+  readonly code = "CHAIN_TRANSACTION_UNCERTAIN";
+
+  constructor(
+    readonly walletAddress: `0x${string}`,
+    readonly chainId: number,
+    readonly nonce: number,
+    readonly txHash: `0x${string}` | null,
+    cause: unknown,
+  ) {
+    super("Transaction outcome is unknown. Check its hash or this wallet's transaction nonce before retrying.", { cause });
+    this.name = "ChainTransactionUncertainError";
+  }
+}
+
+/** The wallet nonce was mined by a cancellation or a different operation. */
+export class ChainTransactionReplacedError extends Error {
+  readonly code = "CHAIN_TRANSACTION_REPLACED";
+
+  constructor(
+    readonly walletAddress: `0x${string}`,
+    readonly chainId: number,
+    readonly nonce: number,
+    readonly originalTxHash: `0x${string}`,
+    readonly txHash: `0x${string}`,
+    readonly reason: "cancelled" | "replaced",
+  ) {
+    super(`Transaction ${reason}; the submitted transaction did not execute. Check replacement transaction ${txHash} before retrying.`);
+    this.name = "ChainTransactionReplacedError";
+  }
+}
+
+/** Claim a cancelled or expired game's spectator waitlist deposit into operational balance. */
+export async function writeClaimWaitlistRefund(
+  wallet: AgentWallet,
+  params: {
+    topicWaitlist: `0x${string}`;
+    topicId: bigint | string;
+    citizenId: bigint | string;
+    rpcUrl?: string;
+    chainId?: number;
+    /** Persist each returned transaction hash, including fee replacements. */
+    onSubmitted?: (hash: `0x${string}`) => void | Promise<void>;
+  },
+): Promise<`0x${string}`> {
+  const id = (value: bigint | string, field: string): bigint => {
+    if (typeof value !== "bigint" && (typeof value !== "string" || !/^\d+$/.test(value))) {
+      throw new Error(`${field} must be a positive uint256`);
+    }
+    const parsed = BigInt(value);
+    if (parsed <= 0n || parsed >= 2n ** 256n) throw new Error(`${field} must be a positive uint256`);
+    return parsed;
+  };
+  const topicId = id(params.topicId, "topicId");
+  const citizenId = id(params.citizenId, "citizenId");
+  if (!/^0x[0-9a-fA-F]{40}$/.test(params.topicWaitlist) || /^0x0{40}$/i.test(params.topicWaitlist)) {
+    throw new Error("A valid nonzero TopicWaitlist address is required");
+  }
+  const clients = createAgentChainClients(wallet, { rpcUrl: params.rpcUrl, chainId: params.chainId });
+  let nonce: number | undefined;
+  let txHash: `0x${string}` | null = null;
+  let attempts = 0;
+  try {
+    return await sendChainTx(clients, {
+      address: params.topicWaitlist,
+      abi: [{
+        type: "function", name: "claimWaitlistRefund", stateMutability: "nonpayable",
+        inputs: [{ name: "topicId", type: "uint256" }, { name: "citizenId", type: "uint256" }],
+        outputs: [],
+      }] as const,
+      functionName: "claimWaitlistRefund",
+      args: [topicId, citizenId],
+      onBroadcast: async (currentNonce, hash) => {
+        nonce = currentNonce;
+        if (hash) {
+          txHash = hash;
+          await params.onSubmitted?.(hash);
+        } else attempts++;
+      },
+    });
+  } catch (error) {
+    if (error instanceof ChainTransactionReplacedError || error instanceof ChainTransactionUncertainError) throw error;
+    const reverted = error instanceof Error && error.message.startsWith("Transaction reverted on-chain:");
+    if (nonce !== undefined && !reverted && (txHash !== null || attempts > 1 || !isNonRetryableError(error))) {
+      throw new ChainTransactionUncertainError(clients.account.address, clients.chainId, nonce, txHash, error);
+    }
+    throw error;
+  }
+}
+
 /** Withdraw collateral back to your registered citizen wallet address. */
 export async function writeWithdrawCollateral(
   wallet: AgentWallet,
@@ -759,10 +862,8 @@ export async function writeOperationalToCollateral(
 }
 
 /**
- * Send settlement ERC-20 from **this SDK wallet** to another address (`to`).
- * Typical use: consolidate profits after withdrawals land in-custody locally.
- *
- * Defaults `token` to the arena settlement currency from `{@link resolveChainAddresses}` unless you override it.
+ * Transfer ERC-20 tokens from this SDK wallet to `to`.
+ * `amount` uses the selected token's base units; `token` defaults to the arena settlement token.
  */
 export async function writeWithdrawFromCitizenWallet(
   wallet: AgentWallet,

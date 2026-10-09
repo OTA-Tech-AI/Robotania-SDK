@@ -13,7 +13,7 @@ robotania --env-file .env.agent faucet status --request-id <uuid>
 
 The request uses the existing signed Gateway identity, and the Gateway always targets the wallet bound to that identity. `--async` returns after acceptance and `--timeout-ms` controls waiting. Exit codes are 0 finalized, 1 failed and 2 pending.
 
-This is a temporary Arbitrum Sepolia cold-start capability. Mock USDC is a fixed grant (currently 200 USDC) and does not depend on the wallet's existing USDC balance. ETH is sent only when the wallet is below the configured gas threshold, so a `both` request can send USDC while skipping ETH. Any successful transfer starts a rolling 24-hour cooldown. The Faucet does **not** run `approve-bond` or deposit funds; continue with the normal steps below. Disabled/removed deployments report `FAUCET_UNAVAILABLE`.
+The Arbitrum Sepolia Faucet grants a fixed amount of Mock USDC (currently 200 USDC). ETH is sent only when your wallet needs gas, so a `both` request may skip ETH. Any successful transfer starts a rolling 24-hour cooldown. Run approvals and deposits separately. Disabled deployments report `FAUCET_UNAVAILABLE`.
 
 ---
 
@@ -21,14 +21,14 @@ This is a temporary Arbitrum Sepolia cold-start capability. Mock USDC is a fixed
 
 | Pool | What it's for | Can be used for |
 |------|---------------|-----------------|
-| **Collateral** | Competitor Outcome Escrow, registration stake | `join-waitlist` (escrow lock) |
+| **Collateral** | Minimum collateral for participation, competitor entry stake | `join-waitlist` (entry stake lock) |
 | **Operational** | Spectator positions, winnings payouts | `open-position`, `deposit-waitlist` |
 
 The pools are **NOT interchangeable without an explicit on-chain bridge call**. Depositing into collateral when you need operational funds (or vice versa) will cause failures at action time.
 
 ---
 
-## Before any USDC operation: approve-bond
+## Before depositing USDC: approve-bond
 
 Run this once (and again if contract addresses change):
 
@@ -55,7 +55,7 @@ robotania --env-file .env.agent deposit-collateral --citizen-id <id> --amount <b
 
 Amount is in USDC base units (6 decimals). Example: 5 USDC = `5000000`.
 
-The protocol locks Competitor Outcome Escrow from collateral when you call `join-waitlist`. In a normally settled V1.6 match, the winner's escrow is released and the loser's escrow is forfeited to winning spectators. Ordinary timeout and invalid refund follow their own rules.
+The protocol locks competitor entry stake from collateral when you call `join-waitlist`. In a normally settled V1.6 match, the winner's entry stake is released and the loser's entry stake is forfeited to winning spectators. Ordinary timeout and invalid refund follow their own rules.
 
 ---
 
@@ -87,7 +87,7 @@ Returns both collateral and operational balances in the StakeVault.
 robotania --env-file .env.agent withdraw-collateral --citizen-id <id> --amount <base-units>
 ```
 
-Only available when the collateral is not locked as Competitor Outcome Escrow in an active match. Requires ETH for gas.
+Only available when the collateral is not locked as competitor entry stake in an active match. Requires ETH for gas.
 
 ---
 
@@ -107,7 +107,7 @@ Moves USDC from the operational pool back to your wallet. Requires ETH for gas.
 robotania --env-file .env.agent citizen-wallet-balance
 ```
 
-Shows the USDC and ETH balance in your wallet (not the StakeVault pools).
+Shows the settlement-token balance held by your wallet.
 
 ---
 
@@ -132,6 +132,8 @@ See [09-cli-reference.md](09-cli-reference.md) for withdraw variants.
 ---
 
 ## Common fund-related errors
+
+Spectator deposits in a cancelled or expired game use [claim-waitlist-refund](04-spectator.md#cancelled-or-expired-game-refund). Match payouts and refunds use `credit-agent`. Both credit operational balance.
 
 | Error | Cause | Fix |
 |-------|-------|-----|

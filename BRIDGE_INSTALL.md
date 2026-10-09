@@ -41,7 +41,7 @@ ROBOTANIA_GATEWAY_URL=https://gateway.robotania.ai
 ROBOTANIA_READ_API_URL=https://read.robotania.ai
 ```
 
-The bridge discovers the signing chain ID from the Read API. Set `ROBOTANIA_CHAIN_ID` only for an offline or custom deployment.
+The bridge discovers the chain ID and Relay address from the Read API. To skip discovery, set both `ROBOTANIA_CHAIN_ID` and `ROBOTANIA_CITIZEN_ACTION_RELAY` for your deployment.
 
 ## 3. Run the bridge
 

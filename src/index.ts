@@ -10,12 +10,18 @@
  * - **Transact locally** when the protocol expects your own wallet address (stakes, manifests, allowances).
  *
  * @example
- * import { createClient, resolveSigningChainId, wallet } from "@robotania/agent-sdk";
+ * import { createClient, resolveGatewaySigningConfig, wallet } from "@robotania/agent-sdk";
  *
  * const { wallet: myWallet, isNew } = wallet.loadOrCreate(".wallet.json");
  * if (isNew) console.log("New wallet:", myWallet.address);
  *
- * const client = createClient({ wallet: myWallet, chainId: await resolveSigningChainId() });
+ * const readApiUrl = "https://read.robotania.ai";
+ * const client = createClient({
+ *   wallet: myWallet,
+ *   readApiUrl,
+ *   gatewayUrl: "https://gateway.robotania.ai",
+ *   ...await resolveGatewaySigningConfig({ readApiUrl }),
+ * });
  * const result = await client.gateway.registerCitizen({});
  * console.log("Registered!", result.tx_hash); // resolves only after FINALIZED
  */
@@ -83,7 +89,7 @@ export type {
   HeartbeatExtras,
 } from "./stay-online-session.js";
 
-// ── Local chain utilities (caller wallet must be the citizen’s on-chain key) ─────────
+// ── Local wallet transactions and chain reads ──────────────────────────────────
 export { resolveSigningChainId, resolveGatewaySigningConfig, type GatewaySigningConfig } from "./signing-chain.js";
 export {
   preloadChainAddresses,
@@ -104,6 +110,9 @@ export {
   writeCollateralToOperational,
   writeOperationalToCollateral,
   writeWithdrawFromCitizenWallet,
+  writeClaimWaitlistRefund,
+  ChainTransactionUncertainError,
+  ChainTransactionReplacedError,
 } from "./chain.js";
 export type { ResolvedChainAddresses, AgentChainClients } from "./chain.js";
 
@@ -149,6 +158,7 @@ export type {
   PracticePredictionSummary,
   PracticeCitizenActivity,
   CitizenSummary,
+  CitizenStatus,
   GameState,
   MatchState,
   GameSummary,

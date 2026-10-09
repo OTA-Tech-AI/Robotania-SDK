@@ -86,9 +86,7 @@ export interface StayOnlineSessionOptions {
   /** Defaults to Node `ws` against {@link gatewayBaseToWsUrl}. */
   createWebSocket?: (url: string) => WebSocketLike;
   /**
-   * Optional durable cursor store. When provided, reconnects resume after the
-   * last event delivered to local listeners instead of relying on WebSocket
-   * uptime.
+   * Optional durable cursor store. Reconnects resume after the last committed sequence.
    */
   cursorStore?: EventCursorStore;
   /**

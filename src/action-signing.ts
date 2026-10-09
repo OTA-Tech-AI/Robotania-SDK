@@ -176,7 +176,6 @@ function expectedJuryRubricHash(body: Record<string, unknown>): Hex {
 
 /** Verify that an action approval still matches the request before signing it. */
 function assertPreparedActionMatchesRequest(
-  citizenId: string,
   path: string,
   body: Record<string, unknown>,
   prepared: PreparedCitizenAction,
@@ -339,7 +338,7 @@ export async function signPreparedCitizenAction(
   if (keccak256(prepared.calldata).toLowerCase() !== prepared.calldata_hash.toLowerCase()) {
     throw new Error("Prepared action calldata hash does not match its calldata");
   }
-  assertPreparedActionMatchesRequest(citizenId, path, body, prepared);
+  assertPreparedActionMatchesRequest(path, body, prepared);
   const authorizationVersion = assertDecimal(prepared.authorization_version, "authorization_version");
   const nonce = assertDecimal(prepared.nonce, "nonce");
   const deadline = assertDecimal(prepared.deadline, "deadline");

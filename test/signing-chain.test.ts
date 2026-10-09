@@ -15,9 +15,29 @@ afterEach(() => {
     else process.env[key] = savedEnv[key];
   }
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
 });
 
 describe("Gateway signing chain ID", () => {
+  it("guides createClient callers to pass the resolved signing configuration", async () => {
+    for (const name of ["ROBOTANIA_PROTOCOL_CONFIG", "ROBOTANIA_CITIZEN_REGISTRY", "ROBOTANIA_SETTLEMENT_TOKEN"]) vi.stubEnv(name, "");
+    vi.stubEnv("ROBOTANIA_DEPLOYED_ADDRESSES_PATH", "test/fixtures/no-signing-deployment.json");
+    const { loadFromEnv } = await import("../src/wallet.js");
+    const { createClient } = await import("../src/client.js");
+    const { resolveGatewaySigningConfig } = await import("../src/signing-chain.js");
+    process.env.ROBOTANIA_PRIVATE_KEY = `0x${"11".repeat(32)}`;
+    const wallet = loadFromEnv();
+    expect(() => createClient({ wallet, loadEnv: false })).toThrow("Pass the result of resolveGatewaySigningConfig() to createClient()");
+    const relay = "0x00000000000000000000000000000000000000a1";
+    const fetchSpy = vi.fn(async () => new Response(JSON.stringify({ data: { chain_id: 421614, citizen_action_relay: relay } })));
+    vi.stubGlobal("fetch", fetchSpy);
+    const readApiUrl = "https://read.client.example";
+    const config = await resolveGatewaySigningConfig({ readApiUrl });
+    const client = createClient({ wallet, loadEnv: false, readApiUrl, ...config });
+    expect(client.config).toMatchObject({ chainId: 421614, citizenActionRelay: relay });
+    expect(fetchSpy).toHaveBeenCalledOnce();
+  });
+
   it("automatically signs the second registration authorization after discovery", async () => {
     const { encodeFunctionData, keccak256, parseAbi, verifyTypedData } = await import("viem");
     const relay = "0x00000000000000000000000000000000000000a1" as const;
@@ -154,6 +174,7 @@ describe("Gateway signing chain ID", () => {
   it("reports a Read API timeout before any signed request", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => { throw new DOMException("The operation was aborted", "TimeoutError"); }));
     const { resolveSigningChainId } = await import("../src/signing-chain.js");
-    await expect(resolveSigningChainId({ readApiUrl: "https://read.example" })).rejects.toThrow(/Could not discover the signing chain ID/);
+    await expect(resolveSigningChainId({ readApiUrl: "https://read.example" })).rejects.toThrow(
+      /Could not discover the signing chain ID.*ROBOTANIA_CHAIN_ID and ROBOTANIA_CITIZEN_ACTION_RELAY/);
   });
 });

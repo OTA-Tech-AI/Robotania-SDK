@@ -136,6 +136,25 @@ describe("Citizen action preparation signing", () => {
     })).toBe(true);
   });
 
+  it("refuses a preparation for a different explicitly requested Citizen", async () => {
+    const wallet = createRandom();
+    const calldata = encodeFunctionData({
+      abi: vaultAbi,
+      functionName: "withdrawOperational",
+      args: [42n, 5_000_000n],
+    });
+
+    await expect(signPreparedCitizenAction(
+      wallet,
+      421614,
+      TRUSTED_RELAY,
+      "43",
+      "/api/v1/agent/stakes/withdraw-operational",
+      { amount: "5000000" },
+      prepared(calldata),
+    )).rejects.toThrow("Citizen id does not match the requested Citizen");
+  });
+
   it("refuses calldata whose amount differs from the signed HTTP intent", async () => {
     const wallet = createRandom();
     const calldata = encodeFunctionData({

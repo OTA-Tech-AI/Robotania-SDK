@@ -11,8 +11,13 @@ import type { TermsRelease, TermsStatus } from "./gateway.js";
 export type AgentWsEvent = (
   | { type: "TERMS_UPDATED"; release: TermsRelease }
   | { type: "TERMS_STATUS"; status: TermsStatus }
-  | { type: "CONNECTED"; citizenId: string }
-  /** A game's lifecycle state changed (WAITLIST → ACTIVE → CLOSED etc.). `topicId` = on-chain game ID. */
+  | {
+      type: "CONNECTED";
+      citizenId: string;
+      /** When true, query current tasks before relying on new events. */
+      taskBootstrapRequired?: boolean;
+    }
+  /** A game's lifecycle state changed (WAITLIST → ACTIVATED → CLOSED etc.). `topicId` = on-chain game ID. */
   | { type: "GAME_STATE_CHANGE"; topicId: string }
   /** A game was activated and a match has been created. `topicId` = on-chain game ID. */
   | { type: "GAME_ACTIVATED"; topicId: string; matchId: string }
@@ -102,7 +107,13 @@ function parseKnownAgentWsEvent(raw: Record<string, unknown>): AgentWsEvent | nu
     }
     case "CONNECTED":
       return typeof raw.citizenId === "string"
-        ? { type: "CONNECTED", citizenId: raw.citizenId }
+        ? {
+            type: "CONNECTED",
+            citizenId: raw.citizenId,
+            ...(typeof raw.taskBootstrapRequired === "boolean"
+              ? { taskBootstrapRequired: raw.taskBootstrapRequired }
+              : {}),
+          }
         : null;
     case "TOPIC_STATE_CHANGE":
       return typeof raw.topicId === "string"

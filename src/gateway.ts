@@ -306,9 +306,8 @@ export class GatewayClient {
   /**
    * Register this wallet as a new citizen.
    *
-   * Registration costs gas only — no USDC is required regardless of `minCitizenStake`.
-   * `minCitizenStake` is an operate gate (collateral threshold) enforced when joining
-   * waitlists or opening positions, not at registration time.
+   * The Gateway pays gas; no ETH or USDC is required in this wallet.
+   * Later on-chain participation requires collateral meeting `minCitizenStake`.
    */
   async registerCitizen(params: {
     metadataURI?: string;
@@ -338,9 +337,8 @@ export class GatewayClient {
   /**
    * Validate a desired display name and prepare the on-chain manifest update payload.
    *
-   * Robotania normalizes the name, validates uniqueness, stores its metadata, and returns
-   * `metadataURI` + `manifestHash`. Pass both to {@link writeUpdateManifest} to commit
-   * the change on-chain from your citizen wallet.
+   * Pass the returned `metadataURI` and `manifestHash` to {@link writeUpdateManifest}
+   * to commit the change from your citizen wallet.
    *
    * @param display_name - Desired display name (2–32 Unicode graphemes, no control chars).
    */
@@ -357,9 +355,9 @@ export class GatewayClient {
   /**
    * Cancel a WAITLIST game before it starts (lead settler only).
    *
-   * Refunds: spectator deposits → each depositor's arena balance;
-   * competitor escrows → each competitor's arena balance;
-   * jury escrow → lead settler's arena balance.
+   * Competitor entry stakes and jury escrow are released to collateral.
+   * V1.6 spectators claim separately with `writeClaimWaitlistRefund`;
+   * earlier versions refund spectator deposits during cancellation.
    * The creation fee is non-refundable.
    */
   async cancelGame(params: { topicId: string }, options: WriteRequestOptions = {}): Promise<RequestResult> {
@@ -382,9 +380,7 @@ export class GatewayClient {
   /**
    * Post the spectator hard-lock deposit for a game's waitlist.
    *
-   * `citizenId` **must** belong to this client's registered wallet — the gateway
-   * uses the authenticated session citizen (from the EIP-712 signed header), not
-   * the body field, so it is passed as the auth parameter rather than body-only.
+   * `citizenId` must match this client's registered wallet.
    *
    * @param topicId  - The game's on-chain ID.
    * @param amount   - USDC in atomic units (6 decimals), e.g. `"5000000"` = 5 USDC.
@@ -403,7 +399,7 @@ export class GatewayClient {
 
   /**
    * Activate a game once waitlist prerequisites are met (lead settler only).
-   * On success, a match is created and the game moves to ACTIVE state.
+   * Creates a match and sets the game to ACTIVATED. Wait for MATCH_LIVE before playing.
    * @param topicId - The game's on-chain ID.
    */
   async activateGame(params: { topicId: string }, options: WriteRequestOptions = {}): Promise<RequestResult> {
@@ -413,10 +409,10 @@ export class GatewayClient {
   /**
    * Create a game on-chain through the Gateway.
    *
-   * Protocol field names (all map directly to on-chain `CreateTopicParams`):
+   * Create-game input fields:
    * - `topicType`  — `0` debate_text · `1` board_duel  (also accepts `"debate_text"` / `"board_duel"`)
    * - `marketMode` — `0` VANILLA · `1` POPULARITY · `2` HYBRID · `3` ADVERSARIAL  (also accepts string names)
-   * - See {@link GameSummary} for the full field list with descriptions.
+   * - See the SDK Settler guide (`docs/05-settler.md`) for input fields.
    *
    * For `topicType=1` (board_duel), `boardTemplate` is **required** — the gateway will reject
    * the request with `BOARD_TEMPLATE_REQUIRED` if it is missing.
@@ -531,10 +527,9 @@ export class GatewayClient {
    *
    * - **Debate:** `payloadContent` = {@link DebateTurnPayload}.
    * - **Board:** `payloadContent` = {@link BoardTurnV1Payload} (`sideboardBefore`, `sideboardAfter`, board artifacts).
-   *   On-chain `submitTurn` is keeper-only for board topics — this is the supported path.
    *   Poll {@link ReadClient.getMatchBoard} for `can_submit_turn` / `block_reason` before calling.
-   *   After REJECT, `step_phase` is `RESUBMIT_REQUIRED` — resubmit before `resubmit_deadline_at`
-   *   (not `turn_deadline_at`). Gateway routes the same call to on-chain `resubmitTurn`.
+   *   After REJECT, `step_phase` is `RESUBMIT_REQUIRED`. Use this method to resubmit
+   *   before `resubmit_deadline_at`, not `turn_deadline_at`.
    */
   async submitTurn(params: {
     matchId: string;
@@ -584,8 +579,7 @@ export class GatewayClient {
 
   /**
    * Open a spectator position on a match side.
-   * @deprecated `turnIndex` — the contract derives the current turn from chain state.
-   *   Omit this field; passing a stale value will revert on-chain.
+   * The current turn is determined automatically; the legacy `turnIndex` field is ignored.
    */
   async openPosition(params: {
     matchId: string;
@@ -593,7 +587,7 @@ export class GatewayClient {
     /** On-chain side: 1 = SIDE_A, 2 = SIDE_B */
     side: 1 | 2;
     amount: bigint | string;
-    /** @deprecated Contract derives turn automatically. Do not pass. */
+    /** @deprecated Ignored by the SDK; omit this field. */
     turnIndex?: number;
     /**
      * Legacy body key; also accepted in WriteRequestOptions. Save before sending.
@@ -610,8 +604,8 @@ export class GatewayClient {
   }
 
   /**
-   * Does not credit spectator payout. Do not use this after FINALIZED.
-   * For payout or refund, use {@link creditAgent} (`claim-for`).
+   * Compatibility settlement action. On V1.5/V1.6 matches, claims this wallet's
+   * eligible spectator payout or refund. Prefer {@link creditAgent} or {@link claimFor}.
    */
   async claimPosition(params: {
     matchId: string;
@@ -650,7 +644,7 @@ export class GatewayClient {
   async submitJuryVote(params: {
     juryCaseId: string;
     jurorCitizenId: string;
-    /** JuryOutcome enum value: 0=UNSET, 1=A_WINS, 2=B_WINS, 3=INVALID_MATCH, 4=REMATCH_REQUIRED, 5=INDETERMINATE */
+    /** Submit 1=A_WINS, 2=B_WINS, 3=INVALID_MATCH or 4=REMATCH_REQUIRED. Do not submit 0 or 5. */
     outcome: number;
     reasonText: string;
   }, options: WriteRequestOptions = {}): Promise<RequestResult> {

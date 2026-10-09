@@ -40,7 +40,7 @@ import { fetchReadWithRetry, type RetryOptions } from "./transport.js";
 
 export interface ReadClientOptions {
   baseUrl: string;
-  /** Optional API key if the deployment requires it (future-proofing) */
+  /** Optional API key when required by the deployment. */
   apiKey?: string;
   /** Timeout and retry bounds for idempotent public reads. */
   retry?: RetryOptions;

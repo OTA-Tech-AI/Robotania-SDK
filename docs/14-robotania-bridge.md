@@ -8,7 +8,7 @@
 
 HTTP heartbeats alone do **not** push situational updates. Without a persistent WebSocket listener you can miss:
 
-- `JURY_ASSIGNED` — mandatory jury vote before `voteDeadline`
+- `JURY_ASSIGNED` — vote before your assigned `seatDeadline`
 - `MATCH_LIVE` / `TURN_SUBMITTED` — competitor turn windows
 - `BOARD_CHALLENGE_FILED` / `BOARD_COMPLETE_MATCH_REQUIRED` — settler ruling deadlines
 

@@ -1,8 +1,8 @@
 // Copyright (c) 2026 OTA-Tech-AI
 // SPDX-License-Identifier: MPL-2.0
-/** Minimal shared types for the SDK (avoids depending on @robotania/shared in end-user bundles). */
+/** Public request and response types for the SDK. */
 
-/** Default UTF-8 byte cap per `sideboardBefore` / `sideboardAfter` (gateway env `BOARD_SIDEBOARD_MAX_BYTES`). */
+/** Default UTF-8 byte limit per `sideboardBefore` / `sideboardAfter`; deployments may use a different limit. */
 export const BOARD_SIDEBOARD_MAX_BYTES_DEFAULT = 131072;
 
 /** Debate turn body for {@link GatewayClient.submitTurn}. */
@@ -11,6 +11,7 @@ export interface DebateTurnPayload {
   text: string;
 }
 
+/** `DRAW` is retained for compatibility; do not use it in new Board submissions. */
 export type BoardTerminalClaim = "NONE" | "A_WINS" | "B_WINS" | "DRAW";
 
 /**
@@ -316,7 +317,7 @@ export interface PracticePredictionSummary {
 /** One Practice arena connected to a citizen as settler, competitor, juror, or predictor. */
 export interface PracticeCitizenActivity {
   practice_arena_id: string;
-  /** Stable human-facing Practice Arena number; not an API path identifier. */
+  /** Stable public Practice Arena number. Use it with `ReadClient.getPracticeArena()` or in `/practice/{practice_number}`. */
   practice_number: string;
   practice_match_id?: string | null;
   title: string;
@@ -333,17 +334,19 @@ export interface ApiEnvelope<T> {
   meta?: Record<string, unknown>;
 }
 
+export type CitizenStatus = "NONE" | "ACTIVE" | "SUSPENDED" | "COOLDOWN" | "RETIRING" | "UNDER_PENALTY" | (string & {});
+
 export interface CitizenSummary {
   citizen_id: string;
   wallet_address: string;
-  status: number;
+  status: CitizenStatus;
   display_name: string | null;
   metadata_uri: string | null;
 }
 
 /**
- * Game (topic) lifecycle state as serialized by the public Read API
- * (string enum labels per read-api `public-shape.ts`; unknown ordinals surface as `UNKNOWN(<n>)`).
+ * Game (topic) lifecycle labels returned by the public Read API.
+ * Unknown numeric states are returned as `UNKNOWN(<n>)`.
  */
 export type GameState =
   | "NONE"
@@ -355,8 +358,8 @@ export type GameState =
   | (string & {});
 
 /**
- * Match lifecycle state as serialized by the public Read API
- * (string enum labels per read-api `public-shape.ts`; unknown ordinals surface as `UNKNOWN(<n>)`).
+ * Match lifecycle labels returned by the public Read API.
+ * Unknown numeric states are returned as `UNKNOWN(<n>)`.
  */
 export type MatchState =
   | "NONE"
@@ -372,9 +375,6 @@ export type MatchState =
 
 /**
  * A game (arena topic) as returned by {@link ReadClient.getGame} / {@link ReadClient.listGames}.
- *
- * Field names match the protocol / on-chain / DB layer so you can cross-reference them directly
- * with contract code, audit responses, and chain events:
  *
  * - `topic_id`   — the game's unique on-chain identifier (= `topicId` in contract events)
  * - `topic_type` — arena format: `0` = text debate, `1` = board game
@@ -411,12 +411,13 @@ export interface GameSummary {
   min_spectator_deposit?: string;
   /** Planned max chain turns N (cap; match may end earlier with n < N). Settlement uses T_valid = max(n − m, 2). */
   planned_turn_count?: number;
-  /** Timing-weight tail m — last m turns of actual n get lower w(t); soft anti-snipe; does not hard-ban openPosition in V1. */
+  /** Timing-weight tail m: the last m completed turns receive lower timing weight; this is not an open-position cutoff. */
   timing_weight_tail_turns?: number;
   /** Minimum USDC pool size required before the game can activate (0 = no threshold). */
   activation_stake_threshold?: string;
   /** Settlement mode: `"SETTLER_INITIAL"` or `"JURY_FIRST"`. */
   settlement_mode?: string;
+  /** Minimum completed match turns for salary; prize eligibility is separate. */
   min_turns_for_salary?: number;
   jury_escrow_amount?: string;
   /** match_id of the active match once the game has been activated; null before activation. */
@@ -457,13 +458,13 @@ export interface MatchSummary {
   supporter_bonus_bps?: number | null;
   /** Opposite-side spectator salary share for ADVERSARIAL mode (basis points). */
   adversarial_salary_bps?: number | null;
-  /** Minimum turns a competitor must submit to earn salary + prize (anti-freeloading). */
+  /** Minimum completed match turns for salary; prize eligibility is separate. */
   min_turns_for_salary?: number | null;
   /** Absolute USDC locked for jury rewards (atomic units, 6 decimals). */
   jury_escrow_amount?: string | null;
   /** Minimum USDC hard-lock deposit per spectator (atomic units, 6 decimals). */
   min_spectator_deposit?: string | null;
-  /** Timing-weight tail turns m (§10.6 soft tail); does not hard-ban openPosition in V1 beta. */
+  /** Timing-weight tail m: the last m completed turns receive lower timing weight; this is not an open-position cutoff. */
   timing_weight_tail_turns?: number | null;
   /** Settlement mode: `"SETTLER_INITIAL"` or `"JURY_FIRST"`. */
   settlement_mode?: string | null;
@@ -488,7 +489,7 @@ export interface MatchSummary {
   planned_turn_count?: number | null;
   /** Settlement lifecycle (`AWAITING_SETTLEMENT`, `FINALIZED`, …) when present. */
   settlement_state?: string | null;
-  /** Final winner side (`"A"` / `"B"`) from settlement projection; null until decided. */
+  /** Final winner side (`"A"` / `"B"`); null until decided. */
   settlement_winner?: string | null;
 }
 
@@ -500,11 +501,11 @@ export interface PositionSummary {
   side: number | string;
   raw_amount: string;
   net_raw_amount: string;
-  /** Chain turn index when the position opened (Plan A canonical turn). */
+  /** Chain turn index when the position opened. */
   turn_index: number;
   fee_amount?: string;
-  effective_stake?: string;
-  fee_classification?: number;
+  effective_stake?: string | null;
+  fee_classification?: number | null;
   fee_free_credit?: string;
   claimed_at?: string | null;
   opened_at: string;
@@ -522,7 +523,7 @@ export interface PositionBoardSnapshot {
   freeze_at: string | null;
 }
 
-/** One `board_challenges` row as embedded on GET /matches/:id/board/steps. */
+/** Challenge summary returned with match board steps. */
 export interface BoardChallengeStepSummary {
   challenge_id: string;
   challenger_citizen_id: string;
@@ -557,7 +558,7 @@ export type JuryCaseState =
   | "FINALIZED"
   | "INVALID_MATCH";
 
-/** Linked jury case on GET /matches/:id/board/steps (from `challenged_board_step_ids`). */
+/** Linked jury case returned with match board steps. */
 export interface JuryCaseBoardStepSummary {
   jury_case_id: string;
   state: JuryCaseState | string;
@@ -659,7 +660,7 @@ export interface MatchBoardBundle {
   can_submit_turn?: boolean;
   /** Whether the on-chain position window is open for spectators (after settleBoardStep). */
   can_open_position?: boolean;
-  /** Derived sequencing phase for agents/UI (spec §13). */
+  /** Current Board progression phase. */
   step_phase?: string | null;
   /** Why submit is blocked; null when `can_submit_turn` is true. */
   block_reason?: BoardSubmitBlockReason | null;

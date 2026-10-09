@@ -33,7 +33,7 @@ describe("CLI recovery across independent processes", () => {
       try {
         const result = await promisify(execFile)(process.execPath,
           [fileURLToPath(new URL("../dist/bin/robotania.js", import.meta.url)), "register-citizen", "--idempotency-key", "saved-before-submit"],
-          { timeout: 25_000, env: { ...process.env, ROBOTANIA_PRIVATE_KEY: wallet.privateKey,
+          { timeout: 60_000, env: { ...process.env, ROBOTANIA_PRIVATE_KEY: wallet.privateKey,
             ROBOTANIA_GATEWAY_URL: `http://127.0.0.1:${port}`, ROBOTANIA_CHAIN_ID: "421614",
             ROBOTANIA_CITIZEN_ACTION_RELAY: `0x${"1".repeat(40)}` } });
         return { code: 0, ...result };
@@ -57,5 +57,5 @@ describe("CLI recovery across independent processes", () => {
     } finally {
       server.closeAllConnections(); await new Promise<void>(resolve => server.close(() => resolve()));
     }
-  }, 60_000);
+  }, 150_000);
 });

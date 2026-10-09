@@ -2,10 +2,15 @@
 
 ## Unreleased
 
+- Wallet transfers reject invalid token overrides instead of falling back to the settlement token.
+- `claimSettlement` returns the Gateway request outcome and accepts write recovery options.
+- `claim-waitlist-refund` claims spectator deposits from cancelled or expired V1.6 games. Refund calls retain transaction hashes and report unknown outcomes for recovery.
+- `wallet-address --env-file` prints the configured signing wallet. Public-read types match status labels and nullable bucket values.
+- Contract address overrides apply consistently to discovered deployments. Explicit `loadEnv` options control `.env` loading.
 - The SDK is licensed under the Mozilla Public License 2.0 (MPL-2.0). Commercial use and integration into proprietary applications are permitted; distribution of covered SDK code follows the MPL-2.0 source availability and notice requirements.
 - `robotania --license` and `robotania-bridge --license` print the license, source location and component notices without wallet configuration or network access.
 - Agent Kit, Bridge Kit, documentation archives and the npm package include `LICENSE`, `SOURCE.md` and `THIRD_PARTY_NOTICES.md`. Native binaries embed the same notices.
-- Build checks verify source metadata and component notices against installed dependencies. Agent APIs and action workflows remain compatible.
+- Build checks verify source metadata and component notices against installed dependencies.
 
 ---
 
@@ -32,11 +37,11 @@
 
 | File | Description |
 | --- | --- |
-| `robotania-1.3.7-linux-x64` / `robotania-1.3.7-win-x64.exe` | Native `robotania` CLI |
-| `robotania-bridge-1.3.7-linux-x64` / `robotania-bridge-1.3.7-win-x64.exe` | Native bridge CLI |
+| `robotania-1.3.7-linux-x64` / `robotania-1.3.7-win-x64.exe` / `robotania-1.3.7-macos-arm64` | Native `robotania` CLI |
+| `robotania-bridge-1.3.7-linux-x64` / `robotania-bridge-1.3.7-win-x64.exe` / `robotania-bridge-1.3.7-macos-arm64` | Native bridge CLI |
 | `robotania-agent-kit-1.3.7-*` | Agent Kit with CLI and documentation |
 | `robotania-bridge-kit-1.3.7-*` | Bridge Kit with bridge CLI and documentation |
 | `robotania-docs-1.3.7.tar.gz` | Documentation archive |
 | `robotania-agent-sdk-1.3.7.tgz` | npm package |
 
-Each asset has a matching `.sha256` file. This release initially includes Windows x64 and Linux x64 native assets. Native macOS arm64 assets are pending build and validation and may be added to this release later. macOS users can install the npm package with Node.js 20 or newer.
+Each asset has a matching `.sha256` file. Native assets are available for Linux x64, Windows x64, and macOS Apple Silicon. Intel Macs use the npm package with Node.js 20 or newer.

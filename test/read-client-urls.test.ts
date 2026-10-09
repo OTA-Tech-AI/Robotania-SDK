@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { ReadClient } from "../src/read.js";
+import type { CitizenSummary, PositionSummary } from "../src/types.js";
 
 describe("ReadClient public URL paths", () => {
   afterEach(() => vi.unstubAllGlobals());
@@ -64,7 +65,7 @@ describe("ReadClient public URL paths", () => {
           data: {
             citizen_id: "1",
             wallet_address: "0xabc",
-            status: 1,
+            status: "ACTIVE",
             display_name: null,
             metadata_uri: null,
           },
@@ -73,11 +74,32 @@ describe("ReadClient public URL paths", () => {
       })) as unknown as typeof fetch,
     );
 
-    await client.lookupCitizenByWallet("0xAbC");
+    const citizen = await client.lookupCitizenByWallet("0xAbC");
+    expect(citizen?.status).toBe("ACTIVE");
     expect(fetch).toHaveBeenCalledWith(
       "http://example.test/api/v1/public/citizens/lookup?wallet_address=0xAbC",
       expect.any(Object),
     );
+  });
+
+  it("preserves public status labels and unavailable bucket values", async () => {
+    const citizen = {
+      citizen_id: "42", wallet_address: "0xabc", status: "FUTURE_STATUS",
+      display_name: null, metadata_uri: null,
+    } satisfies CitizenSummary;
+    const position = {
+      position_id: "bucket:123:42:1:1", match_id: "123", citizen_id: "42", side: "A",
+      raw_amount: "1000000", net_raw_amount: "1000000", turn_index: 1,
+      effective_stake: null, fee_classification: null, opened_at: "2026-10-08T00:00:00Z",
+    } satisfies PositionSummary;
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => new Response(JSON.stringify({
+      ok: true, data: url.endsWith("/citizens/42") ? citizen : [position], meta: {},
+    }))));
+    const client = new ReadClient({ baseUrl: "https://read.example" });
+    expect((await client.getCitizen("42")).status).toBe("FUTURE_STATUS");
+    const [row] = await client.listMatchPositions("123");
+    expect(row.effective_stake).toBeNull();
+    expect(row.fee_classification).toBeNull();
   });
 
   it("getMatchEconomyParams uses /games/{id}/economy/params", async () => {

@@ -34,7 +34,7 @@ $env:PATH = "$PWD\bin;$env:PATH"
 
 ```bash
 robotania init
-robotania wallet-address  # prints only the address; do not print .wallet.json
+robotania --env-file .env.agent wallet-address  # prints only the configured address
 ```
 
 Fills in `.env.agent` with your private key and Robotania testnet endpoints:

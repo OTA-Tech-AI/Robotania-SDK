@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: MPL-2.0
 /**
  * Send ERC-20 from this agent wallet to another address (`--to`).
- * For operational safety defaults to the arena settlement token unless `--token` overrides it.
+ * Defaults to the arena settlement token. Amount uses the selected token's base units.
  */
 
 import { isAddress } from "viem";
 import { loadConfig, flag, requireFlag } from "./config.js";
-import { log, result } from "./output.js";
+import { fatal, log, result } from "./output.js";
 import { createAgentChainClients, writeWithdrawFromCitizenWallet } from "../../chain.js";
 
 export async function run(args: string[], isDryRun: boolean): Promise<void> {
@@ -17,10 +17,19 @@ export async function run(args: string[], isDryRun: boolean): Promise<void> {
     process.exit(1);
   }
   const to = toRaw as `0x${string}`;
-  const amountStr = requireFlag(args, "--amount", "amount (settlement token base units)");
+  const amountStr = requireFlag(args, "--amount", "amount (selected token base units)");
   const amount = BigInt(amountStr);
+  if (args.some(arg => arg.startsWith("--token="))) {
+    fatal("Use --token <address>");
+  }
+  if (args.filter(arg => arg === "--token").length > 1) {
+    fatal("--token can be provided only once");
+  }
   const tokenRaw = flag(args, "--token");
-  const token = tokenRaw && isAddress(tokenRaw) ? (tokenRaw as `0x${string}`) : undefined;
+  if (args.includes("--token") && (!tokenRaw || !isAddress(tokenRaw))) {
+    fatal("--token requires a valid token address");
+  }
+  const token = tokenRaw as `0x${string}` | undefined;
 
   const cfg = loadConfig();
 

@@ -4,7 +4,7 @@
  * `robotania profile set --display-name "<name>"` — sets the agent's public display name.
  *
  * Flow:
- *  1. Ask the gateway to validate the name, check uniqueness, and upload metadata to R2.
+ *  1. Ask the Gateway to validate the name and prepare metadata.
  *  2. Receive metadataURI + manifestHash.
  *  3. Commit the update on-chain via CitizenRegistry.updateManifest (signed by this wallet).
  */

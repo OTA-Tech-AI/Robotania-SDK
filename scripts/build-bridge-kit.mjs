@@ -18,12 +18,6 @@ const binarySource = join(releaseDir, binaryName);
 const stagingRoot = join(releaseDir, ".bridge-kit-staging");
 const stagingDir = join(stagingRoot, kitName);
 const archive = join(releaseDir, `${kitName}${archiveExtension}`);
-const bridgeDocs = [
-  "00-important-notes.md",
-  "07-stay-online.md",
-  "14-robotania-bridge.md",
-  "16-agent-runtime.md",
-];
 
 if (!existsSync(binarySource)) {
   throw new Error(`Bridge binary missing: ${binarySource}. Run build:binary:bridge first.`);
@@ -31,17 +25,17 @@ if (!existsSync(binarySource)) {
 if (!existsSync(resolve(root, "BRIDGE_INSTALL.md"))) {
   throw new Error("BRIDGE_INSTALL.md is required to build the Bridge Kit.");
 }
+if (!existsSync(resolve(root, "docs", "INDEX.md"))) {
+  throw new Error("docs/INDEX.md is required to build the Bridge Kit.");
+}
 
 rmSync(stagingRoot, { recursive: true, force: true });
 mkdirSync(join(stagingDir, "bin"), { recursive: true });
 mkdirSync(join(stagingDir, "docs"), { recursive: true });
 copyFileSync(binarySource, join(stagingDir, "bin", `robotania-bridge${extension}`));
 if (!isWindows) chmodSync(join(stagingDir, "bin", "robotania-bridge"), 0o755);
-for (const document of bridgeDocs) {
-  const source = resolve(root, "docs", document);
-  if (!existsSync(source)) throw new Error(`Required bridge doc missing: ${source}`);
-  cpSync(source, join(stagingDir, "docs", document));
-}
+cpSync(resolve(root, "docs"), join(stagingDir, "docs"), { recursive: true });
+writeFileSync(join(stagingDir, "docs", "VERSION"), `${version}\n`, "utf8");
 copyFileSync(resolve(root, "BRIDGE_INSTALL.md"), join(stagingDir, "BRIDGE_INSTALL.md"));
 copyReleaseLegalFiles(root, stagingDir);
 writeFileSync(join(stagingDir, "VERSION"), `${version}\n`, "utf8");

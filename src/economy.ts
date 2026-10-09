@@ -1,18 +1,20 @@
 // Copyright (c) 2026 OTA-Tech-AI
 // SPDX-License-Identifier: MPL-2.0
 import type { GatewayClient } from "./gateway.js";
+import type { RequestResult, WriteRequestOptions } from "./types.js";
 
-/** Mirrors on-chain SettlementMath using 1e18 fixed-point arithmetic. */
+/** Fixed-point scale for timing weights and crowding discounts. */
 const WAD = 1_000_000_000_000_000_000n;
 const BPS = 10_000n;
 
+/** Integer division of `x * y` by `denom`; returns `0` when `denom` is zero. */
 export function mulDiv(x: bigint, y: bigint, denom: bigint): bigint {
   if (denom === 0n) return 0n;
   return (x * y) / denom;
 }
 
 /**
- * T_valid = max(n − m, 2) at settlement (mirrors on-chain SettlementMath).
+ * T_valid = max(n − m, 2) at settlement.
  * n = actual final turn count when the match ends; m = timingWeightTailTurns.
  * When n equals plannedTurnCount N, this equals max(N − m, 2).
  */
@@ -22,12 +24,17 @@ export function computeTValid(n: number, timingWeightTailTurns: number): number 
   return t < 2 ? 2 : t;
 }
 
+/** Return timing weight scaled by `10^18`, where `10^18` represents 1. `alphaBps` uses basis points. */
 export function computeTimingWeight(t: number, tValid: number, alphaBps: number): bigint {
   if (tValid <= 1 || t <= 1) return WAD;
   const decay = (BigInt(alphaBps) * WAD * BigInt(t - 1)) / (BPS * BigInt(tValid - 1));
   return decay >= WAD ? 0n : WAD - decay;
 }
 
+/**
+ * Return crowding discount scaled by `10^18`, where `10^18` represents 1.
+ * Stake inputs use the same base units; `lambdaBps` uses basis points.
+ */
 export function computeCrowdingDiscount(
   bucketTimeWeightedStake: bigint,
   previousEffectiveStake: bigint,
@@ -41,6 +48,7 @@ export function computeCrowdingDiscount(
   return mulDiv(WAD, WAD, onePlus);
 }
 
+/** Weights and discounts use `10^18` scaling; returns stake in `feeAdjustedStake`'s base units. */
 export function calculateEffectiveStake(
   feeAdjustedStake: bigint,
   timingWeight: bigint,
@@ -49,9 +57,11 @@ export function calculateEffectiveStake(
   return mulDiv(mulDiv(feeAdjustedStake, timingWeight, WAD), crowdingDiscount, WAD);
 }
 
+/** Compatibility wrapper for {@link GatewayClient.claimPosition}; preserves the request outcome. */
 export async function claimSettlement(
   gateway: GatewayClient,
   matchId: string,
-): Promise<void> {
-  await gateway.claimPosition({ matchId });
+  options: WriteRequestOptions = {},
+): Promise<RequestResult> {
+  return gateway.claimPosition({ matchId }, options);
 }

@@ -6,10 +6,10 @@ import { createAgentChainClients, ensureErc20Allowance } from "../../chain.js";
 
 const MAX_UINT256 = 2n ** 256n - 1n;
 
-export async function run(args: string[], isDryRun: boolean): Promise<void> {
+export async function run(_args: string[], isDryRun: boolean): Promise<void> {
   const cfg = loadConfig();
   const addrs = cfg.chainAddresses;
-  const clients = createAgentChainClients(cfg.wallet);
+  createAgentChainClients(cfg.wallet);
 
   // CitizenRegistry is intentionally excluded: registration no longer pulls USDC
   // (minCitizenStake is an operate gate only — collateral must be deposited separately).

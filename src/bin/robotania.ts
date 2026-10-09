@@ -13,7 +13,8 @@ import { checkTermsBeforeAction, recoverTermsRejection, TermsManualRetryError,
 import { cliVersion } from "./cli/docs.js";
 import { licenseNotice } from "./cli/license.js";
 import { fatal, fatalResult, requestOutcomeExitCode } from "./cli/output.js";
-import { preloadChainAddresses } from "../chain.js";
+import { ChainTransactionReplacedError, ChainTransactionUncertainError, preloadChainAddresses } from "../chain.js";
+import { loadFromEnv } from "../wallet.js";
 import { GatewayActionFailedError, GatewayActionPendingError, GatewayError, GatewayWriteUncertainError } from "../gateway.js";
 import { readFileSync } from "node:fs";
 import { privateKeyToAccount } from "viem/accounts";
@@ -39,12 +40,19 @@ async function main(): Promise<void> {
   }
   if (args[0] === "wallet-address") {
     try {
+      if (envFile !== undefined) {
+        applyDotenv(envFile);
+        process.stdout.write(`${loadFromEnv().address}\n`);
+        return;
+      }
       const raw = JSON.parse(readFileSync(".wallet.json", "utf8")) as { privateKey?: string };
       if (!raw.privateKey || !/^0x[0-9a-fA-F]{64}$/.test(raw.privateKey)) throw new Error();
       process.stdout.write(`${privateKeyToAccount(raw.privateKey as `0x${string}`).address}\n`);
       return;
     } catch {
-      fatal("Could not read a valid .wallet.json in the current directory.");
+      fatal(envFile !== undefined
+        ? "Could not resolve a valid configured wallet. Check ROBOTANIA_PRIVATE_KEY."
+        : "Could not read a valid .wallet.json in the current directory.");
     }
   }
 
@@ -65,7 +73,7 @@ async function main(): Promise<void> {
     "withdraw-collateral", "withdraw-operational", "collateral-to-operational",
     "operational-to-collateral", "withdraw-from-citizen-wallet", "citizen-wallet-balance",
     "citizen-arena-balances", "register-citizen", "manifest", "create-game", "set-game-display", "set-citizen-avatar",
-    "join-waitlist", "deposit-waitlist", "activate-game", "cancel-game",
+    "join-waitlist", "deposit-waitlist", "activate-game", "cancel-game", "claim-waitlist-refund",
     "profile",
     "stakes-withdraw-collateral", "stakes-withdraw-operational",
     "stakes-collateral-to-operational", "stakes-operational-to-collateral",
@@ -77,6 +85,9 @@ async function main(): Promise<void> {
   ]);
   if (!KNOWN_COMMANDS.has(command)) {
     fatal(`Unknown command: ${command}. Run "robotania --help" for usage.`);
+  }
+  if (command === "claim-waitlist-refund" && (writeOptions.mode === "async" || process.argv.includes("--timeout-ms"))) {
+    fatal("claim-waitlist-refund does not use Gateway --async or --timeout-ms flags.");
   }
 
   // New entry/content actions can have local preparation before the Gateway
@@ -159,6 +170,12 @@ async function main(): Promise<void> {
     case "withdraw-collateral": {
       const { runWithdrawCollateralLocal } = await import("./cli/treasury-local-chain.js");
       await runWithdrawCollateralLocal(rest, isDryRun);
+      break;
+    }
+
+    case "claim-waitlist-refund": {
+      const { run } = await import("./cli/claim-waitlist-refund.js");
+      await run(rest, isDryRun);
       break;
     }
 
@@ -405,6 +422,25 @@ async function mainWithTermsReview(): Promise<void> {
 }
 
 mainWithTermsReview().catch((err) => {
+  if (err instanceof ChainTransactionReplacedError) {
+    fatalResult({
+      ok: false, terminal: true, wallet_address: err.walletAddress, chain_id: err.chainId,
+      transaction_nonce: err.nonce, original_tx_hash: err.originalTxHash, tx_hash: err.txHash,
+      replacement_reason: err.reason,
+      error: { code: err.code, message: err.message, next_action: "CHECK_TRANSACTION" },
+    }, 1);
+  }
+  if (err instanceof ChainTransactionUncertainError) {
+    fatalResult({
+      ok: false,
+      terminal: false,
+      wallet_address: err.walletAddress,
+      chain_id: err.chainId,
+      transaction_nonce: err.nonce,
+      tx_hash: err.txHash,
+      error: { code: err.code, message: err.message, next_action: "CHECK_TRANSACTION" },
+    }, 2);
+  }
   if (err instanceof GatewayWriteUncertainError) {
     fatalResult({ ok: false, terminal: false, idempotency_key: err.idempotencyKey,
       error: { code: err.errorCode, message: err.detail, next_action: "OPERATOR_REVIEW" },

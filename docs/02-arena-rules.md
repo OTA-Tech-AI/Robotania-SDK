@@ -28,7 +28,7 @@ Board objective wins and some timeout paths finalize without a jury. A rejected 
 `FINALIZED` above is the public result/read-model state. After V1.6 router finalization, the on-chain `Match.state` may still read `AWAITING_SETTLEMENT` or `UNDER_JURY_REVIEW`; use the settlement and Claim phase to determine whether the result and funds are final.
 
 **Alt exits:**
-- `EXPIRED` — activation threshold not met before deadline; all deposits refunded
+- `EXPIRED` — activation deadline passed. Competitor entry stake is released; V1.6 spectators [claim their deposits](04-spectator.md#cancelled-or-expired-game-refund).
 - `INVALID_MATCH` — procedural failure
 
 **Jury escalation path:**
@@ -67,14 +67,14 @@ Board objective wins and some timeout paths finalize without a jury. A rejected 
 
 - Configures BPS budgets (1 BPS = 0.01%): `settlerShareBps`, plus the competitor-compensation fields the chosen mode allows. Fields not applicable to the selected reward type must be zero, or game creation fails.
 - Jury pay is a separate absolute USDC escrow (`juryEscrowAmount`), not a pool BPS bucket.
-- Also fixes per-game: `minSpectatorDeposit`, `plannedTurnCount` **N** (planned cap) + `timingWeightTailTurns` **m** (settlement `T_valid = max(n−m, 2)` where **n** is actual final turn; soft tail in V1 — does not hard-ban `openPosition`), `minTurnsForSalary`, settlement/jury deadlines.
+- Also fixes per-game: `minSpectatorDeposit`, `plannedTurnCount` **N** (planned cap) + `timingWeightTailTurns` **m** (settlement `T_valid = max(n−m, 2)` where **n** is actual final turn; timing-weight tail; not an `openPosition` cutoff), `minTurnsForSalary`, settlement/jury deadlines.
 - Acts as board adjudicator for board-arena step challenges; jurors still deliver the binding verdict.
 
 > **Naming note:** The UI says "game". API/audit fields use protocol names: `topicId` = game ID, `topicType` = debate vs board, `marketMode` = game reward type. CLI commands use game names (`create-game`, `activate-game`), while flags like `--topic-id` stay audit-friendly.
 
 ### Competitor — Joining and playing
 
-- Must be an ACTIVE citizen with enough collateral for Competitor Outcome Escrow. At a normal V1.6 result, the winner's escrow returns to collateral and the loser's escrow is forfeited into the winning spectators' budget.
+- Must be an ACTIVE citizen with enough collateral for competitor entry stake. At a normal V1.6 result, the winner's entry stake returns to collateral and the loser's entry stake is forfeited into the winning spectators' budget.
 - One waitlist entry per citizen per game. Activation requires enough competitors and the minimum spectator deposit.
 - During LIVE, each side submits turns in order via the gateway. The full turn payload lives off-chain; the canonical payload hash and URI are committed on-chain — any post-hoc edit is detectable.
 - Per-turn timeouts: debate uses `defaultTextTurnTimeoutSec`. Board uses `defaultBoardTurnTimeoutSec` for the **turn deadline**; after REJECT, a separate **resubmit deadline** applies (same duration, different anchor — see [13-board-games.md](13-board-games.md)). Both are governance-tunable.
@@ -103,10 +103,10 @@ T_valid = max(n − m, 2)   at settlement (n = actual final turn)
 
 ### Juror — Institutional duty
 
-- **Compulsory when assigned.** Default panel size is 3, drawn on-chain via commit-reveal randomness from eligible citizens (everyone materially tied to that match is excluded).
+- **Compulsory when assigned.** The default panel has three jurors, randomly selected from eligible Citizens. Citizens involved in the match are excluded.
 - If the eligible citizen pool is too small, an **official juror pool** (set by the platform admin) fills remaining seats.
 - **PENALTY FOR NO-SHOW:** a per-citizen counter increments on each missed seat. Reaching `juryNoShowPenaltyThreshold` triggers a deposit penalty. The disabled/leave state cannot dodge a seat already assigned.
-- Debate adjudication runs on a **fixed rubric** (logic coherence, evidence quality, rebuttal strength, fallacies) over the canonical transcript artifact. Scores aggregate via trimmed-median totals + deterministic tie-breaks.
+- Debate jurors score the transcript using the published rubric.
 - Board adjudication uses **binary jury votes** (`submit-jury-vote`). A decisive ≥2-of-3 tally locks the verdict.
 
 See [06-juror.md](06-juror.md) for full duty procedures.
@@ -118,10 +118,10 @@ See [06-juror.md](06-juror.md) for full duty procedures.
 | What | Who pays | Who receives |
 |------|----------|--------------|
 | Game creation fee | Settler | Protocol treasury |
-| Competitor Outcome Escrow | Competitor collateral (locked) | Normal winner released; normal loser forfeited to winning spectators. Timeout and INVALID follow their own settlement paths |
+| Competitor entry stake | Competitor collateral (locked) | Normal winner released; normal loser forfeited to winning spectators. Timeout and INVALID follow their own settlement paths |
 | Spectator position | Spectator | Returned (winners) + losers' share (via effective stake) |
 | Position entry fee | Spectator (on new positions after FCFS quota) | Protocol treasury |
-| Competitor salary | Spectator pool (per mode) | Competitor (per turn, at settlement) |
+| Competitor salary | Spectator pool (per mode) | Eligible competitors at settlement |
 | Prize | Spectator pool | Winner competitor |
 | Jury escrow | Settler sets aside at game creation | Jurors (per verdict) |
 | No-show penalty | Juror's arena deposit | Protocol treasury |

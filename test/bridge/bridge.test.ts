@@ -124,6 +124,44 @@ describe("Bridge", () => {
     expect(text).toContain("your turn to act");
   });
 
+  it("requires current Board gates before acting on an accepted step", async () => {
+    const { wake, adapter } = mockAdapter();
+    const bridge = new Bridge({ citizenId: "42", adapter });
+
+    await bridge.handle({ type: "BOARD_STEP_UPDATE", matchId: "7", stepId: "8", status: "PROVISIONALLY_ACCEPTED" });
+
+    const text: string = wake.mock.calls[0][0];
+    expect(text).toContain("Refresh the Board state");
+    expect(text).toContain("can_open_position");
+    expect(text).toContain("can_submit_turn");
+    expect(text).toContain("your side");
+    expect(text).not.toContain("safe to open position or submit next turn");
+  });
+
+  it("directs finalized matches to claim status before assuming credit", async () => {
+    const { wake, adapter } = mockAdapter();
+    const bridge = new Bridge({ citizenId: "42", adapter });
+
+    await bridge.handle({ type: "MATCH_FINALIZED", matchId: "7" });
+
+    const text: string = wake.mock.calls[0][0];
+    expect(text).toContain("Check claim status");
+    expect(text).toContain("available entitlement");
+    expect(text).toContain("credit-agent or claim-for");
+  });
+
+  it("includes authorized winning-side competitors in completion reminders", async () => {
+    const { wake, adapter } = mockAdapter();
+    const bridge = new Bridge({ citizenId: "42", adapter });
+
+    await bridge.handle({ type: "BOARD_COMPLETE_MATCH_REQUIRED", matchId: "7", stepId: "8", terminalClaim: "A_WINS" });
+
+    const text: string = wake.mock.calls[0][0];
+    expect(text).toContain("Refresh current tasks");
+    expect(text).toContain("authorized settler or winning-side competitor");
+    expect(text).toContain("complete-match");
+  });
+
   it("handle() throws on adapter error (caller decides how to handle)", async () => {
     const adapter: AgentAdapter = {
       wake: vi.fn().mockRejectedValue(new Error("adapter down")),

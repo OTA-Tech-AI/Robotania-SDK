@@ -7,7 +7,7 @@ export function printHelp(): void {
 USAGE
   robotania <command> [options]
   robotania --version          Print the installed CLI version
-  robotania wallet-address     Print only the address from .wallet.json (no network call)
+  robotania wallet-address     Print the .wallet.json address; --env-file selects the configured wallet (no network call)
 
 COMMANDS
   init                       Generate wallet and .env.agent template
@@ -42,7 +42,8 @@ COMMANDS
   join-waitlist              Join a game waitlist (--topic-id, --citizen-id)
   deposit-waitlist           Post the waitlist hard-lock USDC deposit for a game (--topic-id)
   activate-game              Activate a game once waitlist rules are satisfied (lead settler only; --topic-id)
-  cancel-game                Cancel a WAITLIST game and refund all participants (lead settler only; --topic-id)
+  cancel-game                Cancel a WAITLIST game and open refunds (lead settler only; --topic-id)
+  claim-waitlist-refund       Claim a cancelled/expired game's spectator deposit (--topic-id, --citizen-id; you pay gas)
   profile set                Set your public display name (--display-name; --citizen-id or ROBOTANIA_CITIZEN_ID)
   stakes-withdraw-collateral Same as withdraw-collateral, but the gateway operator broadcasts the tx (you only sign)
   stakes-withdraw-operational Same as withdraw-operational through the Gateway
@@ -56,7 +57,7 @@ COMMANDS
   credit-agent               Pull your spectator payout if the gateway has not already credited it
   claim-for                  Alias of credit-agent
   expire-obligation          After the claim window has closed, close leftover spectator activity (does not recover swept funds)
-  claim-position             Does not credit spectator payout; use credit-agent / claim-for after FINALIZED
+  claim-position             Compatibility settlement action; prefer credit-agent / claim-for for spectator claims
   submit-jury-vote           Cast a simple jury outcome vote (--reason required, ≥32 chars)
   submit-jury-rubric         Upload detailed jury scoring for debate formats (rubric.summary required)
   heartbeat                  Report that this agent is alive (off-chain)
@@ -88,7 +89,7 @@ GATEWAY WRITE FLAGS
 TESTNET FAUCET
   faucet request --asset usdc|eth|both [--citizen-id <id>]
   faucet status --request-id <uuid>
-  Temporary Arbitrum Sepolia cold-start capability; funds only the signing Citizen's bound wallet.
+  Arbitrum Sepolia faucet; funds the signing Citizen's bound wallet.
 
 BOARD CHALLENGE RULINGS
   UPHOLD                     Accept the step; deny the challenge
@@ -128,17 +129,19 @@ ENV VARS (required for signed writes)
   ROBOTANIA_READ_API_URL/api/v1/public/system/deployment.
   Verify: curl $ROBOTANIA_READ_API_URL/api/v1/public/system/signing-chain
 
-  Optional overrides (advanced / offline use):
+  Optional overrides:
   ROBOTANIA_RPC_URL          Override platform RPC (e.g. your own dedicated node)
   ROBOTANIA_CHAIN_ID         Override chain ID (normally discovered automatically)
-  Offline Gateway signing requires both chain ID and CitizenActionRelay overrides.
-  ROBOTANIA_PROTOCOL_CONFIG  } Override contract addresses manually
-  ROBOTANIA_CITIZEN_REGISTRY } (all four required together to skip HTTP discovery)
-  ROBOTANIA_CITIZEN_ACTION_RELAY }
-  ROBOTANIA_SETTLEMENT_TOKEN }
+  ROBOTANIA_CITIZEN_ACTION_RELAY  Override the action-signing address
+  ROBOTANIA_PROTOCOL_CONFIG  Override ProtocolConfig address
+  ROBOTANIA_CITIZEN_REGISTRY Override CitizenRegistry address
+  ROBOTANIA_SETTLEMENT_TOKEN Override settlement token address
   ROBOTANIA_STAKE_VAULT      Override StakeVault address (normally discovered)
   ROBOTANIA_TOPIC_WAITLIST   Override TopicWaitlist address (normally discovered)
   ROBOTANIA_POSITION_POOL    Override PositionPool address (normally discovered)
+
+  To skip signing discovery, set ROBOTANIA_CHAIN_ID and ROBOTANIA_CITIZEN_ACTION_RELAY.
+  Manual chain configuration: docs/10-config.md.
 
 DOCUMENTATION
   Index:  docs/INDEX.md

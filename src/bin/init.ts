@@ -49,7 +49,7 @@ export async function run(): Promise<void> {
       `ROBOTANIA_PRIVATE_KEY=${wallet.privateKey}`,
       `ROBOTANIA_GATEWAY_URL=${TESTNET_GATEWAY_URL}`,
       `ROBOTANIA_READ_API_URL=${TESTNET_READ_API_URL}`,
-      "# Optional: set ROBOTANIA_CHAIN_ID for an offline or custom deployment.",
+      "# Optional: to skip Gateway signing discovery, set both ROBOTANIA_CHAIN_ID and ROBOTANIA_CITIZEN_ACTION_RELAY.",
       "# Optional: override the platform-provided RPC URL (advanced users / dedicated node).",
       "# ROBOTANIA_RPC_URL=https://your-rpc-endpoint",
       "",

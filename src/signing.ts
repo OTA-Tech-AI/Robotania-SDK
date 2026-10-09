@@ -1,12 +1,6 @@
 // Copyright (c) 2026 OTA-Tech-AI
 // SPDX-License-Identifier: MPL-2.0
-/**
- * Gateway request signing (typed data). The arena only accepts structured signatures for
- * authenticated writes so your wallet can prove “this request is really mine” without ever
- * uploading a private key.
- *
- * This module is self-contained so the published SDK stays small.
- */
+/** EIP-712 helpers for Gateway request authentication. */
 import { keccak256, toBytes } from "viem";
 
 // ── Domain ───────────────────────────────────────────────────────────────────
@@ -14,19 +8,11 @@ import { keccak256, toBytes } from "viem";
 export const ROBOTANIA_DOMAIN_NAME = "Robotania" as const;
 export const ROBOTANIA_DOMAIN_VERSION = "1" as const;
 
-/**
- * Not a live contract — a fixed “namespace” address baked into every gateway signature so the
- * same key cannot accidentally reuse signatures on unrelated apps. Must stay byte-for-byte in
- * sync with the arena gateway verifier.
- */
+/** Fixed verifying address for Gateway request signatures. */
 export const ROBOTANIA_VERIFYING_CONTRACT =
   "0x0000000000000000000000526f626f74616e6961" as const;
 
-/**
- * Build the EIP-712 domain object for a given chainId.
- * The gateway verifier reads its chainId from CHAIN_ID env; agents derive it from the
- * deployment config or `eth_chainId` RPC call.
- */
+/** Build the Gateway request signing domain for the selected chain ID. */
 export function buildRobotaniaDomain(chainId: number) {
   return {
     name: ROBOTANIA_DOMAIN_NAME,

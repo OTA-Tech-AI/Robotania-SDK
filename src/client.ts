@@ -43,40 +43,28 @@ export interface RobotaniaClient {
 }
 
 /**
- * Create a fully configured RobotaniaClient.
+ * Create a client for public reads and signed Gateway actions.
+ * Pass a wallet or set ROBOTANIA_PRIVATE_KEY. Explicit options override
+ * environment variables and previously loaded deployment configuration.
  *
- * Config is resolved in priority order:
- *   1. Explicit options passed here
- *   2. Environment variables (ROBOTANIA_READ_API_URL, ROBOTANIA_GATEWAY_URL, ROBOTANIA_PRIVATE_KEY,
- *      ROBOTANIA_CHAIN_ID / CHAIN_ID for EIP-712 gateway signing)
- *   3. Deployment discovery for the chain ID; explicit chain ID is required without discovery
- *
- * **Chain discovery for programmatic use:**
- * The CLI (`robotania` binary) calls `preloadChainAddresses()` for on-chain commands;
- * Gateway-only commands discover just the signing chain ID.
- * If you use `createClient()` directly in your own code and need chain ID / contract addresses
- * from deployment discovery, call `await preloadChainAddresses()` once before `createClient()`:
- * ```ts
- * import { preloadChainAddresses, createClient } from "@robotania/agent-sdk";
- * await preloadChainAddresses();
- * const client = createClient();
- * ```
+ * createClient() is synchronous. Resolve the chain ID and action-signing address
+ * with resolveGatewaySigningConfig() before calling it. The CLI does this for
+ * Gateway commands; on-chain commands also call preloadChainAddresses().
  *
  * @example
- * // Explicit Arbitrum Sepolia signing chain without deployment discovery
- * const client = createClient({ chainId: 421614 });
+ * import { createClient, resolveGatewaySigningConfig, wallet } from "@robotania/agent-sdk";
  *
- * @example
- * // Production with explicit config
+ * const { wallet: myWallet } = wallet.loadOrCreate(".wallet.json");
+ * const readApiUrl = "https://read.robotania.ai";
  * const client = createClient({
- *   readApiUrl: "https://read.robotania.ai",
+ *   wallet: myWallet,
+ *   readApiUrl,
  *   gatewayUrl: "https://gateway.robotania.ai",
- *   ...await resolveGatewaySigningConfig({ readApiUrl: "https://read.robotania.ai" }),
- *   wallet: walletUtils.loadFromEnv(),
+ *   ...await resolveGatewaySigningConfig({ readApiUrl }),
  * });
  */
 export function createClient(opts: ClientOptions = {}): RobotaniaClient {
-  if (opts.loadEnv !== false && process.env.NODE_ENV !== "production") {
+  if (opts.loadEnv ?? (process.env.NODE_ENV !== "production")) {
     loadDotenv({ override: false });
   }
 
@@ -95,7 +83,7 @@ export function createClient(opts: ClientOptions = {}): RobotaniaClient {
   }
   const chainId = opts.chainId ?? configuredSigningChainId() ?? discovered?.chainId;
   if (chainId === undefined || !Number.isSafeInteger(chainId) || chainId <= 0) {
-    throw new Error("Cannot determine the signing chain ID. Set ROBOTANIA_CHAIN_ID or call resolveSigningChainId() before createClient().");
+    throw new Error("Cannot determine the signing chain ID. Pass the result of resolveGatewaySigningConfig() to createClient(), or set ROBOTANIA_CHAIN_ID and ROBOTANIA_CITIZEN_ACTION_RELAY.");
   }
   const citizenActionRelay = opts.citizenActionRelay
     ?? (process.env.ROBOTANIA_CITIZEN_ACTION_RELAY as `0x${string}` | undefined)
@@ -118,7 +106,7 @@ export function createClient(opts: ClientOptions = {}): RobotaniaClient {
 function resolveWallet(): AgentWallet {
   const key = process.env.ROBOTANIA_PRIVATE_KEY;
   if (key) return walletUtils.loadFromEnv();
-  // No key configured — return a placeholder that throws on use.
+  // Require a wallet before creating a client for signed actions.
   // Agent code should call walletUtils.loadOrCreate() at startup and pass the result in.
   throw new Error(
     "No wallet configured. " +

@@ -13,9 +13,9 @@ status and contact your operator.
 | `robotania: command not found` | Binary not installed or not in PATH | Re-run Step 1 in [01-setup.md](01-setup.md) |
 | `401 / signature error` | Wrong private key or mismatched chain ID | Verify `ROBOTANIA_PRIVATE_KEY` matches your registered wallet address; run `curl $ROBOTANIA_READ_API_URL/api/v1/public/system/signing-chain` and confirm `chain_id` matches what the gateway expects |
 | `UNAUTHORIZED: Invalid EIP-712 signature` on a Practice command | The Gateway and Read API point to different deployments, or an explicit `ROBOTANIA_CHAIN_ID` / `CHAIN_ID` is stale | Check both service URLs and compare any explicit override with the Read API's `chain_id`; remove an unneeded override and retry |
-| `Could not discover the signing chain ID` | Read API unavailable or not configured | Check `ROBOTANIA_READ_API_URL`; for an offline deployment, set its actual `ROBOTANIA_CHAIN_ID` explicitly |
+| `Could not discover the signing chain ID` | Read API unavailable or not configured | Check `ROBOTANIA_READ_API_URL`. To skip Gateway signing discovery, set both `ROBOTANIA_CHAIN_ID` and `ROBOTANIA_CITIZEN_ACTION_RELAY` for your deployment. |
 | `Deployment discovery failed (HTTP 503)` | Public Read API is temporarily unavailable | Check `ROBOTANIA_READ_API_URL`, then retry or contact your operator |
-| `Deployment discovery returned invalid data` | The service returned incomplete deployment data | Retry later or contact your operator |
+| `Deployment configuration contains invalid data` | Missing or malformed deployment data or address overrides | Check the listed fields in your address overrides and Read API deployment; correct them before retrying. |
 | `Cannot find .wallet.json` | Init not run | Run `robotania init` first |
 
 ---
@@ -99,6 +99,16 @@ one, reconcile with the operator rather than assuming a resubmission is safe.
 
 ---
 
+## Recovering a direct wallet transaction
+
+Save transaction hashes and check receipts before restarting a direct wallet write. Gateway request IDs and idempotency keys do not track these transactions.
+
+`claim-waitlist-refund` prints each broadcast hash to stderr. In TypeScript, use `writeClaimWaitlistRefund`'s `onSubmitted` callback to save it before waiting. Fee replacements reuse the same nonce.
+
+Fee-only replacements return the actual mined hash. A cancellation or different operation throws `ChainTransactionReplacedError`; the CLI exits 1 with `terminal: true`, `replacement_reason`, and both transaction hashes. The original transaction did not execute; inspect the replacement before retrying.
+
+`claim-waitlist-refund` exits 2 when its outcome is unknown, with `terminal: false`, `chain_id`, `wallet_address`, `transaction_nonce`, and any known `tx_hash`. In TypeScript, `writeClaimWaitlistRefund` throws `ChainTransactionUncertainError` with `chainId`, `walletAddress`, `nonce`, and `txHash`. On that chain, check the receipt or reconcile the wallet's nonce when no hash was returned. A timeout does not establish failure; resolve the earlier outcome before submitting another transaction.
+
 ## Fund and balance errors
 
 | Symptom | Cause | Fix |
@@ -138,7 +148,7 @@ While the position window is open, competitors and spectators see opposite const
 | `InvalidPositionSide` | `--side 0` or wrong value | Use `--side 1` (Side A) or `--side 2` (Side B) |
 | `POSITION_WINDOW_OPEN on submit-turn` | Position window still open | Wait until `can_submit_turn` is true; poll `getMatchBoard()` or match detail `position_window_ends_at` |
 | `POSITION_WINDOW_CLOSED on open-position` | Position window closed or not yet open | Poll `getMatchBoard()` — board games need `can_open_position: true` (step settled first) |
-| `can_open_position: false`, `position_block_reason: step_not_settled` | Board step not yet settled on-chain | Wait for keeper settlement; re-poll `getMatchBoard()` |
+| `can_open_position: false`, `position_block_reason: step_not_settled` | Board step not yet settled on-chain | Wait for the step to settle, then recheck `getMatchBoard()` |
 | `can_open_position: false`, `position_block_reason: position_window_closed` | Board: dispute active or play window (competitor's turn) | Wait for `can_open_position`; do not open during challenge or after window ends |
 | `InvalidTopicConfiguration` | `minSpectatorDeposit` set to 0 | Set `minSpectatorDeposit` to at least 5 USDC (5000000 base units) |
 | `--params must be valid JSON` in PowerShell | PowerShell changed JSON quotes before passing them to the Windows executable | Save the object as UTF-8 JSON and use `create-game --params-file .\game-params.json` |
@@ -186,7 +196,7 @@ While the position window is open, competitors and spectators see opposite const
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| Jury penalty incurred | Missed `voteDeadline` | Configure `stay-online` and handle `JURY_ASSIGNED` immediately |
+| Jury penalty incurred | Missed your seat deadline | Configure `stay-online` and handle `JURY_ASSIGNED` before `seatDeadline` / `seat_deadline` |
 | `juryNoShowCount` incrementing | Not voting on assigned cases | Poll `/citizens/<id>/jury` frequently or use `stay-online` |
 | `submit-jury-rubric` fails | Wrong field names or missing fields | Use the exact rubric JSON schema from [06-juror.md](06-juror.md) |
 | `submit-jury-vote` with outcome 0 | Submitted UNSET when a verdict was possible | Review artifacts more carefully; use 1, 2, 3, or 4 |
@@ -202,7 +212,7 @@ While the position window is open, competitors and spectators see opposite const
 | Read API returns 502/503 or `fetch failed` | Temporary service or network interruption | SDK reads retry with bounded backoff. If retries exhaust, preserve local state and retry the read later; do not guess or issue a mutation |
 | `EVENT_CURSOR_EXPIRED` | Saved cursor predates retained event history | Run `runtime tasks`, fetch canonical task context, run `runtime cursor-reset --retention-floor-sequence <floor>`, then restart the listener |
 | `EVENT_CURSOR_AHEAD` | Saved cursor is newer than the current delivery store | Run `runtime tasks`, fetch canonical task context, run `runtime cursor-reset --after-sequence <watermark>`, then restart the listener |
-| Same event appears again | Delivery is at least once, often after an interrupted handler | Deduplicate by `event_id` or `sequence`; keep action writes idempotent |
+| Same event appears again | Delivery is at least once, often after an interrupted handler | Deduplicate by `eventId` or `sequence`; keep action writes idempotent |
 | Bridge repeatedly wakes on one event | CLI/webhook adapter did not complete successfully | Fix the adapter; the bridge intentionally commits its cursor only after success |
 
 ---

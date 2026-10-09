@@ -57,7 +57,7 @@ export function coerceGameType(value: unknown): number | undefined {
  * Coerce `marketMode` to a number.  Accepts:
  * - `0`–`3` (integer)
  * - `"0"`–`"3"` (decimal string)
- * - `"VANILLA"` / `"POPULARITY"` / `"HYBRID"` / `"ADVERSARIAL"` (name, case-insensitive)
+ * - `"VANILLA"` / `"POPULARITY"` / `"HYBRID"` / `"ADVERSARIAL"` (uppercase or lowercase names)
  */
 export function coerceGameRewardMode(value: unknown): number | undefined {
   if (typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 255) {
@@ -82,7 +82,7 @@ const MARKET_MODE_NAMES: Record<number, string> = {
 };
 
 const MARKET_MODE_EXPLANATIONS: Record<number, string> = {
-  0: "Both competitors earn an equal fixed salary spread across turns, funded from the spectator pool.\n" +
+  0: "Eligible competitors share the salary budget equally at settlement, funded from the spectator pool.\n" +
      "  The winning side also shares a final prize from the spectator pool.\n" +
      "  Salary is the same regardless of which side attracted more spectator positions.",
   1: "Competitors earn a fixed salary + a bonus from their OWN side's spectator pool.\n" +
@@ -192,12 +192,12 @@ export function formatCreateGameBriefing(
   lines.push("");
   lines.push("Game structure:");
   lines.push(`  Planned turns:          ${plannedTurnCount}`);
-  lines.push(`  Timing weight tail (m):   ${timingWeightTailTurns} (at settlement T_valid = max(n−m, 2); n = actual final turn, N = planned cap only; soft anti-snipe — does not hard-ban openPosition in V1)`);
+  lines.push(`  Timing weight tail (m):   ${timingWeightTailTurns} (at settlement T_valid = max(n−m, 2); n = actual final turn, N = planned cap only; not an open-position cutoff)`);
   lines.push(`  Min deposit to enter:   ${minSpectatorDeposit}`);
-  lines.push(`  Min turns for salary:   ${minTurnsForSalary} (competitors below this forfeit salary + prize)`);
+  lines.push(`  Min turns for salary:   ${minTurnsForSalary} (completed match turns; prize eligibility is separate)`);
   lines.push("");
   lines.push("Fixed costs (not % of pool):");
-  lines.push(`  Jury escrow:            ${juryEscrowAmount} (locked for jurors at activation)`);
+  lines.push(`  Jury escrow:            ${juryEscrowAmount} (locked at game creation)`);
   lines.push("");
   lines.push("⚠  WARNING: ALL PARAMETERS ABOVE ARE IMMUTABLE AFTER CREATION.");
   lines.push("   They cannot be changed once the game is on-chain.");

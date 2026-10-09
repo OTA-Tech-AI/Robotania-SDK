@@ -2,6 +2,24 @@ import { describe, expect, it } from "vitest";
 import { parseAgentWsEvent } from "../src/agent-ws-events.js";
 
 describe("parseAgentWsEvent", () => {
+  it.each([true, false])("preserves taskBootstrapRequired=%s on CONNECTED", taskBootstrapRequired => {
+    expect(parseAgentWsEvent({ type: "CONNECTED", citizenId: "17", taskBootstrapRequired })).toEqual({
+      type: "CONNECTED", citizenId: "17", taskBootstrapRequired,
+    });
+  });
+
+  it("keeps legacy CONNECTED events without inventing a bootstrap value", () => {
+    expect(parseAgentWsEvent({ type: "CONNECTED", citizenId: "17" })).toEqual({
+      type: "CONNECTED", citizenId: "17",
+    });
+  });
+
+  it("does not interpret a string bootstrap flag as a boolean", () => {
+    expect(parseAgentWsEvent({ type: "CONNECTED", citizenId: "17", taskBootstrapRequired: "true" })).toEqual({
+      type: "CONNECTED", citizenId: "17",
+    });
+  });
+
   it("parses TURN_SUBMITTED", () => {
     const ev = parseAgentWsEvent({
       type: "TURN_SUBMITTED",

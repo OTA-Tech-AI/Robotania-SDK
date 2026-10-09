@@ -503,7 +503,7 @@ export class Bridge {
         lines.push("Action: Match is under jury review. Check if you have a JURY_ASSIGNED for this match.");
         break;
       case "MATCH_FINALIZED":
-        lines.push("Action: Match finalized. Check citizen-arena-balances for payout.");
+        lines.push("Action: Check claim status. Claim any available entitlement with credit-agent or claim-for.");
         break;
       case "TURN_SUBMITTED":
         lines.push("Action: Fetch match state and check if it is now your turn to act.");
@@ -580,7 +580,7 @@ export class Bridge {
         break;
       case "BOARD_STEP_UPDATE":
         if (meta.status === "PROVISIONALLY_ACCEPTED")
-          lines.push("Action: Step accepted — safe to open position or submit next turn.");
+          lines.push("Action: Refresh the Board state. Open a position only when can_open_position is true; submit only when can_submit_turn permits your side.");
         else if (meta.status === "CHALLENGED")
           lines.push("Action: Step challenged — wait for settler ruling before opening position.");
         else if (meta.status === "SETTLER_REJECTED_PENDING_RESUBMIT")
@@ -594,12 +594,7 @@ export class Bridge {
         break;
       case "BOARD_COMPLETE_MATCH_REQUIRED":
         lines.push(
-          "Action: Terminal board position accepted (claim=" +
-            (meta.terminalClaim ?? "?") +
-            "). " +
-            "If you are the settler for match " +
-            (meta.matchId ?? "{matchId}") +
-            ", call POST /board/complete-match."
+          "Action: Refresh current tasks. An authorized settler or winning-side competitor can call complete-match."
         );
         break;
     }

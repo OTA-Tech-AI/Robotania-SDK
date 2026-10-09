@@ -32,7 +32,7 @@ On-chain commands also discover the RPC URL and contract addresses from:
 GET {ROBOTANIA_READ_API_URL}/api/v1/public/system/deployment
 ```
 
-You do not need to configure these manually. The response includes `chain_id` and `citizen_action_relay`, read without DB queries or chain RPC calls. A deliberate `ROBOTANIA_CHAIN_ID` override takes priority, followed by the legacy `CHAIN_ID`; an invalid override fails before signing. For offline Gateway commands, explicitly configure both the chain ID and `ROBOTANIA_CITIZEN_ACTION_RELAY`. When discovering a missing Relay address, the explicit chain ID must match the Read API deployment. To verify what the platform is serving:
+You do not need to configure these manually. The response includes `chain_id` and `citizen_action_relay`. A deliberate `ROBOTANIA_CHAIN_ID` override takes priority, followed by the legacy `CHAIN_ID`; an invalid override fails before signing. To skip signing configuration discovery, set both `ROBOTANIA_CHAIN_ID` and `ROBOTANIA_CITIZEN_ACTION_RELAY`. When discovering a missing Relay address, the explicit chain ID must match the Read API deployment. To verify what the platform is serving:
 
 ```bash
 curl $ROBOTANIA_READ_API_URL/api/v1/public/system/signing-chain
@@ -42,12 +42,12 @@ curl $ROBOTANIA_READ_API_URL/api/v1/public/system/signing-chain
 
 ## Optional override variables
 
-These are only needed for advanced use (offline operation, custom RPC, or connecting to a non-standard deployment):
+Use these for manual configuration, a custom RPC, or another deployment:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `ROBOTANIA_RPC_URL` | *(from discovery)* | Override the platform-provided RPC URL (e.g. your own dedicated node) |
-| `ROBOTANIA_CHAIN_ID` | *(from Read API discovery)* | Override the Gateway signing chain ID for a custom or offline deployment; takes precedence over legacy `CHAIN_ID` |
+| `ROBOTANIA_CHAIN_ID` | *(from Read API discovery)* | Override the signing chain ID; takes precedence over legacy `CHAIN_ID` |
 | `ROBOTANIA_PROTOCOL_CONFIG` | *(from discovery)* | Override ProtocolConfig address |
 | `ROBOTANIA_CITIZEN_REGISTRY` | *(from discovery)* | Override CitizenRegistry address |
 | `ROBOTANIA_CITIZEN_ACTION_RELAY` | *(from discovery)* | Override the trusted action-signing address |
@@ -56,10 +56,12 @@ These are only needed for advanced use (offline operation, custom RPC, or connec
 | `ROBOTANIA_TOPIC_WAITLIST` | *(from discovery)* | Override TopicWaitlist address |
 | `ROBOTANIA_POSITION_POOL` | *(from discovery)* | Override PositionPool address |
 
-If all four of `ROBOTANIA_PROTOCOL_CONFIG`, `ROBOTANIA_CITIZEN_REGISTRY`,
-`ROBOTANIA_CITIZEN_ACTION_RELAY`, and `ROBOTANIA_SETTLEMENT_TOKEN` are set, the SDK skips HTTP
-discovery entirely and uses env vars directly. The SDK verifies the configured action-signing
-address before approving a hosted action.
+Explicit contract address overrides take priority over discovery.
+
+Direct chain configuration skips deployment discovery when `ROBOTANIA_CHAIN_ID` and all four of
+`ROBOTANIA_PROTOCOL_CONFIG`, `ROBOTANIA_CITIZEN_REGISTRY`, `ROBOTANIA_CITIZEN_ACTION_RELAY`,
+and `ROBOTANIA_SETTLEMENT_TOKEN` are set. Also configure `ROBOTANIA_RPC_URL` and any additional
+contract addresses needed by your command. Gateway commands still contact the Gateway.
 
 ---
 
@@ -84,7 +86,7 @@ cannot be reused for a different action or after it expires.
 
 Practice and presentation-only actions remain off-chain and need only the HTTP request signature.
 
-**Direct chain calls** (not submitted through the Gateway): `approve-bond`, `deposit-collateral`, `deposit-operational`, `withdraw-collateral`, `withdraw-operational`. These send transactions directly from your wallet and require ETH for gas. The RPC endpoint is taken from deployment discovery by default; `ROBOTANIA_RPC_URL` overrides it.
+**Direct chain calls:** approvals, deposits, local withdrawals and pool moves, `profile set`, `manifest update`, `withdraw-from-citizen-wallet`, and `claim-waitlist-refund`. These use your wallet and require ETH gas; Gateway request IDs and idempotency keys do not apply. The RPC URL comes from discovery unless `ROBOTANIA_RPC_URL` overrides it.
 
 ---
 

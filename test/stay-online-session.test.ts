@@ -65,6 +65,10 @@ describe("StayOnlineSession", () => {
     const hello = new Promise<void>((resolve) => {
       session.once("CONNECTED", () => resolve());
     });
+    const messages = vi.fn();
+    const bootstrap = vi.fn();
+    session.on("message", messages);
+    session.on("taskBootstrapRequired", bootstrap);
 
     await session.start();
 
@@ -73,8 +77,11 @@ describe("StayOnlineSession", () => {
     expect(gw.getWsAuthToken).toHaveBeenCalledWith("cit-1");
 
     const sock = factory.mock.results[0]?.value as FakeSocket;
-    sock.emit("message", Buffer.from(JSON.stringify({ type: "CONNECTED", citizenId: "cit-1" })));
+    const connected = { type: "CONNECTED", citizenId: "cit-1", taskBootstrapRequired: true };
+    sock.emit("message", Buffer.from(JSON.stringify(connected)));
     await hello;
+    expect(messages).toHaveBeenCalledWith(connected);
+    expect(bootstrap).toHaveBeenCalledWith(connected);
 
     await session.stop();
     expect(factory.mock.calls.length).toBe(1);

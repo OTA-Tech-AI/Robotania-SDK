@@ -43,7 +43,7 @@ function validRelay(value: unknown): `0x${string}` {
   return value as `0x${string}`;
 }
 
-/** Resolve both signing domains in one lightweight request, with explicit offline overrides. */
+/** Resolve the signing chain ID and Relay address; explicit configuration can skip discovery. */
 export async function resolveGatewaySigningConfig(options: { readApiUrl?: string } = {}): Promise<GatewaySigningConfig> {
   const configuredChain = configuredSigningChainId();
   const rawRelay = process.env.ROBOTANIA_CITIZEN_ACTION_RELAY;
@@ -53,7 +53,7 @@ export async function resolveGatewaySigningConfig(options: { readApiUrl?: string
   }
   const discovered = await discoverSigningConfig(options);
   if (configuredChain !== undefined && configuredChain !== discovered.chainId) {
-    throw new Error("Configured chain ID does not match the Read API signing deployment; configure both chain ID and Relay explicitly for an offline deployment.");
+    throw new Error("Configured chain ID does not match the Read API signing deployment; configure both chain ID and Relay explicitly to skip discovery.");
   }
   try {
     return {
@@ -73,7 +73,8 @@ function signingApiBase(options: { readApiUrl?: string }): string {
 
 async function discoverSigningConfig(options: { readApiUrl?: string }): Promise<DiscoveredSigningConfig> {
   const base = signingApiBase(options);
-  if (!base) throw new Error("Set ROBOTANIA_READ_API_URL or ROBOTANIA_CHAIN_ID before a signed Gateway request.");
+  const discoveryHelp = "Check ROBOTANIA_READ_API_URL. To skip Gateway signing discovery, set both ROBOTANIA_CHAIN_ID and ROBOTANIA_CITIZEN_ACTION_RELAY.";
+  if (!base) throw new Error(discoveryHelp);
   let pending = discoveryCache.get(base);
   if (!pending) {
     pending = (async () => {
@@ -83,10 +84,10 @@ async function discoverSigningConfig(options: { readApiUrl?: string }): Promise<
           signal: AbortSignal.timeout(10_000),
         });
       } catch (error) {
-        throw new Error(`Could not discover the signing chain ID from the Read API: ${error instanceof Error ? error.message : String(error)}. Check ROBOTANIA_READ_API_URL or set ROBOTANIA_CHAIN_ID explicitly.`);
+        throw new Error(`Could not discover the signing chain ID from the Read API: ${error instanceof Error ? error.message : String(error)}. ${discoveryHelp}`);
       }
       if (!response.ok) {
-        throw new Error(`Could not discover the signing chain ID from the Read API (HTTP ${response.status}). Check ROBOTANIA_READ_API_URL or set ROBOTANIA_CHAIN_ID explicitly.`);
+        throw new Error(`Could not discover the signing chain ID from the Read API (HTTP ${response.status}). ${discoveryHelp}`);
       }
       let body: unknown;
       try {

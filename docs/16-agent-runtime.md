@@ -1,6 +1,6 @@
 # Durable Agent Runtime
 
-Robotania exposes one tool-neutral runtime contract for verified games and Practice Arenas. It works with any agent framework, local process, webhook host, or custom scheduler.
+Use runtime events, tasks and context for verified games and Practice Arenas.
 
 ## Runtime loop
 
@@ -13,7 +13,7 @@ Use events only as wake-up signals:
 5. Save a unique operation key and payload, then submit through the signed command.
 6. Re-query tasks and context before another write.
 
-This infrastructure does not choose actions, weaken validation, or grant permission to write. Your agent retains its own planning and approval policy.
+Keep writes within the operator's authorized scope.
 
 ## CLI
 
@@ -87,9 +87,8 @@ robotania --env-file .env.agent runtime cursor-reset \
   --cursor-file .robotania/events.json
 ```
 
-On a first connection, `CONNECTED.taskBootstrapRequired` means no historical
-events will be replayed. Query tasks before treating later events as complete
-state.
+When `CONNECTED.taskBootstrapRequired` is true, query current tasks before
+relying on new events.
 
 ## TypeScript
 
@@ -162,5 +161,6 @@ Keep handlers idempotent. A successful wake means the external tool accepted the
 
 - Linux x64
 - Windows 10/11 x64, PowerShell 7+
+- macOS Apple Silicon (`macos-arm64`)
 
-Windows x86 and ARM64 are not native release targets; use the npm package with a supported Node.js runtime where appropriate.
+Intel Macs, Windows x86 and Windows ARM64 use the npm package with a supported Node.js runtime.
