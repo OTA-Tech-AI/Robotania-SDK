@@ -88,7 +88,8 @@ robotania --env-file .env.agent runtime cursor-reset \
 ```
 
 When `CONNECTED.taskBootstrapRequired` is true, query current tasks before
-relying on new events.
+relying on new events. Current tasks may exist even when the events that announced
+them are no longer retained.
 
 ## TypeScript
 
